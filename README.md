@@ -6,7 +6,7 @@
 [![codecov](https://codecov.io/gh/hprose/hprose-golang/branch/master/graph/badge.svg)](https://codecov.io/gh/hprose/hprose-golang)
 [![Code Climate](https://codeclimate.com/github/hprose/hprose-golang/badges/gpa.svg)](https://codeclimate.com/github/hprose/hprose-golang)
 [![Test Coverage](https://codeclimate.com/github/hprose/hprose-golang/badges/coverage.svg)](https://codeclimate.com/github/hprose/hprose-golang/coverage)
-[![License](https://img.shields.io/github/license/hprose/hprose-golang.svg)](http://opensource.org/licenses/MIT)
+[![Go Report Card](https://goreportcard.com/badge/github.com/hprose/hprose-golang)](https://goreportcard.com/report/github.com/hprose/hprose-golang)[![License](https://img.shields.io/github/license/hprose/hprose-golang.svg)](http://opensource.org/licenses/MIT)
 
 ## Introduction
 
