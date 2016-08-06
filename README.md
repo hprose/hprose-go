@@ -4,6 +4,8 @@
 [![Build Status](https://travis-ci.org/hprose/hprose-golang.svg?branch=master)](https://travis-ci.org/hprose/hprose-golang)
 [![GoDoc](https://godoc.org/github.com/hprose/hprose-golang?status.svg&style=flat)](https://godoc.org/github.com/hprose/hprose-golang)
 [![codecov](https://codecov.io/gh/hprose/hprose-golang/branch/master/graph/badge.svg)](https://codecov.io/gh/hprose/hprose-golang)
+[![Code Climate](https://codeclimate.com/github/hprose/hprose-golang/badges/gpa.svg)](https://codeclimate.com/github/hprose/hprose-golang)
+[![Test Coverage](https://codeclimate.com/github/hprose/hprose-golang/badges/coverage.svg)](https://codeclimate.com/github/hprose/hprose-golang/coverage)
 [![License](https://img.shields.io/github/license/hprose/hprose-golang.svg)](http://opensource.org/licenses/MIT)
 
 ## Introduction
