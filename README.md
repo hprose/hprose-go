@@ -4,7 +4,7 @@
 [![Build Status](https://travis-ci.org/hprose/hprose-golang.svg?branch=master)](https://travis-ci.org/hprose/hprose-golang)
 [![GoDoc](https://godoc.org/github.com/hprose/hprose-golang?status.svg&style=flat)](https://godoc.org/github.com/hprose/hprose-golang)
 [![codecov](https://codecov.io/gh/hprose/hprose-golang/branch/master/graph/badge.svg)](https://codecov.io/gh/hprose/hprose-golang)
-[![License](https://img.shields.io/github/license/hprose/hprose-hprose.svg)](http://opensource.org/licenses/MIT)
+[![License](https://img.shields.io/github/license/hprose/hprose-golang.svg)](http://opensource.org/licenses/MIT)
 
 ## Introduction
 
