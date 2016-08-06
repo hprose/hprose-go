@@ -12,7 +12,7 @@ install:
     - go get -d -v ./...
 
 script:
-    - ./go.test.sh
+    - ./test.sh
 
 codecov:
   token: 904ed379-1635-4df0-a5c1-0e445aae49ba
