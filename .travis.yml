@@ -12,9 +12,3 @@ install:
 
 script:
     - ./test.sh
-
-codecov:
-  token: 904ed379-1635-4df0-a5c1-0e445aae49ba
-
-after_success:
-    - bash <(curl -s https://codecov.io/bash)

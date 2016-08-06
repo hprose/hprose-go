@@ -1,8 +1,0 @@
-codecov:
-  branch: master
-  bot: hprose
-
-coverage:
-  precision: 2
-  round: down
-  range: "70...100"
