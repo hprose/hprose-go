@@ -1,0 +1,16 @@
+language: go
+
+env:
+    - GIMME_OS=linux
+    - GIMME_OS=darwin
+    - GIMME_OS=windows
+
+install:
+    - go get -d -v ./...
+
+script:
+    - go build -v ./...
+    - go test -v ./...
+
+after_success:
+    - bash <(curl -s https://codecov.io/bash)
