@@ -10,10 +10,11 @@ go:
 before_install:
   - go get github.com/mattn/goveralls
   - go get golang.org/x/tools/cmd/cover
-  - wget https://github.com/h12w/gosweep/raw/master/gosweep.sh
-  - chmod +x gosweep.sh
+
 install:
     - go get -d -v ./...
 
 script:
-    - gosweep.sh
+    - wget https://github.com/h12w/gosweep/raw/master/gosweep.sh
+    - chmod +x gosweep.sh
+    - ./gosweep.sh
