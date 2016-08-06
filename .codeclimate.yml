@@ -7,7 +7,8 @@ engines:
     enabled: true
   markdownlint:
     enabled: true
-
+  fixme:
+    enabled: true
 ratings:
-  paths:
-    - "**.go"
+  paths: []
+exclude_paths: []
