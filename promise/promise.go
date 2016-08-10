@@ -38,9 +38,11 @@ type Thenable interface {
 	// Then method returns a Promise. It takes two arguments: callback functions
 	// for the success and failure cases of the Promise.
 	//
-	// onFulfilled: a Function called when the Promise is fulfilled. This function has one argument, the fulfillment value.
+	// onFulfilled: a Function called when the Promise is fulfilled.
+	// 				This function has one argument, the fulfillment value.
 	//
-	// onRejected: a Function called when the Promise is rejected. This function has one argument, the rejection reason.
+	//  onRejected: a Function called when the Promise is rejected.
+	//  		    This function has one argument, the rejection reason.
 	Then(onFulfilled onFulfilled, onRejected ...onRejected) Promise
 }
 
@@ -71,7 +73,8 @@ type Promise interface {
 	// this call in exactly the same way as for Then's onRejected.
 	//
 	// If test is omitted, it defaults to a function that always returns true.
-	// The test function should not panic, but if it does, it is handled as if // the the onRejected function had panic.
+	// The test function should not panic, but if it does, it is handled as if
+	// the the onRejected function had panic.
 	Catch(onRejected onRejected, test ...testFunc) Promise
 
 	// Complete is the same way as Then(onCompleted, onCompleted)
@@ -106,10 +109,14 @@ type Promise interface {
 	// otherwise nothing to do.
 	Fill(promise Promise)
 
-	// Timeout create a new promise that will reject with a TimeoutError or a custom reason after a timeout if promise does not fulfill or reject beforehand.
+	// Timeout create a new promise that will reject with a TimeoutError or a
+	// custom reason after a timeout if promise does not fulfill or reject
+	// beforehand.
 	Timeout(duration time.Duration, reason ...error) Promise
 
-	// Delay create a new promise that will, after duration delay, fulfill with the same value as this promise. If this promise rejects, delayedPromise will be rejected immediately.
+	// Delay create a new promise that will, after duration delay, fulfill with
+	// the same value as this promise. If this promise rejects, delayed promise
+	// will be rejected immediately.
 	Delay(duration time.Duration) Promise
 
 	// Tap executes a function as a side effect when promise fulfills.
