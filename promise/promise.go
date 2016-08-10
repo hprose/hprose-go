@@ -21,29 +21,31 @@ package promise
 
 import "time"
 
-type callable func() (interface{}, error)
+// OnFulfilled is a function called when the Promise is fulfilled.
+// This function has one argument, the fulfillment value.
+type OnFulfilled func(interface{}) (interface{}, error)
 
-type onCompleted func(interface{}) (interface{}, error)
+// OnRejected is a function called when the Promise is rejected.
+// This function has one argument, the rejection reason.
+type OnRejected func(error) (interface{}, error)
 
-type onFulfilled func(interface{}) (interface{}, error)
+// OnCompleted is a function called when the Promise is completed.
+// This function has one argument,
+// the fulfillment value when the Promise is fulfilled,
+// or the rejection reason when the Promise is rejected.
+type OnCompleted func(interface{}) (interface{}, error)
 
-type onRejected func(error) (interface{}, error)
+// OnfulfilledSideEffect is a function used as the argument of Promise.Tap
+type OnfulfilledSideEffect func(interface{})
 
-type onfulfilledSideEffect func(interface{})
-
-type testFunc func(error) bool
+// TestFunc is a function used as the argument of Promise.Catch
+type TestFunc func(error) bool
 
 // Thenable is an interface that defines a Then method.
 type Thenable interface {
 	// Then method returns a Promise. It takes two arguments: callback functions
 	// for the success and failure cases of the Promise.
-	//
-	// onFulfilled: a Function called when the Promise is fulfilled.
-	//              This function has one argument, the fulfillment value.
-	//
-	//  onRejected: a Function called when the Promise is rejected.
-	//              This function has one argument, the rejection reason.
-	Then(onFulfilled onFulfilled, onRejected ...onRejected) Promise
+	Then(onFulfilled OnFulfilled, onRejected ...OnFulfilled) Promise
 }
 
 // Promise is an interface of the JS Promise/A+ spec
@@ -75,22 +77,22 @@ type Promise interface {
 	// If test is omitted, it defaults to a function that always returns true.
 	// The test function should not panic, but if it does, it is handled as if
 	// the the onRejected function had panic.
-	Catch(onRejected onRejected, test ...testFunc) Promise
+	Catch(onRejected OnFulfilled, test ...TestFunc) Promise
 
 	// Complete is the same way as Then(onCompleted, onCompleted)
-	Complete(onCompleted onCompleted) Promise
+	Complete(onCompleted OnCompleted) Promise
 
 	// Done is the same semantics as Then except that it don't return a Promise.
 	// If the callback function (onFulfilled or onRejected) returns error or
 	// panics, the application will be crashing.
 	// The result of the callback function will be ignored.
-	Done(onFulfilled onFulfilled, onRejected ...onRejected)
+	Done(onFulfilled OnFulfilled, onRejected ...OnRejected)
 
 	// Fail is the same way as Done(nil, onRejected)
-	Fail(onRejected onRejected)
+	Fail(onRejected OnRejected)
 
 	// Always is the same way as Done(onCompleted, onCompleted)
-	Always(onCompleted onCompleted)
+	Always(onCompleted OnCompleted)
 
 	// State return the current state of the Promise
 	State() State
@@ -130,7 +132,7 @@ type Promise interface {
 	//       rejects with the panic message as the reason.
 	// 2. If promise rejects, onFulfilledSideEffect is not executed, and the
 	//    promise returned by tap rejects with promise's rejection reason.
-	Tap(onfulfilledSideEffect onfulfilledSideEffect) Promise
+	Tap(onfulfilledSideEffect OnfulfilledSideEffect) Promise
 
 	// Get the value and reason synchronously, if this promise in PENDING state.
 	// this method will block the current goroutine.
