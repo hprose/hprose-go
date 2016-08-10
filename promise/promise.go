@@ -39,10 +39,10 @@ type Thenable interface {
 	// for the success and failure cases of the Promise.
 	//
 	// onFulfilled: a Function called when the Promise is fulfilled.
-	// 				This function has one argument, the fulfillment value.
+	//              This function has one argument, the fulfillment value.
 	//
 	//  onRejected: a Function called when the Promise is rejected.
-	//  		    This function has one argument, the rejection reason.
+	//              This function has one argument, the rejection reason.
 	Then(onFulfilled onFulfilled, onRejected ...onRejected) Promise
 }
 
