@@ -8,9 +8,9 @@
 \**********************************************************/
 /**********************************************************\
  *                                                        *
- * promise/promise_test.go                                *
+ * promise/timeout_error.go                               *
  *                                                        *
- * promise test for Go.                                   *
+ * promise TimeoutError for Go.                           *
  *                                                        *
  * LastModified: Aug 8, 2015                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
@@ -18,3 +18,11 @@
 \**********************************************************/
 
 package promise
+
+// TimeoutError is the default error of Promise.Timeout.
+type TimeoutError struct{}
+
+// Error implements the TimeoutError Error method.
+func (TimeoutError) Error() string {
+	return "timeout"
+}
