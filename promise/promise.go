@@ -93,7 +93,8 @@ type Promise interface {
 	// If this promise completes with an error, the returned promise completes
 	// with the same error.
 	//
-	// The action function should not panic, but if it does, the returned promise completes with a PanicError.
+	// The action function should not panic, but if it does, the returned
+	// promise completes with a PanicError.
 	WhenComplete(action func()) Promise
 
 	// Done is the same semantics as Then except that it don't return a Promise.
