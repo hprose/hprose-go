@@ -12,7 +12,7 @@
  *                                                        *
  * promise implementation for Go.                         *
  *                                                        *
- * LastModified: Aug 11, 2015                             *
+ * LastModified: Aug 12, 2015                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -41,20 +41,22 @@ type promiseImpl struct {
 	subscribers []subscriber
 }
 
+func call(onFulfilled OnFulfilled, next Promise, x interface{}) {
+	defer func() {
+		if e := recover(); e != nil {
+			next.Reject(NewPanicError(e))
+		}
+	}()
+	if result, err := onFulfilled(x); err != nil {
+		next.Reject(err)
+	} else {
+		next.Resolve(result)
+	}
+}
+
 func resolve(onFulfilled OnFulfilled, next Promise, x interface{}) {
 	if onFulfilled != nil {
-		go func() {
-			defer func() {
-				if e := recover(); e != nil {
-					next.Reject(NewPanicError(e))
-				}
-			}()
-			if result, err := onFulfilled(x); err != nil {
-				next.Reject(err)
-			} else {
-				next.Resolve(result)
-			}
-		}()
+		go call(onFulfilled, next, x)
 	} else {
 		next.Resolve(x)
 	}
@@ -62,18 +64,9 @@ func resolve(onFulfilled OnFulfilled, next Promise, x interface{}) {
 
 func reject(onRejected OnRejected, next Promise, e error) {
 	if onRejected != nil {
-		go func() {
-			defer func() {
-				if e := recover(); e != nil {
-					next.Reject(NewPanicError(e))
-				}
-			}()
-			if result, err := onRejected(e); err != nil {
-				next.Reject(err)
-			} else {
-				next.Resolve(result)
-			}
-		}()
+		go call(func(x interface{}) (interface{}, error) {
+			return onRejected(x.(error))
+		}, next, e)
 	} else {
 		next.Reject(e)
 	}
@@ -110,15 +103,15 @@ func (p *promiseImpl) Then(onFulfilled OnFulfilled, onRejected ...OnRejected) Pr
 }
 
 func (p *promiseImpl) catch(onRejected OnRejected, test TestFunc) Promise {
-	if test != nil {
-		return p.then(nil, func(e error) (interface{}, error) {
-			if test(e) {
-				return p.then(nil, onRejected), nil
-			}
-			return nil, e
-		})
+	if test == nil {
+		return p.then(nil, onRejected)
 	}
-	return p.then(nil, onRejected)
+	return p.then(nil, func(e error) (interface{}, error) {
+		if test(e) {
+			return p.then(nil, onRejected), nil
+		}
+		return nil, e
+	})
 }
 
 func (p *promiseImpl) Catch(onRejected OnRejected, test ...TestFunc) Promise {
