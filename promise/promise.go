@@ -10,9 +10,9 @@
  *                                                        *
  * promise/promise.go                                     *
  *                                                        *
- * promise for Go.                                        *
+ * promise interface for Go.                              *
  *                                                        *
- * LastModified: Aug 8, 2015                              *
+ * LastModified: Aug 11, 2015                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -45,7 +45,7 @@ type TestFunc func(error) bool
 type Thenable interface {
 	// Then method returns a Promise. It takes two arguments: callback functions
 	// for the success and failure cases of the Promise.
-	Then(onFulfilled OnFulfilled, onRejected ...OnFulfilled) Promise
+	Then(onFulfilled OnFulfilled, onRejected ...OnRejected) Promise
 }
 
 // Promise is an interface of the JS Promise/A+ spec
@@ -77,10 +77,24 @@ type Promise interface {
 	// If test is omitted, it defaults to a function that always returns true.
 	// The test function should not panic, but if it does, it is handled as if
 	// the the onRejected function had panic.
-	Catch(onRejected OnFulfilled, test ...TestFunc) Promise
+	Catch(onRejected OnRejected, test ...TestFunc) Promise
 
 	// Complete is the same way as Then(onCompleted, onCompleted)
 	Complete(onCompleted OnCompleted) Promise
+
+	// WhenComplete register a function to be called when the promise completes.
+	//
+	// The action function is called when this promise completes, whether it
+	// does so with a value or with an error.
+	//
+	// If this promise completes with a value, the returned promise completes
+	// with the same value.
+	//
+	// If this promise completes with an error, the returned promise completes
+	// with the same error.
+	//
+	// The action function should not panic, but if it does, the returned promise completes with a PanicError.
+	WhenComplete(action func()) Promise
 
 	// Done is the same semantics as Then except that it don't return a Promise.
 	// If the callback function (onFulfilled or onRejected) returns error or
