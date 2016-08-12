@@ -12,7 +12,7 @@
  *                                                        *
  * promise interface for Go.                              *
  *                                                        *
- * LastModified: Aug 11, 2015                             *
+ * LastModified: Aug 13, 2015                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -20,6 +20,10 @@
 package promise
 
 import "time"
+
+// Callable is a function type.
+// It has no arguments and returns a result with an error.
+type Callable func() (interface{}, error)
 
 // OnFulfilled is a function called when the Promise is fulfilled.
 // This function has one argument, the fulfillment value.
