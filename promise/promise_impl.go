@@ -182,10 +182,9 @@ func (p *promiseImpl) resolve(thenable Thenable) {
 		return nil, nil
 	}
 	defer func() {
-		if e := recover(); e != nil {
-			if atomic.CompareAndSwapUint32(&done, 0, 1) {
-				p.Reject(NewPanicError(e))
-			}
+		e := recover()
+		if e != nil && atomic.CompareAndSwapUint32(&done, 0, 1) {
+			p.Reject(NewPanicError(e))
 		}
 	}()
 	thenable.Then(resolveFunc, rejectFunc)
@@ -194,11 +193,17 @@ func (p *promiseImpl) resolve(thenable Thenable) {
 func (p *promiseImpl) Resolve(value interface{}) {
 	if promise, ok := value.(*promiseImpl); ok && promise == p {
 		p.Reject(TypeError{"Self resolution"})
-	} else if promise, ok := value.(Promise); ok {
+		return
+	}
+	if promise, ok := value.(Promise); ok {
 		promise.Fill(p)
-	} else if thenable, ok := value.(Thenable); ok {
+		return
+	}
+	if thenable, ok := value.(Thenable); ok {
 		p.resolve(thenable)
-	} else if atomic.CompareAndSwapUint32(&p.state, uint32(PENDING), uint32(FULFILLED)) {
+		return
+	}
+	if atomic.CompareAndSwapUint32(&p.state, uint32(PENDING), uint32(FULFILLED)) {
 		p.value = value
 		subscribers := p.subscribers
 		p.subscribers = nil
