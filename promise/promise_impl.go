@@ -162,25 +162,22 @@ func (p *promiseImpl) State() State {
 
 func (p *promiseImpl) resolveThenable(thenable Thenable) {
 	var done uint32
-	resolveFunc := func(y interface{}) (interface{}, error) {
+	defer func() {
+		if e := recover(); e != nil && atomic.CompareAndSwapUint32(&done, 0, 1) {
+			p.Reject(NewPanicError(e))
+		}
+	}()
+	thenable.Then(func(y interface{}) (interface{}, error) {
 		if atomic.CompareAndSwapUint32(&done, 0, 1) {
 			p.Resolve(y)
 		}
 		return nil, nil
-	}
-	rejectFunc := func(e error) (interface{}, error) {
+	}, func(e error) (interface{}, error) {
 		if atomic.CompareAndSwapUint32(&done, 0, 1) {
 			p.Reject(e)
 		}
 		return nil, nil
-	}
-	defer func() {
-		e := recover()
-		if e != nil && atomic.CompareAndSwapUint32(&done, 0, 1) {
-			p.Reject(NewPanicError(e))
-		}
-	}()
-	thenable.Then(resolveFunc, rejectFunc)
+	})
 }
 
 func (p *promiseImpl) reslove(value interface{}) {
