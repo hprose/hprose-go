@@ -19,7 +19,10 @@
 
 package promise
 
-import "sync/atomic"
+import (
+	"errors"
+	"sync/atomic"
+)
 
 func allHandler(promise Promise, count *int64, result []interface{}, value interface{}, index int) {
 	ToPromise(value).Then(func(value interface{}) {
@@ -42,6 +45,48 @@ func All(iterable ...interface{}) Promise {
 	promise := New()
 	for index, value := range iterable {
 		allHandler(promise, &count, result, value, index)
+	}
+	return promise
+}
+
+// Race function returns a promise that resolves or rejects as soon as one of
+// the promises in the iterable resolves or rejects, with the value or reason
+// from that promise.
+func Race(iterable ...interface{}) Promise {
+	promise := New()
+	for _, value := range iterable {
+		ToPromise(value).Fill(promise)
+	}
+	return promise
+}
+
+// Any function is a competitive race that allows one winner.
+//
+// The returned promise will:
+//
+//     fulfill as soon as any one of the input promises fulfills, with the
+//     value of the fulfilled input promise, or
+//
+//     reject:
+//
+//         with a IllegalArgumentError if the input array is empty--i.e.
+//		   it is impossible to have one winner.
+//
+//         with an array of all the rejection reasons, if the input array is
+//         non-empty, and all input promises reject.
+func Any(iterable ...interface{}) Promise {
+	n := len(iterable)
+	if n == 0 {
+		return Reject(IllegalArgumentError("any(): array must not be empty"))
+	}
+	promise := New()
+	count := int64(n)
+	for _, value := range iterable {
+		ToPromise(value).Then(promise.Resolve, func() {
+			if atomic.AddInt64(&count, -1) == 0 {
+				promise.Reject(errors.New("any(): all promises failed"))
+			}
+		})
 	}
 	return promise
 }

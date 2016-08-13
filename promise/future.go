@@ -115,7 +115,7 @@ func (p *future) resolve(value interface{}) {
 
 func (p *future) Resolve(value interface{}) {
 	if promise, ok := value.(*future); ok && promise == p {
-		p.Reject(TypeError{"Self resolution"})
+		p.Reject(TypeError("Self resolution"))
 	} else if promise, ok := value.(Promise); ok {
 		promise.Fill(p)
 	} else {

@@ -24,6 +24,15 @@ import (
 	"runtime"
 )
 
+// IllegalArgumentError represents an error when a function/method has been
+// passed an illegal or inappropriate argument.
+type IllegalArgumentError string
+
+// Error implements the IllegalArgumentError Error method.
+func (e IllegalArgumentError) Error() string {
+	return string(e)
+}
+
 // TimeoutError represents an error when an operation times out.
 type TimeoutError struct{}
 
@@ -33,13 +42,11 @@ func (TimeoutError) Error() string {
 }
 
 // TypeError represents an error when a value is not of the expected type.
-type TypeError struct {
-	message string
-}
+type TypeError string
 
 // Error implements the TypeError Error method.
 func (e TypeError) Error() string {
-	return e.message
+	return string(e)
 }
 
 // PanicError represents a panic error
