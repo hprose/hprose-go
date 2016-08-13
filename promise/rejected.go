@@ -39,7 +39,7 @@ func (p rejected) Then(onFulfilled OnFulfilled, onRejected ...OnRejected) Promis
 	return next
 }
 
-func (p rejected) Catch(onRejected OnRejected, test ...TestFunc) Promise {
+func (p rejected) Catch(onRejected OnRejected, test ...func(error) bool) Promise {
 	if len(test) == 0 || test[0](p.reason) {
 		next := New()
 		reject(next, onRejected, p.reason)
@@ -49,9 +49,7 @@ func (p rejected) Catch(onRejected OnRejected, test ...TestFunc) Promise {
 }
 
 func (p rejected) Complete(onCompleted OnCompleted) Promise {
-	return p.Catch(func(e error) (interface{}, error) {
-		return onCompleted(e)
-	})
+	return p.Then(nil, onCompleted)
 }
 
 func (p rejected) WhenComplete(action func()) Promise {
@@ -62,12 +60,7 @@ func (p rejected) WhenComplete(action func()) Promise {
 }
 
 func (p rejected) Done(onFulfilled OnFulfilled, onRejected ...OnRejected) {
-	p.
-		Then(nil, onRejected...).
-		Then(nil, func(e error) (interface{}, error) {
-			go panic(e)
-			return nil, nil
-		})
+	p.Then(nil, onRejected...).Then(nil, func(e error) { go panic(e) })
 }
 
 func (p rejected) State() State {
@@ -90,7 +83,7 @@ func (p rejected) Delay(duration time.Duration) Promise {
 	return rejected{p.reason}
 }
 
-func (p rejected) Tap(onfulfilledSideEffect OnfulfilledSideEffect) Promise {
+func (p rejected) Tap(onfulfilledSideEffect func(interface{})) Promise {
 	return rejected{p.reason}
 }
 

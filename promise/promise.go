@@ -19,31 +19,43 @@
 
 package promise
 
-import "time"
-
-// Callable is a function type.
-// It has no arguments and returns a result with an error.
-type Callable func() (interface{}, error)
+import (
+	"reflect"
+	"time"
+)
 
 // OnFulfilled is a function called when the Promise is fulfilled.
 // This function has one argument, the fulfillment value.
-type OnFulfilled func(interface{}) (interface{}, error)
+//
+// The function type can be the following:
+//     func() (interface{}, error)
+//     func()
+//     func(interface{}) (interface{}, error)
+//     func(interface{})
+type OnFulfilled interface{}
 
 // OnRejected is a function called when the Promise is rejected.
 // This function has one argument, the rejection reason.
-type OnRejected func(error) (interface{}, error)
+//
+// The function type can be the following:
+//     func() (interface{}, error)
+//     func()
+//     func(interface{}) (interface{}, error)
+//     func(interface{})
+//     func(error) (interface{}, error)
+//     func(error)
+type OnRejected interface{}
 
 // OnCompleted is a function called when the Promise is completed.
 // This function has one argument,
 // the fulfillment value when the Promise is fulfilled,
 // or the rejection reason when the Promise is rejected.
-type OnCompleted func(interface{}) (interface{}, error)
-
-// OnfulfilledSideEffect is a function used as the argument of Promise.Tap
-type OnfulfilledSideEffect func(interface{})
-
-// TestFunc is a function used as the argument of Promise.Catch
-type TestFunc func(error) bool
+// The function type can be the following:
+//     func() (interface{}, error)
+//     func()
+//     func(interface{}) (interface{}, error)
+//     func(interface{})
+type OnCompleted interface{}
 
 // Promise is an interface of the JS Promise/A+ spec
 // (https://promisesaplus.com/).
@@ -76,7 +88,7 @@ type Promise interface {
 	// If test is omitted, it defaults to a function that always returns true.
 	// The test function should not panic, but if it does, it is handled as if
 	// the the onRejected function had panic.
-	Catch(onRejected OnRejected, test ...TestFunc) Promise
+	Catch(onRejected OnRejected, test ...func(error) bool) Promise
 
 	// Complete is the same way as Then(onCompleted, onCompleted)
 	Complete(onCompleted OnCompleted) Promise
@@ -139,7 +151,7 @@ type Promise interface {
 	//       rejects with the panic message as the reason.
 	// 2. If promise rejects, onFulfilledSideEffect is not executed, and the
 	//    promise returned by tap rejects with promise's rejection reason.
-	Tap(onfulfilledSideEffect OnfulfilledSideEffect) Promise
+	Tap(onfulfilledSideEffect func(interface{})) Promise
 
 	// Get the value and reason synchronously, if this promise in PENDING state.
 	// this method will block the current goroutine.
@@ -152,7 +164,7 @@ func catch(promise Promise) {
 	}
 }
 
-func call(promise Promise, computation Callable) {
+func call(promise Promise, computation func() (interface{}, error)) {
 	defer catch(promise)
 	if result, err := computation(); err != nil {
 		promise.Reject(err)
@@ -161,20 +173,96 @@ func call(promise Promise, computation Callable) {
 	}
 }
 
-func resolve(next Promise, onFulfilled OnFulfilled, x interface{}) {
-	if onFulfilled != nil {
-		go call(next, func() (interface{}, error) { return onFulfilled(x) })
+func call1(promise Promise, computation func()) {
+	defer catch(promise)
+	computation()
+	promise.Resolve(nil)
+}
+
+func call2(promise Promise, computation func(interface{}) (interface{}, error), x interface{}) {
+	defer catch(promise)
+	if result, err := computation(x); err != nil {
+		promise.Reject(err)
 	} else {
-		next.Resolve(x)
+		promise.Resolve(result)
 	}
 }
 
-func reject(next Promise, onRejected OnRejected, e error) {
-	if onRejected != nil {
-		go call(next, func() (interface{}, error) { return onRejected(e) })
+func call3(promise Promise, computation func(interface{}), x interface{}) {
+	defer catch(promise)
+	computation(x)
+	promise.Resolve(nil)
+}
+
+func call4(promise Promise, computation func(error) (interface{}, error), e error) {
+	defer catch(promise)
+	if result, err := computation(e); err != nil {
+		promise.Reject(err)
 	} else {
-		next.Reject(e)
+		promise.Resolve(result)
 	}
+}
+
+func call5(promise Promise, computation func(error), e error) {
+	defer catch(promise)
+	computation(e)
+	promise.Resolve(nil)
+}
+
+func resolve(next Promise, onFulfilled OnFulfilled, x interface{}) {
+	if onFulfilled == nil {
+		next.Resolve(x)
+		return
+	}
+	if f, ok := onFulfilled.(func() (interface{}, error)); ok {
+		go call(next, f)
+		return
+	}
+	if f, ok := onFulfilled.(func()); ok {
+		go call1(next, f)
+		return
+	}
+	if f, ok := onFulfilled.(func(interface{}) (interface{}, error)); ok {
+		go call2(next, f, x)
+		return
+	}
+	if f, ok := onFulfilled.(func(interface{})); ok {
+		go call3(next, f, x)
+		return
+	}
+	panic("onFulfilled can't support this type: " + reflect.TypeOf(onFulfilled).Name())
+}
+
+func reject(next Promise, onRejected OnRejected, e error) {
+	if onRejected == nil {
+		next.Reject(e)
+		return
+	}
+	if f, ok := onRejected.(func() (interface{}, error)); ok {
+		go call(next, f)
+		return
+	}
+	if f, ok := onRejected.(func()); ok {
+		go call1(next, f)
+		return
+	}
+	if f, ok := onRejected.(func(interface{}) (interface{}, error)); ok {
+		go call2(next, f, e)
+		return
+	}
+	if f, ok := onRejected.(func(interface{})); ok {
+		go call3(next, f, e)
+		return
+	}
+	if f, ok := onRejected.(func(error) (interface{}, error)); ok {
+		go call4(next, f, e)
+		return
+	}
+	if f, ok := onRejected.(func(error)); ok {
+		go call5(next, f, e)
+		return
+	}
+	panic("onRejected can't support this type: " + reflect.TypeOf(onRejected).Name())
 }
 
 func timeout(promise Promise, duration time.Duration, reason ...error) Promise {
@@ -190,7 +278,7 @@ func timeout(promise Promise, duration time.Duration, reason ...error) Promise {
 	return next
 }
 
-func tap(promise Promise, onfulfilledSideEffect OnfulfilledSideEffect) Promise {
+func tap(promise Promise, onfulfilledSideEffect func(interface{})) Promise {
 	return promise.Then(func(v interface{}) (interface{}, error) {
 		onfulfilledSideEffect(v)
 		return v, nil
@@ -209,7 +297,7 @@ func tap(promise Promise, onfulfilledSideEffect OnfulfilledSideEffect) Promise {
 //
 // If calling computation returns a non-Promise value, the returned Promise is
 // completed with that value.
-func Create(computation Callable) Promise {
+func Create(computation func() (interface{}, error)) Promise {
 	promise := New()
 	go call(promise, computation)
 	return promise
@@ -227,7 +315,7 @@ func Create(computation Callable) Promise {
 //
 // If calling computation returns a non-Promise value, the returned Promise is
 // completed with that value.
-func Sync(computation Callable) Promise {
+func Sync(computation func() (interface{}, error)) Promise {
 	promise := New()
 	call(promise, computation)
 	return promise
@@ -241,8 +329,10 @@ func Delayed(duration time.Duration, value interface{}) Promise {
 	promise := New()
 	go func() {
 		time.Sleep(duration)
-		if computation, ok := value.(Callable); ok {
+		if computation, ok := value.(func() (interface{}, error)); ok {
 			call(promise, computation)
+		} else if computation, ok := value.(func()); ok {
+			call1(promise, computation)
 		} else {
 			promise.Resolve(value)
 		}

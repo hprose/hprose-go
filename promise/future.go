@@ -68,7 +68,7 @@ func (p *future) Then(onFulfilled OnFulfilled, rest ...OnRejected) Promise {
 	return next
 }
 
-func (p *future) Catch(onRejected OnRejected, test ...TestFunc) Promise {
+func (p *future) Catch(onRejected OnRejected, test ...func(error) bool) Promise {
 	if len(test) == 0 || test[0] == nil {
 		return p.Then(nil, onRejected)
 	}
@@ -81,9 +81,7 @@ func (p *future) Catch(onRejected OnRejected, test ...TestFunc) Promise {
 }
 
 func (p *future) Complete(onCompleted OnCompleted) Promise {
-	return p.Then(OnFulfilled(onCompleted), func(e error) (interface{}, error) {
-		return onCompleted(e)
-	})
+	return p.Then(onCompleted, onCompleted)
 }
 
 func (p *future) WhenComplete(action func()) Promise {
@@ -97,12 +95,7 @@ func (p *future) WhenComplete(action func()) Promise {
 }
 
 func (p *future) Done(onFulfilled OnFulfilled, onRejected ...OnRejected) {
-	p.
-		Then(onFulfilled, onRejected...).
-		Then(nil, func(e error) (interface{}, error) {
-			go panic(e)
-			return nil, nil
-		})
+	p.Then(onFulfilled, onRejected...).Then(nil, func(e error) { go panic(e) })
 }
 
 func (p *future) State() State {
@@ -142,15 +135,7 @@ func (p *future) Reject(reason error) {
 }
 
 func (p *future) Fill(promise Promise) {
-	resolveFunc := func(v interface{}) (interface{}, error) {
-		promise.Resolve(v)
-		return nil, nil
-	}
-	rejectFunc := func(e error) (interface{}, error) {
-		promise.Reject(e)
-		return nil, nil
-	}
-	p.Then(resolveFunc, rejectFunc)
+	p.Then(promise.Resolve, promise.Reject)
 }
 
 func (p *future) Timeout(duration time.Duration, reason ...error) Promise {
@@ -159,33 +144,24 @@ func (p *future) Timeout(duration time.Duration, reason ...error) Promise {
 
 func (p *future) Delay(duration time.Duration) Promise {
 	next := New()
-	p.Then(func(v interface{}) (interface{}, error) {
+	p.Then(func(v interface{}) {
 		go func() {
 			time.Sleep(duration)
 			next.Resolve(v)
 		}()
-		return nil, nil
-	}, func(e error) (interface{}, error) {
-		next.Reject(e)
-		return nil, nil
-	})
+	}, next.Reject)
 	return next
 }
 
-func (p *future) Tap(onfulfilledSideEffect OnfulfilledSideEffect) Promise {
+func (p *future) Tap(onfulfilledSideEffect func(interface{})) Promise {
 	return tap(p, onfulfilledSideEffect)
 }
 
 func (p *future) Get() (interface{}, error) {
-	c := make(chan interface{})
-	p.Then(func(v interface{}) (interface{}, error) {
-		c <- v
-		return nil, nil
-	}, func(e error) (interface{}, error) {
-		c <- e
-		return nil, nil
-	})
+	c := make(chan interface{}, 1)
+	p.Then(func(v interface{}) { c <- v }, func(e error) { c <- e })
 	v := <-c
+	close(c)
 	if e, ok := v.(error); ok {
 		return nil, e
 	}
