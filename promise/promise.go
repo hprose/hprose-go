@@ -106,9 +106,8 @@ type Promise interface {
 	State() State
 
 	// Resolve method returns a Promise object that is resolved with the given
-	// value. If the value is a Thenable (i.e. has a Then method), the returned
-	// promise will "follow" that Thenable, adopting its eventual state;
-	// otherwise the returned promise will be fulfilled with the value.
+	// value. If the value is a Promise, the returned promise will "follow" that Promise, adopting its eventual state; otherwise the returned promise
+	// will be fulfilled with the value.
 	Resolve(value interface{})
 
 	// Reject method returns a Promise object that is rejected with the given
