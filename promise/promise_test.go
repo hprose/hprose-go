@@ -28,8 +28,8 @@ func TestNew(t *testing.T) {
 	}
 }
 
-func TestValue(t *testing.T) {
-	p := Value(123)
+func TestResolve(t *testing.T) {
+	p := Resolve(123)
 	if p.State() != FULFILLED {
 		t.Error("p.State must be FULFILLED")
 	}
