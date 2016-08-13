@@ -127,24 +127,36 @@ func (p *future) State() State {
 	return State(p.state)
 }
 
+func thenableCatch(promise Promise, done *uint32) {
+	if e := recover(); e != nil && atomic.CompareAndSwapUint32(done, 0, 1) {
+		promise.Reject(NewPanicError(e))
+	}
+}
+
+func getThenableOnFullfilled(promise Promise, done *uint32) OnFulfilled {
+	return func(y interface{}) (interface{}, error) {
+		if atomic.CompareAndSwapUint32(done, 0, 1) {
+			promise.Resolve(y)
+		}
+		return nil, nil
+	}
+}
+
+func getThenableOnRejected(promise Promise, done *uint32) OnRejected {
+	return func(e error) (interface{}, error) {
+		if atomic.CompareAndSwapUint32(done, 0, 1) {
+			promise.Reject(e)
+		}
+		return nil, nil
+	}
+}
+
 func (p *future) resolveThenable(thenable Thenable) {
 	var done uint32
-	defer func() {
-		if e := recover(); e != nil && atomic.CompareAndSwapUint32(&done, 0, 1) {
-			p.Reject(NewPanicError(e))
-		}
-	}()
-	thenable.Then(func(y interface{}) (interface{}, error) {
-		if atomic.CompareAndSwapUint32(&done, 0, 1) {
-			p.Resolve(y)
-		}
-		return nil, nil
-	}, func(e error) (interface{}, error) {
-		if atomic.CompareAndSwapUint32(&done, 0, 1) {
-			p.Reject(e)
-		}
-		return nil, nil
-	})
+	defer thenableCatch(p, &done)
+	thenable.Then(
+		getThenableOnFullfilled(p, &done),
+		getThenableOnRejected(p, &done))
 }
 
 func (p *future) reslove(value interface{}) {
