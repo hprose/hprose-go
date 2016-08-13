@@ -72,15 +72,6 @@ func reject(onRejected OnRejected, next Promise, e error) {
 	}
 }
 
-func (p *promiseImpl) init(computation Callable) {
-	result, err := computation()
-	if err != nil {
-		p.Reject(err)
-	} else {
-		p.Resolve(result)
-	}
-}
-
 func (p *promiseImpl) then(onFulfilled OnFulfilled, onRejected OnRejected) Promise {
 	next := new(promiseImpl)
 	switch State(p.state) {
@@ -277,16 +268,31 @@ func (p *promiseImpl) Get() (interface{}, error) {
 	return v, nil
 }
 
+func exec(promise Promise, computation Callable) {
+	if result, err := computation(); err != nil {
+		promise.Reject(err)
+	} else {
+		promise.Resolve(result)
+	}
+}
+
+func assign(promise Promise, value interface{}) {
+	if e, ok := value.(error); ok {
+		promise.Reject(e)
+	} else {
+		promise.Resolve(value)
+	}
+}
+
 // New creates a Promise object
 func New(value ...interface{}) Promise {
 	promise := new(promiseImpl)
 	if len(value) > 0 {
-		if computation, ok := value[0].(Callable); ok {
-			go promise.init(computation)
-		} else if e, ok := value[0].(error); ok {
-			promise.Reject(e)
+		v := value[0]
+		if computation, ok := v.(Callable); ok {
+			go exec(promise, computation)
 		} else {
-			promise.Resolve(value[0])
+			assign(promise, v)
 		}
 	}
 	return promise
@@ -306,7 +312,7 @@ func New(value ...interface{}) Promise {
 // completed with that value.
 func Sync(computation Callable) Promise {
 	promise := new(promiseImpl)
-	promise.init(computation)
+	exec(promise, computation)
 	return promise
 }
 
@@ -318,11 +324,9 @@ func Delayed(duration time.Duration, value interface{}) Promise {
 	go func() {
 		time.Sleep(duration)
 		if computation, ok := value.(Callable); ok {
-			promise.init(computation)
-		} else if e, ok := value.(error); ok {
-			promise.Reject(e)
+			exec(promise, computation)
 		} else {
-			promise.Resolve(value)
+			assign(promise, value)
 		}
 	}()
 	return promise
