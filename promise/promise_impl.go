@@ -12,7 +12,7 @@
  *                                                        *
  * promise implementation for Go.                         *
  *                                                        *
- * LastModified: Aug 12, 2015                             *
+ * LastModified: Aug 13, 2015                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -23,10 +23,6 @@ import (
 	"sync/atomic"
 	"time"
 )
-
-// Callable is a function type.
-// It has no arguments and returns a result with an error.
-type Callable func() (interface{}, error)
 
 type subscriber struct {
 	onFulfilled OnFulfilled
@@ -39,6 +35,11 @@ type promiseImpl struct {
 	reason      error
 	state       uint32
 	subscribers []subscriber
+}
+
+// New creates a PENDING Promise object
+func New() Promise {
+	return new(promiseImpl)
 }
 
 func call(onFulfilled OnFulfilled, next Promise, x interface{}) {
@@ -266,68 +267,4 @@ func (p *promiseImpl) Get() (interface{}, error) {
 		return nil, e
 	}
 	return v, nil
-}
-
-func exec(promise Promise, computation Callable) {
-	if result, err := computation(); err != nil {
-		promise.Reject(err)
-	} else {
-		promise.Resolve(result)
-	}
-}
-
-func assign(promise Promise, value interface{}) {
-	if e, ok := value.(error); ok {
-		promise.Reject(e)
-	} else {
-		promise.Resolve(value)
-	}
-}
-
-// New creates a Promise object
-func New(value ...interface{}) Promise {
-	promise := new(promiseImpl)
-	if len(value) > 0 {
-		v := value[0]
-		if computation, ok := v.(Callable); ok {
-			go exec(promise, computation)
-		} else {
-			assign(promise, v)
-		}
-	}
-	return promise
-}
-
-// Sync creates a Promise object containing the result of immediately calling
-// computation.
-//
-// If calling computation returns error, the returned Promise is rejected with
-// the error.
-//
-// If calling computation returns a Promise object, completion of the created
-// Promise will wait until the returned Promise completes, and will then
-// complete with the same result.
-//
-// If calling computation returns a non-Promise value, the returned Promise is
-// completed with that value.
-func Sync(computation Callable) Promise {
-	promise := new(promiseImpl)
-	exec(promise, computation)
-	return promise
-}
-
-// Delayed creates a Promise object with the given value after a delay.
-//
-// If the value is a Callable function, it will be executed after the given duration has passed, and the Promise object is completed with the result.
-func Delayed(duration time.Duration, value interface{}) Promise {
-	promise := new(promiseImpl)
-	go func() {
-		time.Sleep(duration)
-		if computation, ok := value.(Callable); ok {
-			exec(promise, computation)
-		} else {
-			assign(promise, value)
-		}
-	}()
-	return promise
 }
