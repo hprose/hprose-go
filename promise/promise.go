@@ -210,59 +210,41 @@ func call5(promise Promise, computation func(error), e error) {
 }
 
 func resolve(next Promise, onFulfilled OnFulfilled, x interface{}) {
-	if onFulfilled == nil {
+	switch f := onFulfilled.(type) {
+	case nil:
 		next.Resolve(x)
-		return
-	}
-	if f, ok := onFulfilled.(func() (interface{}, error)); ok {
+	case func() (interface{}, error):
 		go call(next, f)
-		return
-	}
-	if f, ok := onFulfilled.(func()); ok {
+	case func():
 		go call1(next, f)
-		return
-	}
-	if f, ok := onFulfilled.(func(interface{}) (interface{}, error)); ok {
+	case func(interface{}) (interface{}, error):
 		go call2(next, f, x)
-		return
-	}
-	if f, ok := onFulfilled.(func(interface{})); ok {
+	case func(interface{}):
 		go call3(next, f, x)
-		return
+	default:
+		panic("onFulfilled can't support this type: " + reflect.TypeOf(onFulfilled).Name())
 	}
-	panic("onFulfilled can't support this type: " + reflect.TypeOf(onFulfilled).Name())
 }
 
 func reject(next Promise, onRejected OnRejected, e error) {
-	if onRejected == nil {
+	switch f := onRejected.(type) {
+	case nil:
 		next.Reject(e)
-		return
-	}
-	if f, ok := onRejected.(func() (interface{}, error)); ok {
+	case func() (interface{}, error):
 		go call(next, f)
-		return
-	}
-	if f, ok := onRejected.(func()); ok {
+	case func():
 		go call1(next, f)
-		return
-	}
-	if f, ok := onRejected.(func(interface{}) (interface{}, error)); ok {
+	case func(interface{}) (interface{}, error):
 		go call2(next, f, e)
-		return
-	}
-	if f, ok := onRejected.(func(interface{})); ok {
+	case func(interface{}):
 		go call3(next, f, e)
-		return
-	}
-	if f, ok := onRejected.(func(error) (interface{}, error)); ok {
+	case func(error) (interface{}, error):
 		go call4(next, f, e)
-		return
-	}
-	if f, ok := onRejected.(func(error)); ok {
+	case func(error):
 		go call5(next, f, e)
-		return
+	default:
+		panic("onRejected can't support this type: " + reflect.TypeOf(onRejected).Name())
 	}
-	panic("onRejected can't support this type: " + reflect.TypeOf(onRejected).Name())
 }
 
 func timeout(promise Promise, duration time.Duration, reason ...error) Promise {
@@ -329,11 +311,12 @@ func Delayed(duration time.Duration, value interface{}) Promise {
 	promise := New()
 	go func() {
 		time.Sleep(duration)
-		if computation, ok := value.(func() (interface{}, error)); ok {
+		switch computation := value.(type) {
+		case func() (interface{}, error):
 			call(promise, computation)
-		} else if computation, ok := value.(func()); ok {
+		case func():
 			call1(promise, computation)
-		} else {
+		default:
 			promise.Resolve(value)
 		}
 	}()
