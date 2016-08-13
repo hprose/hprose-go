@@ -158,7 +158,41 @@ type Promise interface {
 	Get() (interface{}, error)
 }
 
+func catch(promise Promise) {
+	if e := recover(); e != nil {
+		promise.Reject(NewPanicError(e))
+	}
+}
+
+func call(onFulfilled OnFulfilled, next Promise, x interface{}) {
+	defer catch(next)
+	if result, err := onFulfilled(x); err != nil {
+		next.Reject(err)
+	} else {
+		next.Resolve(result)
+	}
+}
+
+func resolve(onFulfilled OnFulfilled, next Promise, x interface{}) {
+	if onFulfilled != nil {
+		go call(onFulfilled, next, x)
+	} else {
+		next.Resolve(x)
+	}
+}
+
+func reject(onRejected OnRejected, next Promise, e error) {
+	if onRejected != nil {
+		go call(func(x interface{}) (interface{}, error) {
+			return onRejected(x.(error))
+		}, next, e)
+	} else {
+		next.Reject(e)
+	}
+}
+
 func exec(promise Promise, computation Callable) {
+	defer catch(promise)
 	if result, err := computation(); err != nil {
 		promise.Reject(err)
 	} else {
