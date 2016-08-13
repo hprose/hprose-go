@@ -241,7 +241,8 @@ func Sync(computation Callable) Promise {
 
 // Delayed creates a Promise object with the given value after a delay.
 //
-// If the value is a Callable function, it will be executed after the given duration has passed, and the Promise object is completed with the result.
+// If the value is a Callable function, it will be executed after the given
+// duration has passed, and the Promise object is completed with the result.
 func Delayed(duration time.Duration, value interface{}) Promise {
 	promise := New()
 	go func() {
