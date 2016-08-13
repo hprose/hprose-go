@@ -25,8 +25,8 @@ type fulfilled struct {
 	value interface{}
 }
 
-// Value creates a FULFILLED Promise object
-func Value(value interface{}) Promise {
+// Resolve creates a Promise object completed with the value
+func Resolve(value interface{}) Promise {
 	if _, ok := value.(Thenable); ok {
 		p := New()
 		p.Resolve(value)
@@ -36,6 +36,9 @@ func Value(value interface{}) Promise {
 }
 
 func (p fulfilled) Then(onFulfilled OnFulfilled, onRejected ...OnRejected) Promise {
+	if onFulfilled == nil {
+		return fulfilled{p.value}
+	}
 	next := New()
 	resolve(next, onFulfilled, p.value)
 	return next
