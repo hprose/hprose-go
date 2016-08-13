@@ -109,15 +109,7 @@ func (p *future) State() State {
 	return State(p.state)
 }
 
-func (p *future) Resolve(value interface{}) {
-	if promise, ok := value.(*future); ok && promise == p {
-		p.Reject(TypeError{"Self resolution"})
-		return
-	}
-	if promise, ok := value.(Promise); ok {
-		promise.Fill(p)
-		return
-	}
+func (p *future) resolve(value interface{}) {
 	if atomic.CompareAndSwapUint32(&p.state, uint32(PENDING), uint32(FULFILLED)) {
 		p.value = value
 		subscribers := p.subscribers
@@ -125,6 +117,16 @@ func (p *future) Resolve(value interface{}) {
 		for _, subscriber := range subscribers {
 			resolve(subscriber.next, subscriber.onFulfilled, value)
 		}
+	}
+}
+
+func (p *future) Resolve(value interface{}) {
+	if promise, ok := value.(*future); ok && promise == p {
+		p.Reject(TypeError{"Self resolution"})
+	} else if promise, ok := value.(Promise); ok {
+		promise.Fill(p)
+	} else {
+		p.resolve(value)
 	}
 }
 
