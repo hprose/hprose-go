@@ -68,12 +68,6 @@ func (p fulfilled) Done(onFulfilled OnFulfilled, onRejected ...OnRejected) {
 		})
 }
 
-func (p fulfilled) Fail(onRejected OnRejected) {}
-
-func (p fulfilled) Always(onCompleted OnCompleted) {
-	p.Done(OnFulfilled(onCompleted))
-}
-
 func (p fulfilled) State() State {
 	return FULFILLED
 }

@@ -42,7 +42,11 @@ func New() Promise {
 	return new(future)
 }
 
-func (p *future) then(onFulfilled OnFulfilled, onRejected OnRejected) Promise {
+func (p *future) Then(onFulfilled OnFulfilled, rest ...OnRejected) Promise {
+	var onRejected OnRejected
+	if len(rest) > 0 {
+		onRejected = rest[0]
+	}
 	next := New()
 	switch State(p.state) {
 	case FULFILLED:
@@ -62,40 +66,26 @@ func (p *future) then(onFulfilled OnFulfilled, onRejected OnRejected) Promise {
 	return next
 }
 
-func (p *future) Then(onFulfilled OnFulfilled, onRejected ...OnRejected) Promise {
-	if len(onRejected) == 0 {
-		return p.then(onFulfilled, nil)
+func (p *future) Catch(onRejected OnRejected, test ...TestFunc) Promise {
+	if len(test) == 0 || test[0] == nil {
+		return p.Then(nil, onRejected)
 	}
-	return p.then(onFulfilled, onRejected[0])
-}
-
-func (p *future) catch(onRejected OnRejected, test TestFunc) Promise {
-	if test == nil {
-		return p.then(nil, onRejected)
-	}
-	return p.then(nil, func(e error) (interface{}, error) {
-		if test(e) {
-			return p.then(nil, onRejected), nil
+	return p.Then(nil, func(e error) (interface{}, error) {
+		if test[0](e) {
+			return p.Then(nil, onRejected), nil
 		}
 		return nil, e
 	})
 }
 
-func (p *future) Catch(onRejected OnRejected, test ...TestFunc) Promise {
-	if len(test) == 0 {
-		return p.catch(onRejected, nil)
-	}
-	return p.catch(onRejected, test[0])
-}
-
 func (p *future) Complete(onCompleted OnCompleted) Promise {
-	return p.then(OnFulfilled(onCompleted), func(e error) (interface{}, error) {
+	return p.Then(OnFulfilled(onCompleted), func(e error) (interface{}, error) {
 		return onCompleted(e)
 	})
 }
 
 func (p *future) WhenComplete(action func()) Promise {
-	return p.then(func(v interface{}) (interface{}, error) {
+	return p.Then(func(v interface{}) (interface{}, error) {
 		action()
 		return v, nil
 	}, func(e error) (interface{}, error) {
@@ -111,16 +101,6 @@ func (p *future) Done(onFulfilled OnFulfilled, onRejected ...OnRejected) {
 			go panic(e)
 			return nil, nil
 		})
-}
-
-func (p *future) Fail(onRejected OnRejected) {
-	p.Done(nil, onRejected)
-}
-
-func (p *future) Always(onCompleted OnCompleted) {
-	p.Done(OnFulfilled(onCompleted), func(e error) (interface{}, error) {
-		return onCompleted(e)
-	})
 }
 
 func (p *future) State() State {
@@ -151,7 +131,7 @@ func getThenableOnRejected(promise Promise, done *uint32) OnRejected {
 	}
 }
 
-func (p *future) resolveThenable(thenable Thenable) {
+func resolveThenable(p *future, thenable Thenable) {
 	var done uint32
 	defer thenableCatch(p, &done)
 	thenable.Then(
@@ -159,7 +139,7 @@ func (p *future) resolveThenable(thenable Thenable) {
 		getThenableOnRejected(p, &done))
 }
 
-func (p *future) reslove(value interface{}) {
+func resloveValue(p *future, value interface{}) {
 	if atomic.CompareAndSwapUint32(&p.state, uint32(PENDING), uint32(FULFILLED)) {
 		p.value = value
 		subscribers := p.subscribers
@@ -173,13 +153,17 @@ func (p *future) reslove(value interface{}) {
 func (p *future) Resolve(value interface{}) {
 	if promise, ok := value.(*future); ok && promise == p {
 		p.Reject(TypeError{"Self resolution"})
-	} else if promise, ok := value.(Promise); ok {
-		promise.Fill(p)
-	} else if thenable, ok := value.(Thenable); ok {
-		p.resolveThenable(thenable)
-	} else {
-		p.reslove(value)
+		return
 	}
+	if promise, ok := value.(Promise); ok {
+		promise.Fill(p)
+		return
+	}
+	if thenable, ok := value.(Thenable); ok {
+		resolveThenable(p, thenable)
+		return
+	}
+	resloveValue(p, value)
 }
 
 func (p *future) Reject(reason error) {
@@ -211,7 +195,7 @@ func (p *future) Timeout(duration time.Duration, reason ...error) Promise {
 
 func (p *future) Delay(duration time.Duration) Promise {
 	next := New()
-	p.then(func(v interface{}) (interface{}, error) {
+	p.Then(func(v interface{}) (interface{}, error) {
 		go func() {
 			time.Sleep(duration)
 			next.Resolve(v)
@@ -230,7 +214,7 @@ func (p *future) Tap(onfulfilledSideEffect OnfulfilledSideEffect) Promise {
 
 func (p *future) Get() (interface{}, error) {
 	c := make(chan interface{})
-	p.then(func(v interface{}) (interface{}, error) {
+	p.Then(func(v interface{}) (interface{}, error) {
 		c <- v
 		return nil, nil
 	}, func(e error) (interface{}, error) {

@@ -70,16 +70,6 @@ func (p rejected) Done(onFulfilled OnFulfilled, onRejected ...OnRejected) {
 		})
 }
 
-func (p rejected) Fail(onRejected OnRejected) {
-	p.Done(nil, onRejected)
-}
-
-func (p rejected) Always(onCompleted OnCompleted) {
-	p.Done(nil, func(e error) (interface{}, error) {
-		return onCompleted(e)
-	})
-}
-
 func (p rejected) State() State {
 	return REJECTED
 }

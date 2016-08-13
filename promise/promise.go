@@ -107,12 +107,6 @@ type Promise interface {
 	// The result of the callback function will be ignored.
 	Done(onFulfilled OnFulfilled, onRejected ...OnRejected)
 
-	// Fail is the same way as Done(nil, onRejected)
-	Fail(onRejected OnRejected)
-
-	// Always is the same way as Done(onCompleted, onCompleted)
-	Always(onCompleted OnCompleted)
-
 	// State return the current state of the Promise
 	State() State
 
