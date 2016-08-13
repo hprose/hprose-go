@@ -160,7 +160,7 @@ func (p *promiseImpl) State() State {
 	return State(p.state)
 }
 
-func (p *promiseImpl) resolve(thenable Thenable) {
+func (p *promiseImpl) resolveThenable(thenable Thenable) {
 	var done uint32
 	resolveFunc := func(y interface{}) (interface{}, error) {
 		if atomic.CompareAndSwapUint32(&done, 0, 1) {
@@ -183,19 +183,7 @@ func (p *promiseImpl) resolve(thenable Thenable) {
 	thenable.Then(resolveFunc, rejectFunc)
 }
 
-func (p *promiseImpl) Resolve(value interface{}) {
-	if promise, ok := value.(*promiseImpl); ok && promise == p {
-		p.Reject(TypeError{"Self resolution"})
-		return
-	}
-	if promise, ok := value.(Promise); ok {
-		promise.Fill(p)
-		return
-	}
-	if thenable, ok := value.(Thenable); ok {
-		p.resolve(thenable)
-		return
-	}
+func (p *promiseImpl) reslove(value interface{}) {
 	if atomic.CompareAndSwapUint32(&p.state, uint32(PENDING), uint32(FULFILLED)) {
 		p.value = value
 		subscribers := p.subscribers
@@ -203,6 +191,18 @@ func (p *promiseImpl) Resolve(value interface{}) {
 		for _, subscriber := range subscribers {
 			resolve(subscriber.onFulfilled, subscriber.next, value)
 		}
+	}
+}
+
+func (p *promiseImpl) Resolve(value interface{}) {
+	if promise, ok := value.(*promiseImpl); ok && promise == p {
+		p.Reject(TypeError{"Self resolution"})
+	} else if promise, ok := value.(Promise); ok {
+		promise.Fill(p)
+	} else if thenable, ok := value.(Thenable); ok {
+		p.resolveThenable(thenable)
+	} else {
+		p.reslove(value)
 	}
 }
 
