@@ -27,7 +27,7 @@ type fulfilled struct {
 
 // Resolve creates a Promise object completed with the value
 func Resolve(value interface{}) Promise {
-	if _, ok := value.(Thenable); ok {
+	if _, ok := value.(Promise); ok {
 		p := New()
 		p.Resolve(value)
 		return p

@@ -109,49 +109,6 @@ func (p *future) State() State {
 	return State(p.state)
 }
 
-func thenableCatch(promise Promise, done *uint32) {
-	if e := recover(); e != nil && atomic.CompareAndSwapUint32(done, 0, 1) {
-		promise.Reject(NewPanicError(e))
-	}
-}
-
-func getThenableOnFullfilled(promise Promise, done *uint32) OnFulfilled {
-	return func(y interface{}) (interface{}, error) {
-		if atomic.CompareAndSwapUint32(done, 0, 1) {
-			promise.Resolve(y)
-		}
-		return nil, nil
-	}
-}
-
-func getThenableOnRejected(promise Promise, done *uint32) OnRejected {
-	return func(e error) (interface{}, error) {
-		if atomic.CompareAndSwapUint32(done, 0, 1) {
-			promise.Reject(e)
-		}
-		return nil, nil
-	}
-}
-
-func resolveThenable(p *future, thenable Thenable) {
-	var done uint32
-	defer thenableCatch(p, &done)
-	thenable.Then(
-		getThenableOnFullfilled(p, &done),
-		getThenableOnRejected(p, &done))
-}
-
-func resloveValue(p *future, value interface{}) {
-	if atomic.CompareAndSwapUint32(&p.state, uint32(PENDING), uint32(FULFILLED)) {
-		p.value = value
-		subscribers := p.subscribers
-		p.subscribers = nil
-		for _, subscriber := range subscribers {
-			resolve(subscriber.next, subscriber.onFulfilled, value)
-		}
-	}
-}
-
 func (p *future) Resolve(value interface{}) {
 	if promise, ok := value.(*future); ok && promise == p {
 		p.Reject(TypeError{"Self resolution"})
@@ -161,11 +118,14 @@ func (p *future) Resolve(value interface{}) {
 		promise.Fill(p)
 		return
 	}
-	if thenable, ok := value.(Thenable); ok {
-		resolveThenable(p, thenable)
-		return
+	if atomic.CompareAndSwapUint32(&p.state, uint32(PENDING), uint32(FULFILLED)) {
+		p.value = value
+		subscribers := p.subscribers
+		p.subscribers = nil
+		for _, subscriber := range subscribers {
+			resolve(subscriber.next, subscriber.onFulfilled, value)
+		}
 	}
-	resloveValue(p, value)
 }
 
 func (p *future) Reject(reason error) {

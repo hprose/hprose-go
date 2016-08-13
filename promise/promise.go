@@ -45,17 +45,12 @@ type OnfulfilledSideEffect func(interface{})
 // TestFunc is a function used as the argument of Promise.Catch
 type TestFunc func(error) bool
 
-// Thenable is an interface that defines a Then method.
-type Thenable interface {
-	// Then method returns a Promise. It takes two arguments: callback functions
-	// for the success and failure cases of the Promise.
-	Then(onFulfilled OnFulfilled, onRejected ...OnRejected) Promise
-}
-
 // Promise is an interface of the JS Promise/A+ spec
 // (https://promisesaplus.com/).
 type Promise interface {
-	Thenable
+	// Then method returns a Promise. It takes two arguments: callback functions
+	// for the success and failure cases of the Promise.
+	Then(onFulfilled OnFulfilled, onRejected ...OnRejected) Promise
 
 	// Catch handles errors emitted by this Promise.
 	//
