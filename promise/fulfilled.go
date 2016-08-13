@@ -25,12 +25,21 @@ type fulfilled struct {
 	value interface{}
 }
 
-// Resolve creates a Promise object completed with the value
+// Resolve creates a Promise object completed with the value.
 func Resolve(value interface{}) Promise {
-	if _, ok := value.(Promise); ok {
+	if promise, ok := value.(Promise); ok {
 		p := New()
-		p.Resolve(value)
+		promise.Fill(p)
 		return p
+	}
+	return fulfilled{value}
+}
+
+// ToPromise convert value to a Promise object.
+// If the value is already a promise, return it in place
+func ToPromise(value interface{}) Promise {
+	if promise, ok := value.(Promise); ok {
+		return promise
 	}
 	return fulfilled{value}
 }
