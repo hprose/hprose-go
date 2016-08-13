@@ -164,7 +164,14 @@ func catch(promise Promise) {
 	}
 }
 
-func call(promise Promise, computation func() (interface{}, error)) {
+type func0 func() (interface{}, error)
+type func1 func()
+type func2 func(interface{}) (interface{}, error)
+type func3 func(interface{})
+type func4 func(error) (interface{}, error)
+type func5 func(error)
+
+func call(promise Promise, computation func0) {
 	defer catch(promise)
 	if result, err := computation(); err != nil {
 		promise.Reject(err)
@@ -173,13 +180,13 @@ func call(promise Promise, computation func() (interface{}, error)) {
 	}
 }
 
-func call1(promise Promise, computation func()) {
+func call1(promise Promise, computation func1) {
 	defer catch(promise)
 	computation()
 	promise.Resolve(nil)
 }
 
-func call2(promise Promise, computation func(interface{}) (interface{}, error), x interface{}) {
+func call2(promise Promise, computation func2, x interface{}) {
 	defer catch(promise)
 	if result, err := computation(x); err != nil {
 		promise.Reject(err)
@@ -188,13 +195,13 @@ func call2(promise Promise, computation func(interface{}) (interface{}, error), 
 	}
 }
 
-func call3(promise Promise, computation func(interface{}), x interface{}) {
+func call3(promise Promise, computation func3, x interface{}) {
 	defer catch(promise)
 	computation(x)
 	promise.Resolve(nil)
 }
 
-func call4(promise Promise, computation func(error) (interface{}, error), e error) {
+func call4(promise Promise, computation func4, e error) {
 	defer catch(promise)
 	if result, err := computation(e); err != nil {
 		promise.Reject(err)
@@ -203,7 +210,7 @@ func call4(promise Promise, computation func(error) (interface{}, error), e erro
 	}
 }
 
-func call5(promise Promise, computation func(error), e error) {
+func call5(promise Promise, computation func5, e error) {
 	defer catch(promise)
 	computation(e)
 	promise.Resolve(nil)
