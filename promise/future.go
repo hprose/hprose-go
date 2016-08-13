@@ -12,7 +12,7 @@
  *                                                        *
  * future promise implementation for Go.                  *
  *                                                        *
- * LastModified: Aug 13, 2015                             *
+ * LastModified: Aug 13, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/

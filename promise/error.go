@@ -12,7 +12,7 @@
  *                                                        *
  * promise error for Go.                                  *
  *                                                        *
- * LastModified: Aug 11, 2015                             *
+ * LastModified: Aug 13, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/

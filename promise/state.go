@@ -12,7 +12,7 @@
  *                                                        *
  * promise state for Go.                                  *
  *                                                        *
- * LastModified: Aug 8, 2015                              *
+ * LastModified: Aug 13, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
