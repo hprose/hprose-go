@@ -167,18 +167,9 @@ func call(promise Promise, computation Callable) {
 	}
 }
 
-func call1(next Promise, onFulfilled OnFulfilled, x interface{}) {
-	defer catch(next)
-	if result, err := onFulfilled(x); err != nil {
-		next.Reject(err)
-	} else {
-		next.Resolve(result)
-	}
-}
-
 func resolve(next Promise, onFulfilled OnFulfilled, x interface{}) {
 	if onFulfilled != nil {
-		go call1(next, onFulfilled, x)
+		go call(next, func() (interface{}, error) { return onFulfilled(x) })
 	} else {
 		next.Resolve(x)
 	}
@@ -186,9 +177,7 @@ func resolve(next Promise, onFulfilled OnFulfilled, x interface{}) {
 
 func reject(next Promise, onRejected OnRejected, e error) {
 	if onRejected != nil {
-		go call1(next, func(x interface{}) (interface{}, error) {
-			return onRejected(x.(error))
-		}, e)
+		go call(next, func() (interface{}, error) { return onRejected(e) })
 	} else {
 		next.Reject(e)
 	}
