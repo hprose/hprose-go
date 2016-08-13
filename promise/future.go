@@ -46,8 +46,14 @@ func (p *future) then(onFulfilled OnFulfilled, onRejected OnRejected) Promise {
 	next := New()
 	switch State(p.state) {
 	case FULFILLED:
+		if onFulfilled == nil {
+			return fulfilled{p.value}
+		}
 		resolve(next, onFulfilled, p.value)
 	case REJECTED:
+		if onRejected == nil {
+			return rejected{p.reason}
+		}
 		reject(next, onRejected, p.reason)
 	default:
 		p.subscribers = append(p.subscribers,
