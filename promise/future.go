@@ -30,11 +30,13 @@ type subscriber struct {
 	next        Promise
 }
 
+type subscribers []subscriber
+
 type future struct {
 	value       interface{}
 	reason      error
 	state       uint32
-	subscribers []subscriber
+	subscribers subscribers
 }
 
 // New creates a PENDING Promise object
