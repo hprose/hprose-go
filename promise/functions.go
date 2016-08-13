@@ -81,12 +81,13 @@ func Any(iterable ...interface{}) Promise {
 	}
 	promise := New()
 	count := int64(n)
+	onRejected := func() {
+		if atomic.AddInt64(&count, -1) == 0 {
+			promise.Reject(errors.New("any(): all promises failed"))
+		}
+	}
 	for _, value := range iterable {
-		ToPromise(value).Then(promise.Resolve, func() {
-			if atomic.AddInt64(&count, -1) == 0 {
-				promise.Reject(errors.New("any(): all promises failed"))
-			}
-		})
+		ToPromise(value).Then(promise.Resolve, onRejected)
 	}
 	return promise
 }
