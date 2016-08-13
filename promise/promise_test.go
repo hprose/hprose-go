@@ -19,7 +19,10 @@
 
 package promise
 
-import "testing"
+import (
+	"fmt"
+	"testing"
+)
 
 func TestNew(t *testing.T) {
 	p := New()
@@ -35,5 +38,16 @@ func TestResolve(t *testing.T) {
 	}
 	if v, _ := p.Get(); v.(int) != 123 {
 		t.Error("p.Get value be 123")
+	}
+}
+
+func TestAll(t *testing.T) {
+	p := All(Resolve(1), 2, Resolve(3))
+	if v, err := p.Get(); err == nil {
+		if fmt.Sprintf("%v", v) != "[1 2 3]" {
+			t.Error("v must be [1 2 3]")
+		}
+	} else {
+		t.Error(err)
 	}
 }
