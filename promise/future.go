@@ -43,12 +43,12 @@ func New() Promise {
 }
 
 func (p *future) then(onFulfilled OnFulfilled, onRejected OnRejected) Promise {
-	next := new(future)
+	next := New()
 	switch State(p.state) {
 	case FULFILLED:
-		resolve(onFulfilled, next, p.value)
+		resolve(next, onFulfilled, p.value)
 	case REJECTED:
-		reject(onRejected, next, p.reason)
+		reject(next, onRejected, p.reason)
 	default:
 		p.subscribers = append(p.subscribers,
 			subscriber{onFulfilled, onRejected, next})
@@ -147,7 +147,7 @@ func (p *future) reslove(value interface{}) {
 		subscribers := p.subscribers
 		p.subscribers = nil
 		for _, subscriber := range subscribers {
-			resolve(subscriber.onFulfilled, subscriber.next, value)
+			resolve(subscriber.next, subscriber.onFulfilled, value)
 		}
 	}
 }
@@ -170,7 +170,7 @@ func (p *future) Reject(reason error) {
 		subscribers := p.subscribers
 		p.subscribers = nil
 		for _, subscriber := range subscribers {
-			reject(subscriber.onRejected, subscriber.next, reason)
+			reject(subscriber.next, subscriber.onRejected, reason)
 		}
 	}
 }
@@ -188,38 +188,26 @@ func (p *future) Fill(promise Promise) {
 }
 
 func (p *future) Timeout(duration time.Duration, reason ...error) Promise {
-	promise := new(future)
-	timer := time.AfterFunc(duration, func() {
-		if len(reason) > 0 {
-			promise.Reject(reason[0])
-		} else {
-			promise.Reject(TimeoutError{})
-		}
-	})
-	p.WhenComplete(func() { timer.Stop() }).Fill(promise)
-	return promise
+	return timeout(p, duration, reason...)
 }
 
 func (p *future) Delay(duration time.Duration) Promise {
-	promise := new(future)
+	next := New()
 	p.then(func(v interface{}) (interface{}, error) {
 		go func() {
 			time.Sleep(duration)
-			promise.Resolve(v)
+			next.Resolve(v)
 		}()
 		return nil, nil
 	}, func(e error) (interface{}, error) {
-		promise.Reject(e)
+		next.Reject(e)
 		return nil, nil
 	})
-	return promise
+	return next
 }
 
 func (p *future) Tap(onfulfilledSideEffect OnfulfilledSideEffect) Promise {
-	return p.then(func(v interface{}) (interface{}, error) {
-		onfulfilledSideEffect(v)
-		return v, nil
-	}, nil)
+	return tap(p, onfulfilledSideEffect)
 }
 
 func (p *future) Get() (interface{}, error) {

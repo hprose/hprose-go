@@ -164,34 +164,7 @@ func catch(promise Promise) {
 	}
 }
 
-func call(onFulfilled OnFulfilled, next Promise, x interface{}) {
-	defer catch(next)
-	if result, err := onFulfilled(x); err != nil {
-		next.Reject(err)
-	} else {
-		next.Resolve(result)
-	}
-}
-
-func resolve(onFulfilled OnFulfilled, next Promise, x interface{}) {
-	if onFulfilled != nil {
-		go call(onFulfilled, next, x)
-	} else {
-		next.Resolve(x)
-	}
-}
-
-func reject(onRejected OnRejected, next Promise, e error) {
-	if onRejected != nil {
-		go call(func(x interface{}) (interface{}, error) {
-			return onRejected(x.(error))
-		}, next, e)
-	} else {
-		next.Reject(e)
-	}
-}
-
-func exec(promise Promise, computation Callable) {
+func call(promise Promise, computation Callable) {
 	defer catch(promise)
 	if result, err := computation(); err != nil {
 		promise.Reject(err)
@@ -200,22 +173,68 @@ func exec(promise Promise, computation Callable) {
 	}
 }
 
-func assign(promise Promise, value interface{}) {
-	if e, ok := value.(error); ok {
-		promise.Reject(e)
+func call1(next Promise, onFulfilled OnFulfilled, x interface{}) {
+	defer catch(next)
+	if result, err := onFulfilled(x); err != nil {
+		next.Reject(err)
 	} else {
-		promise.Resolve(value)
+		next.Resolve(result)
 	}
 }
 
-// Create creates a Promise object
-func Create(value interface{}) Promise {
-	promise := New()
-	if computation, ok := value.(Callable); ok {
-		go exec(promise, computation)
+func resolve(next Promise, onFulfilled OnFulfilled, x interface{}) {
+	if onFulfilled != nil {
+		go call1(next, onFulfilled, x)
 	} else {
-		assign(promise, value)
+		next.Resolve(x)
 	}
+}
+
+func reject(next Promise, onRejected OnRejected, e error) {
+	if onRejected != nil {
+		go call1(next, func(x interface{}) (interface{}, error) {
+			return onRejected(x.(error))
+		}, e)
+	} else {
+		next.Reject(e)
+	}
+}
+
+func timeout(promise Promise, duration time.Duration, reason ...error) Promise {
+	next := New()
+	timer := time.AfterFunc(duration, func() {
+		if len(reason) > 0 {
+			next.Reject(reason[0])
+		} else {
+			next.Reject(TimeoutError{})
+		}
+	})
+	promise.WhenComplete(func() { timer.Stop() }).Fill(next)
+	return next
+}
+
+func tap(promise Promise, onfulfilledSideEffect OnfulfilledSideEffect) Promise {
+	return promise.Then(func(v interface{}) (interface{}, error) {
+		onfulfilledSideEffect(v)
+		return v, nil
+	})
+}
+
+// Create creates a Promise object containing the result of asynchronously
+// calling computation.
+//
+// If calling computation returns error, the returned Promise is rejected with
+// the error.
+//
+// If calling computation returns a Promise object, completion of the created
+// Promise will wait until the returned Promise completes, and will then
+// complete with the same result.
+//
+// If calling computation returns a non-Promise value, the returned Promise is
+// completed with that value.
+func Create(computation Callable) Promise {
+	promise := New()
+	go call(promise, computation)
 	return promise
 }
 
@@ -233,7 +252,7 @@ func Create(value interface{}) Promise {
 // completed with that value.
 func Sync(computation Callable) Promise {
 	promise := New()
-	exec(promise, computation)
+	call(promise, computation)
 	return promise
 }
 
@@ -245,9 +264,9 @@ func Delayed(duration time.Duration, value interface{}) Promise {
 	go func() {
 		time.Sleep(duration)
 		if computation, ok := value.(Callable); ok {
-			exec(promise, computation)
+			call(promise, computation)
 		} else {
-			assign(promise, value)
+			promise.Resolve(value)
 		}
 	}()
 	return promise
