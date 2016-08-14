@@ -91,6 +91,7 @@ func Any(iterable ...interface{}) Promise {
 //		func(index int, value interface{})
 //
 // index: The index of the current element being processed.
+//
 // value: The current element being processed.
 //
 // If any of the promises in iterable is rejected, the callback will not be
@@ -116,6 +117,7 @@ func Each(callback func(int, interface{}), iterable ...interface{}) Promise {
 //		func(index int, value interface{}) bool
 //
 // index: The index of the current element being processed.
+//
 // value: The current element being processed.
 //
 // If any of the promises in iterable is rejected, the callback will not be
