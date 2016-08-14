@@ -136,13 +136,17 @@ func Any(iterable ...interface{}) Promise {
 	}
 	promise := New()
 	for _, value := range iterable {
-		ToPromise(value).Then(promise.Resolve, func() {
-			if atomic.AddInt64(&count, -1) == 0 {
-				promise.Reject(errors.New("any(): all promises failed"))
-			}
-		})
+		ToPromise(value).Then(promise.Resolve, anyHandler(promise, &count))
 	}
 	return promise
+}
+
+func anyHandler(promise Promise, count *int64) func() {
+	return func() {
+		if atomic.AddInt64(count, -1) == 0 {
+			promise.Reject(errors.New("any(): all promises failed"))
+		}
+	}
 }
 
 // Each function executes a provided function once per element of iterable.
