@@ -75,12 +75,11 @@ func Race(iterable ...interface{}) Promise {
 //         with an array of all the rejection reasons, if the input array is
 //         non-empty, and all input promises reject.
 func Any(iterable ...interface{}) Promise {
-	n := len(iterable)
-	if n == 0 {
+	count := int64(len(iterable))
+	if count == 0 {
 		return Reject(IllegalArgumentError("any(): array must not be empty"))
 	}
 	promise := New()
-	count := int64(n)
 	onRejected := func() {
 		if atomic.AddInt64(&count, -1) == 0 {
 			promise.Reject(errors.New("any(): all promises failed"))
