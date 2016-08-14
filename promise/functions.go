@@ -22,6 +22,8 @@ package promise
 import (
 	"errors"
 	"sync/atomic"
+
+	"github.com/hprose/hprose-golang/promise"
 )
 
 func allHandler(promise Promise, count *int64, result []interface{}, value interface{}, index int) {
@@ -60,6 +62,12 @@ func Race(iterable ...interface{}) Promise {
 	return promise
 }
 
+func getAnyOnRejected(count *int64) {
+	if atomic.AddInt64(count, -1) == 0 {
+		promise.Reject(errors.New("any(): all promises failed"))
+	}
+}
+
 // Any function is a competitive race that allows one winner.
 //
 // The returned promise will:
@@ -80,13 +88,8 @@ func Any(iterable ...interface{}) Promise {
 		return Reject(IllegalArgumentError("any(): array must not be empty"))
 	}
 	promise := New()
-	onRejected := func() {
-		if atomic.AddInt64(&count, -1) == 0 {
-			promise.Reject(errors.New("any(): all promises failed"))
-		}
-	}
 	for _, value := range iterable {
-		ToPromise(value).Then(promise.Resolve, onRejected)
+		ToPromise(value).Then(promise.Resolve, getAnyOnRejected(&count))
 	}
 	return promise
 }
