@@ -60,18 +60,14 @@ func Race(iterable ...interface{}) Promise {
 
 // Any function is a competitive race that allows one winner.
 //
-// The returned promise will:
+// The returned promise will fulfill as soon as any one of the input promises
+// fulfills, with the value of the fulfilled input promise.
 //
-//     fulfill as soon as any one of the input promises fulfills, with the
-//     value of the fulfilled input promise, or
+// Or reject with a IllegalArgumentError if the input array is empty--i.e. it
+// is impossible to have one winner.
 //
-//     reject:
-//
-//         with a IllegalArgumentError if the input array is empty--i.e.
-//		   it is impossible to have one winner.
-//
-//         with an array of all the rejection reasons, if the input array is
-//         non-empty, and all input promises reject.
+// Or reject with an array of all the rejection reasons, if the input array is
+// non-empty, and all input promises reject.
 func Any(iterable ...interface{}) Promise {
 	count := int64(len(iterable))
 	if count == 0 {
@@ -95,12 +91,9 @@ func Any(iterable ...interface{}) Promise {
 // of the first promise that was rejected.
 //
 // Parameters:
-//     callback
-//         Function to execute for each element, taking two arguments:
-//         index
-//             The index of the current element being processed.
-//         value
-//             The current element being processed.
+//   callback: Function to execute for each element, taking two arguments:
+//     index: The index of the current element being processed.
+//     value: The current element being processed.
 func Each(callback func(int, interface{}), iterable ...interface{}) Promise {
 	return All(iterable...).Then(func(a interface{}) {
 		if a == nil {
@@ -113,19 +106,17 @@ func Each(callback func(int, interface{}), iterable ...interface{}) Promise {
 	})
 }
 
-// Every function tests whether all elements in the iterable pass the test implemented by the provided function.
+// Every function tests whether all elements in the iterable pass the test
+// implemented by the provided function.
 //
 // If any of the promises in iterable is rejected, the callback will not be
 // executed. the returned promise will be rejected with the rejection reason
 // of the first promise that was rejected.
 //
 // Parameters:
-//     callback
-//         Function to test for each element, taking two arguments:
-//         index
-//             The index of the current element being processed.
-//         value
-//             The current element being processed.
+//   callback: Function to test for each element, taking two arguments:
+//     index: The index of the current element being processed.
+//     value: The current element being processed.
 func Every(callback func(int, interface{}) bool, iterable ...interface{}) Promise {
 	return All(iterable...).Then(func(a interface{}) (interface{}, error) {
 		if a == nil {
