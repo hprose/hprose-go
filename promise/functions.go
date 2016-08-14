@@ -92,16 +92,20 @@ func All(iterable ...interface{}) Promise {
 	result := make([]interface{}, count)
 	promise := New()
 	for index, value := range iterable {
-		ToPromise(value).Then(func(index int) func(value interface{}) {
-			return func(value interface{}) {
-				result[index] = value
-				if atomic.AddInt64(&count, -1) == 0 {
-					promise.Resolve(result)
-				}
-			}
-		}(index), promise.Reject)
+		ToPromise(value).Then(
+			allHandler(promise, result, index, &count),
+			promise.Reject)
 	}
 	return promise
+}
+
+func allHandler(promise Promise, result []interface{}, index int, count *int64) func(value interface{}) {
+	return func(value interface{}) {
+		result[index] = value
+		if atomic.AddInt64(count, -1) == 0 {
+			promise.Resolve(result)
+		}
+	}
 }
 
 // Race function returns a promise that resolves or rejects as soon as one of
