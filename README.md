@@ -4,7 +4,7 @@
 [![Build Status](https://travis-ci.org/hprose/hprose-golang.svg?branch=master)](https://travis-ci.org/hprose/hprose-golang)
 [![GoDoc](https://godoc.org/github.com/hprose/hprose-golang?status.svg&style=flat)](https://godoc.org/github.com/hprose/hprose-golang)
 [![Go Report Card](https://goreportcard.com/badge/github.com/hprose/hprose-golang)](https://goreportcard.com/report/github.com/hprose/hprose-golang)
-[![codebeat badge](https://codebeat.co/badges/5ac613dc-466f-4bf9-a445-439aaf4febb6)](https://codebeat.co/projects/github-com-hprose-hprose-golang)
+[![codebeat badge](https://img.shields.io/badge/codebeat-A-398b39.svg)](https://codebeat.co/projects/github-com-hprose-hprose-golang)
 [![Coverage Status](https://coveralls.io/repos/github/hprose/hprose-golang/badge.svg)](https://coveralls.io/github/hprose/hprose-golang)
 [![License](https://img.shields.io/github/license/hprose/hprose-golang.svg)](http://opensource.org/licenses/MIT)
 
