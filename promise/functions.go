@@ -201,7 +201,7 @@ func Every(callback func(int, interface{}) bool, iterable ...interface{}) Promis
 	})
 }
 
-// Some function tests whether some element in the array passes the test
+// Some function tests whether some element in the iterable passes the test
 // implemented by the provided function.
 //
 // The callback parameter is a function to test for each element:
@@ -233,5 +233,35 @@ func Some(callback func(int, interface{}) bool, iterable ...interface{}) Promise
 			}
 		}
 		return false, nil
+	})
+}
+
+// Filter function returns a promise fulfill with a slice that has all elements
+// pass the test implemented by the provided function.
+//
+// The callback parameter is a function to test for each element:
+//
+//		func(index int, value interface{}) bool
+//
+// index: The index of the current element being processed.
+//
+// value: The current element being processed.
+//
+// If any of the promises in iterable is rejected, the callback will not be
+// executed. the returned promise will be rejected with the rejection reason
+// of the first promise that was rejected.
+func Filter(callback func(int, interface{}) bool, iterable ...interface{}) Promise {
+	return All(iterable...).Then(func(a interface{}) (interface{}, error) {
+		if a == nil {
+			return nil, nil
+		}
+		iterable := a.([]interface{})
+		result := make([]interface{}, 0, len(iterable))
+		for index, value := range iterable {
+			if callback(index, value) {
+				result = append(result, value)
+			}
+		}
+		return result, nil
 	})
 }
