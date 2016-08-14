@@ -63,8 +63,10 @@ func Race(iterable ...interface{}) Promise {
 }
 
 func getAnyOnRejected(count *int64) {
-	if atomic.AddInt64(count, -1) == 0 {
-		promise.Reject(errors.New("any(): all promises failed"))
+	return func() {
+		if atomic.AddInt64(count, -1) == 0 {
+			promise.Reject(errors.New("any(): all promises failed"))
+		}
 	}
 }
 
