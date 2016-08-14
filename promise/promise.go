@@ -217,10 +217,8 @@ func call5(promise Promise, computation func5, e error) {
 	promise.Resolve(nil)
 }
 
-func resolve(next Promise, onFulfilled OnFulfilled, x interface{}) {
-	switch f := onFulfilled.(type) {
-	case nil:
-		next.Resolve(x)
+func do(next Promise, callback interface{}, x interface{}) bool {
+	switch f := callback.(type) {
 	case func() (interface{}, error):
 		go call(next, f)
 	case func():
@@ -230,28 +228,39 @@ func resolve(next Promise, onFulfilled OnFulfilled, x interface{}) {
 	case func(interface{}):
 		go call3(next, f, x)
 	default:
-		panic("onFulfilled can't support this type: " + reflect.TypeOf(onFulfilled).Name())
+		return false
 	}
+	return true
+}
+
+func resolve(next Promise, onFulfilled OnFulfilled, x interface{}) {
+	if onFulfilled == nil {
+		next.Resolve(x)
+		return
+	}
+	if do(next, onFulfilled, x) {
+		return
+	}
+	panic("onFulfilled can't support this type: " +
+		reflect.TypeOf(onFulfilled).Name())
 }
 
 func reject(next Promise, onRejected OnRejected, e error) {
-	switch f := onRejected.(type) {
-	case nil:
+	if onRejected == nil {
 		next.Reject(e)
-	case func() (interface{}, error):
-		go call(next, f)
-	case func():
-		go call1(next, f)
-	case func(interface{}) (interface{}, error):
-		go call2(next, f, e)
-	case func(interface{}):
-		go call3(next, f, e)
+		return
+	}
+	if do(next, onRejected, e) {
+		return
+	}
+	switch f := onRejected.(type) {
 	case func(error) (interface{}, error):
 		go call4(next, f, e)
 	case func(error):
 		go call5(next, f, e)
 	default:
-		panic("onRejected can't support this type: " + reflect.TypeOf(onRejected).Name())
+		panic("onRejected can't support this type: " +
+			reflect.TypeOf(onRejected).Name())
 	}
 }
 
