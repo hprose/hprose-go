@@ -86,14 +86,16 @@ func Any(iterable ...interface{}) Promise {
 
 // Each function executes a provided function once per element of iterable.
 //
+// The callback parameter is a function to execute for each element:
+//
+//		func(index int, value interface{})
+//
+// index: The index of the current element being processed.
+// value: The current element being processed.
+//
 // If any of the promises in iterable is rejected, the callback will not be
 // executed. the returned promise will be rejected with the rejection reason
 // of the first promise that was rejected.
-//
-// Parameters:
-//   callback: Function to execute for each element, taking two arguments:
-//     index: The index of the current element being processed.
-//     value: The current element being processed.
 func Each(callback func(int, interface{}), iterable ...interface{}) Promise {
 	return All(iterable...).Then(func(a interface{}) {
 		if a == nil {
@@ -109,14 +111,16 @@ func Each(callback func(int, interface{}), iterable ...interface{}) Promise {
 // Every function tests whether all elements in the iterable pass the test
 // implemented by the provided function.
 //
+// The callback parameter is a function to test for each element:
+//
+//		func(index int, value interface{}) bool
+//
+// index: The index of the current element being processed.
+// value: The current element being processed.
+//
 // If any of the promises in iterable is rejected, the callback will not be
 // executed. the returned promise will be rejected with the rejection reason
 // of the first promise that was rejected.
-//
-// Parameters:
-//   callback: Function to test for each element, taking two arguments:
-//     index: The index of the current element being processed.
-//     value: The current element being processed.
 func Every(callback func(int, interface{}) bool, iterable ...interface{}) Promise {
 	return All(iterable...).Then(func(a interface{}) (interface{}, error) {
 		if a == nil {

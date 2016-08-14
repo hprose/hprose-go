@@ -12,7 +12,7 @@
  *                                                        *
  * promise interface for Go.                              *
  *                                                        *
- * LastModified: Aug 13, 2016                             *
+ * LastModified: Aug 14, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -24,7 +24,7 @@ import "time"
 // OnFulfilled is a function called when the Promise is fulfilled.
 // This function has one argument, the fulfillment value.
 //
-// The function type can be the following:
+// The function form can be the following:
 //     func() (interface{}, error)
 //     func()
 //     func(interface{}) (interface{}, error)
@@ -34,7 +34,7 @@ type OnFulfilled interface{}
 // OnRejected is a function called when the Promise is rejected.
 // This function has one argument, the rejection reason.
 //
-// The function type can be the following:
+// The function form can be the following:
 //     func() (interface{}, error)
 //     func()
 //     func(interface{}) (interface{}, error)
@@ -47,7 +47,7 @@ type OnRejected interface{}
 // This function has one argument,
 // the fulfillment value when the Promise is fulfilled,
 // or the rejection reason when the Promise is rejected.
-// The function type can be the following:
+// The function form can be the following:
 //     func() (interface{}, error)
 //     func()
 //     func(interface{}) (interface{}, error)
