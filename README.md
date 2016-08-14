@@ -8,8 +8,6 @@
 [![Coverage Status](https://coveralls.io/repos/github/hprose/hprose-golang/badge.svg)](https://coveralls.io/github/hprose/hprose-golang)
 [![License](https://img.shields.io/github/license/hprose/hprose-golang.svg)](http://opensource.org/licenses/MIT)
 
-## Introduction
-
 *Hprose* is a High Performance Remote Object Service Engine.
 
 It is a modern, lightweight, cross-language, cross-platform, object-oriented, high performance, remote dynamic communication middleware. It is not only easy to use, but powerful. You just need a little time to learn, then you can use it to easily construct cross language cross platform distributed application system.
