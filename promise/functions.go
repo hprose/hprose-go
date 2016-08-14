@@ -156,14 +156,16 @@ func Any(iterable ...interface{}) Promise {
 // of the first promise that was rejected.
 func Each(callback func(int, interface{}), iterable ...interface{}) Promise {
 	return All(iterable...).Then(func(a interface{}) {
-		if a == nil {
-			return
-		}
-		iterable := a.([]interface{})
-		for index, value := range iterable {
-			callback(index, value)
+		if a != nil {
+			each(callback, a.([]interface{}))
 		}
 	})
+}
+
+func each(callback func(int, interface{}), iterable []interface{}) {
+	for index, value := range iterable {
+		callback(index, value)
+	}
 }
 
 // Every function tests whether all elements in the iterable pass the test
@@ -191,14 +193,17 @@ func Every(callback func(int, interface{}) bool, iterable ...interface{}) Promis
 		if a == nil {
 			return true, nil
 		}
-		iterable := a.([]interface{})
-		for index, value := range iterable {
-			if !callback(index, value) {
-				return false, nil
-			}
-		}
-		return true, nil
+		return every(callback, a.([]interface{})), nil
 	})
+}
+
+func every(callback func(int, interface{}) bool, iterable []interface{}) bool {
+	for index, value := range iterable {
+		if !callback(index, value) {
+			return false
+		}
+	}
+	return true
 }
 
 // Some function tests whether some element in the iterable passes the test
@@ -226,14 +231,17 @@ func Some(callback func(int, interface{}) bool, iterable ...interface{}) Promise
 		if a == nil {
 			return false, nil
 		}
-		iterable := a.([]interface{})
-		for index, value := range iterable {
-			if callback(index, value) {
-				return true, nil
-			}
-		}
-		return false, nil
+		return some(callback, a.([]interface{})), nil
 	})
+}
+
+func some(callback func(int, interface{}) bool, iterable []interface{}) bool {
+	for index, value := range iterable {
+		if callback(index, value) {
+			return true
+		}
+	}
+	return false
 }
 
 // Filter function returns a promise fulfill with a slice that has all elements
@@ -255,15 +263,18 @@ func Filter(callback func(int, interface{}) bool, iterable ...interface{}) Promi
 		if a == nil {
 			return nil, nil
 		}
-		iterable := a.([]interface{})
-		result := make([]interface{}, 0, len(iterable))
-		for index, value := range iterable {
-			if callback(index, value) {
-				result = append(result, value)
-			}
-		}
-		return result, nil
+		return filter(callback, a.([]interface{})), nil
 	})
+}
+
+func filter(callback func(int, interface{}) bool, iterable []interface{}) []interface{} {
+	result := make([]interface{}, 0, len(iterable))
+	for index, value := range iterable {
+		if callback(index, value) {
+			result = append(result, value)
+		}
+	}
+	return result
 }
 
 // Map function returns a promise fulfill with a slice that has the results of
