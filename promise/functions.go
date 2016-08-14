@@ -180,6 +180,12 @@ func Each(callback func(int, interface{}), iterable ...interface{}) Promise {
 // If any of the promises in iterable is rejected, the callback will not be
 // executed. the returned promise will be rejected with the rejection reason
 // of the first promise that was rejected.
+//
+// The returned promise will fulfill with false if the callback function returns
+// false for any iterable element immediately. Otherwise, if callback returned
+// a true value for all elements, Every will return promise fulfill with true.
+//
+// If iterable is empty, The returned promise will fulfill with true.
 func Every(callback func(int, interface{}) bool, iterable ...interface{}) Promise {
 	return All(iterable...).Then(func(a interface{}) (interface{}, error) {
 		if a == nil {
@@ -192,5 +198,40 @@ func Every(callback func(int, interface{}) bool, iterable ...interface{}) Promis
 			}
 		}
 		return true, nil
+	})
+}
+
+// Some function tests whether some element in the array passes the test
+// implemented by the provided function.
+//
+// The callback parameter is a function to test for each element:
+//
+//		func(index int, value interface{}) bool
+//
+// index: The index of the current element being processed.
+//
+// value: The current element being processed.
+//
+// If any of the promises in iterable is rejected, the callback will not be
+// executed. the returned promise will be rejected with the rejection reason
+// of the first promise that was rejected.
+//
+// The returned promise will fulfill with true if the callback function returns
+// true for any iterable element immediately. Otherwise, if callback returned a
+// false value for all elements, Some will return promise fulfill with false.
+//
+// If iterable is empty, The returned promise will fulfill with false.
+func Some(callback func(int, interface{}) bool, iterable ...interface{}) Promise {
+	return All(iterable...).Then(func(a interface{}) (interface{}, error) {
+		if a == nil {
+			return false, nil
+		}
+		iterable := a.([]interface{})
+		for index, value := range iterable {
+			if callback(index, value) {
+				return true, nil
+			}
+		}
+		return false, nil
 	})
 }
