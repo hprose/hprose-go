@@ -24,15 +24,6 @@ import (
 	"sync/atomic"
 )
 
-func allHandler(promise Promise, count *int64, result []interface{}, value interface{}, index int) {
-	ToPromise(value).Then(func(value interface{}) {
-		result[index] = value
-		if atomic.AddInt64(count, -1) == 0 {
-			promise.Resolve(result)
-		}
-	}, promise.Reject)
-}
-
 // All function returns a promise that resolves when all of the promises in the
 // iterable argument have resolved, or rejects with the reason of the first
 // passed promise that rejects.
@@ -44,7 +35,14 @@ func All(iterable ...interface{}) Promise {
 	}
 	promise := New()
 	for index, value := range iterable {
-		allHandler(promise, &count, result, value, index)
+		ToPromise(value).Then(func(index int) func(value interface{}) {
+			return func(value interface{}) {
+				result[index] = value
+				if atomic.AddInt64(&count, -1) == 0 {
+					promise.Resolve(result)
+				}
+			}
+		}(index), promise.Reject)
 	}
 	return promise
 }
@@ -81,12 +79,11 @@ func Any(iterable ...interface{}) Promise {
 	}
 	promise := New()
 	for _, value := range iterable {
-		ToPromise(value).Then(promise.Resolve,
-			func() {
-				if atomic.AddInt64(&count, -1) == 0 {
-					promise.Reject(errors.New("any(): all promises failed"))
-				}
-			})
+		ToPromise(value).Then(promise.Resolve, func() {
+			if atomic.AddInt64(&count, -1) == 0 {
+				promise.Reject(errors.New("any(): all promises failed"))
+			}
+		})
 	}
 	return promise
 }
