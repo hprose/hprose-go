@@ -22,7 +22,64 @@ package promise
 import (
 	"errors"
 	"sync/atomic"
+	"time"
 )
+
+// Create creates a Promise object containing the result of asynchronously
+// calling computation.
+//
+// If calling computation returns error, the returned Promise is rejected with
+// the error.
+//
+// If calling computation returns a Promise object, completion of the created
+// Promise will wait until the returned Promise completes, and will then
+// complete with the same result.
+//
+// If calling computation returns a non-Promise value, the returned Promise is
+// completed with that value.
+func Create(computation func() (interface{}, error)) Promise {
+	promise := New()
+	go call(promise, computation)
+	return promise
+}
+
+// Sync creates a Promise object containing the result of immediately calling
+// computation.
+//
+// If calling computation returns error, the returned Promise is rejected with
+// the error.
+//
+// If calling computation returns a Promise object, completion of the created
+// Promise will wait until the returned Promise completes, and will then
+// complete with the same result.
+//
+// If calling computation returns a non-Promise value, the returned Promise is
+// completed with that value.
+func Sync(computation func() (interface{}, error)) Promise {
+	promise := New()
+	call(promise, computation)
+	return promise
+}
+
+// Delayed creates a Promise object with the given value after a delay.
+//
+// If the value is a Callable function, it will be executed after the given
+// duration has passed, and the Promise object is completed with the result.
+func Delayed(duration time.Duration, value interface{}) Promise {
+	promise := New()
+	go func() {
+		time.Sleep(duration)
+		switch computation := value.(type) {
+		case func() (interface{}, error):
+			call(promise, computation)
+		case func():
+			call1(promise, computation)
+		default:
+			promise.Resolve(value)
+		}
+	}()
+	return promise
+}
 
 // All function returns a promise that resolves when all of the promises in the
 // iterable argument have resolved, or rejects with the reason of the first
