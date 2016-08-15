@@ -132,7 +132,7 @@ func Race(iterable ...interface{}) Promise {
 func Any(iterable ...interface{}) Promise {
 	count := int64(len(iterable))
 	if count == 0 {
-		return Reject(IllegalArgumentError("any(): iterable must not be empty"))
+		return Reject(IllegalArgumentError("Any(): iterable must not be empty"))
 	}
 	promise := New()
 	for _, value := range iterable {
@@ -144,7 +144,7 @@ func Any(iterable ...interface{}) Promise {
 func anyHandler(promise Promise, count *int64) func() {
 	return func() {
 		if atomic.AddInt64(count, -1) == 0 {
-			promise.Reject(errors.New("any(): all promises failed"))
+			promise.Reject(errors.New("Any(): all promises failed"))
 		}
 	}
 }
@@ -311,4 +311,45 @@ func Map(callback func(int, interface{}) interface{}, iterable ...interface{}) P
 		}
 		return result, nil
 	})
+}
+
+// Reduce function applies a function against an accumulator and each value of
+// the iterable (from left-to-right) to reduce it to a single value.
+//
+// The callback parameter executes on each value in the iterable, taking three
+// arguments:
+//
+//     func(index int, value interface{}, prev interface{}) interface{}
+//
+// index: The index of the current element being processed.
+//
+// value: The current element being processed.
+//
+//  prev: The value previously returned in the last invocation of the callback.
+//
+// The first time the callback is called, prev will be equal to the first value
+// in the iterable and value will be equal to the second.
+//
+// If any of the promises in iterable is rejected, the callback will not be
+// executed. the returned promise will be rejected with the rejection reason
+// of the first promise that was rejected.
+//
+// If iterable is empty, the returned promise will be rejected with a
+// IllegalArgumentError.
+func Reduce(callback func(int, interface{}, interface{}) interface{}, iterable ...interface{}) Promise {
+	return All(iterable...).Then(func(a interface{}) (interface{}, error) {
+		if a == nil {
+			return nil, IllegalArgumentError("Reduce(): iterable must not be empty")
+		}
+		return reduce(callback, a.([]interface{})), nil
+	})
+}
+
+func reduce(callback func(int, interface{}, interface{}) interface{}, iterable []interface{}) interface{} {
+	count := len(iterable)
+	result := iterable[0]
+	for index := 1; index < count; index++ {
+		result = callback(index, iterable[index], result)
+	}
+	return result
 }
