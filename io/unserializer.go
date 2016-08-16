@@ -8,9 +8,9 @@
 \**********************************************************/
 /**********************************************************\
  *                                                        *
- * io/reader.go                                           *
+ * io/unserializer.go                                     *
  *                                                        *
- * hprose reader for Go.                                  *
+ * hprose unserializer for Go.                            *
  *                                                        *
  * LastModified: Aug 16, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
@@ -19,15 +19,9 @@
 
 package io
 
-// Reader is a fine-grained operation struct for Hprose unserialization
-// when JSONCompatible is true, the Map data will unserialize to map[string]interface as the default type
-type Reader struct {
-	classref       []interface{}
-	fieldsref      [][]string
-	JSONCompatible bool
-}
+import "reflect"
 
-// Unmarshaler is a interface for unserializing user custum type
-type Unmarshaler interface {
-	UnmarshalHprose(reader *Reader, tag byte) error
+// Unserializer is a interface for unserializing build-in type
+type Unserializer interface {
+	Unserialize(reader *Reader, tag byte, typ reflect.Type) (interface{}, error)
 }
