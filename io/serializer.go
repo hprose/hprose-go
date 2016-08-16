@@ -19,6 +19,12 @@
 
 package io
 
+import (
+	"math"
+
+	"github.com/hprose/hprose-golang/util"
+)
+
 // Serializer is a interface for serializing build-in type
 type Serializer interface {
 	Serialize(writer *Writer, v interface{}) error
@@ -52,5 +58,27 @@ func (boolSerializer) Serialize(writer *Writer, v interface{}) (err error) {
 		tag = TagFalse
 	}
 	_, err = writer.Stream.Write([]byte{tag})
+	return err
+}
+
+type intSerializer struct{}
+
+func (intSerializer) Serializer(writer *Writer, v interface{}) (err error) {
+	s := writer.Stream
+	i := v.(int)
+	if (i >= 0) && (i <= 9) {
+		_, err = s.Write([]byte{byte('0' + i)})
+		return err
+	}
+	if (i >= math.MinInt32) && (i <= math.MaxInt32) {
+		_, err = s.Write([]byte{TagInteger})
+	} else {
+		_, err = s.Write([]byte{TagLong})
+	}
+	if err == nil {
+		if _, err = s.Write(util.GetInt64Bytes(int64(i))); err == nil {
+			_, err = s.Write([]byte{TagSemicolon})
+		}
+	}
 	return err
 }
