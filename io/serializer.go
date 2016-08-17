@@ -75,10 +75,12 @@ func (intSerializer) Serializer(writer *Writer, v interface{}) (err error) {
 	} else {
 		_, err = s.Write([]byte{TagLong})
 	}
-	if err == nil {
-		if _, err = s.Write(util.GetInt64Bytes(int64(i))); err == nil {
-			_, err = s.Write([]byte{TagSemicolon})
-		}
+	if err != nil {
+		return err
 	}
+	if _, err = s.Write(util.GetInt64Bytes(int64(i))); err != nil {
+		return err
+	}
+	_, err = s.Write([]byte{TagSemicolon})
 	return err
 }
