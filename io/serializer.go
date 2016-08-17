@@ -61,6 +61,21 @@ func (boolSerializer) Serialize(writer *Writer, v interface{}) (err error) {
 	return err
 }
 
+func serializeInt32(writer *Writer, i int32) (err error) {
+	s := writer.Stream
+	if (i >= 0) && (i <= 9) {
+		_, err = s.Write([]byte{byte('0' + i)})
+		return err
+	}
+	if _, err = s.Write([]byte{TagInteger}); err == nil {
+		_, err = s.Write(util.GetIntBytes(int64(i)))
+	}
+	if err == nil {
+		_, err = s.Write([]byte{TagSemicolon})
+	}
+	return err
+}
+
 func serializeInt64(writer *Writer, i int64) (err error) {
 	s := writer.Stream
 	if (i >= 0) && (i <= 9) {
@@ -73,7 +88,7 @@ func serializeInt64(writer *Writer, i int64) (err error) {
 		_, err = s.Write([]byte{TagLong})
 	}
 	if err == nil {
-		_, err = s.Write(util.GetInt64Bytes(i))
+		_, err = s.Write(util.GetIntBytes(i))
 	}
 	if err == nil {
 		_, err = s.Write([]byte{TagSemicolon})
@@ -81,14 +96,19 @@ func serializeInt64(writer *Writer, i int64) (err error) {
 	return err
 }
 
-func serializeInt32(writer *Writer, i int32) (err error) {
+func serializeUint(writer *Writer, i uint64) (err error) {
 	s := writer.Stream
 	if (i >= 0) && (i <= 9) {
 		_, err = s.Write([]byte{byte('0' + i)})
 		return err
 	}
-	if _, err = s.Write([]byte{TagInteger}); err == nil {
-		_, err = s.Write(util.GetInt32Bytes(i))
+	if i <= math.MaxInt32 {
+		_, err = s.Write([]byte{TagInteger})
+	} else {
+		_, err = s.Write([]byte{TagLong})
+	}
+	if err == nil {
+		_, err = s.Write(util.GetUintBytes(i))
 	}
 	if err == nil {
 		_, err = s.Write([]byte{TagSemicolon})
@@ -126,72 +146,32 @@ func (int64Serializer) Serialize(writer *Writer, v interface{}) (err error) {
 	return serializeInt64(writer, v.(int64))
 }
 
-func serializeUint64(writer *Writer, i uint64) (err error) {
-	s := writer.Stream
-	if (i >= 0) && (i <= 9) {
-		_, err = s.Write([]byte{byte('0' + i)})
-		return err
-	}
-	if i <= math.MaxInt32 {
-		_, err = s.Write([]byte{TagInteger})
-	} else {
-		_, err = s.Write([]byte{TagLong})
-	}
-	if err == nil {
-		_, err = s.Write(util.GetUint64Bytes(i))
-	}
-	if err == nil {
-		_, err = s.Write([]byte{TagSemicolon})
-	}
-	return err
-}
-
-func serializeUint32(writer *Writer, i uint32) (err error) {
-	s := writer.Stream
-	if (i >= 0) && (i <= 9) {
-		_, err = s.Write([]byte{byte('0' + i)})
-		return err
-	}
-	if i <= math.MaxInt32 {
-		_, err = s.Write([]byte{TagInteger})
-	} else {
-		_, err = s.Write([]byte{TagLong})
-	}
-	if err == nil {
-		_, err = s.Write(util.GetUint32Bytes(i))
-	}
-	if err == nil {
-		_, err = s.Write([]byte{TagSemicolon})
-	}
-	return err
-}
-
 type uintSerializer struct{}
 
 func (uintSerializer) Serialize(writer *Writer, v interface{}) (err error) {
-	return serializeUint64(writer, uint64(v.(uint)))
+	return serializeUint(writer, uint64(v.(uint)))
 }
 
 type uint8Serializer struct{}
 
 func (uint8Serializer) Serialize(writer *Writer, v interface{}) (err error) {
-	return serializeUint32(writer, uint32(v.(uint8)))
+	return serializeUint(writer, uint64(v.(uint8)))
 }
 
 type uint16Serializer struct{}
 
 func (uint16Serializer) Serialize(writer *Writer, v interface{}) (err error) {
-	return serializeUint32(writer, uint32(v.(uint16)))
+	return serializeUint(writer, uint64(v.(uint16)))
 }
 
 type uint32Serializer struct{}
 
 func (uint32Serializer) Serialize(writer *Writer, v interface{}) (err error) {
-	return serializeUint32(writer, v.(uint32))
+	return serializeUint(writer, uint64(v.(uint32)))
 }
 
 type uint64Serializer struct{}
 
 func (uint64Serializer) Serialize(writer *Writer, v interface{}) (err error) {
-	return serializeUint64(writer, v.(uint64))
+	return serializeUint(writer, v.(uint64))
 }

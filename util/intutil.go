@@ -89,62 +89,8 @@ var minInt64Buf = [...]byte{
 	'-', '9', '2', '2', '3', '3', '7', '2', '0', '3',
 	'6', '8', '5', '4', '7', '7', '5', '8', '0', '8'}
 
-// GetInt32Bytes returns the []byte representation of i in base 10.
-func GetInt32Bytes(i int32) []byte {
-	if (i >= 0) && (i <= 9) {
-		return digits[i : i+1]
-	}
-	if (i >= 10) && (i < 100) {
-		p := 2 * i
-		return digit2Table[p : p+2]
-	}
-	if (i >= 100) && (i < 1000) {
-		p := 3 * i
-		return digit3Table[p : p+3]
-	}
-	if i == math.MinInt32 {
-		return minInt32Buf[:]
-	}
-	var buf [12]byte
-	var sign byte
-	if i < 0 {
-		sign = '-'
-		i = -i
-	}
-	off := 12
-	var q, p int32
-	digit3 := digit3Table
-	digit2 := digit2Table
-	for i >= 100 {
-		q = i / 1000
-		p = (i - (q * 1000)) * 3
-		i = q
-		off -= 3
-		buf[off] = digit3[p]
-		buf[off+1] = digit3[p+1]
-		buf[off+2] = digit3[p+2]
-	}
-	for i >= 10 {
-		q = i / 100
-		p = (i - (q * 100)) * 2
-		i = q
-		off -= 2
-		buf[off] = digit2[p]
-		buf[off+1] = digit2[p+1]
-	}
-	if i > 0 {
-		off--
-		buf[off] = digits[i]
-	}
-	if sign == '-' {
-		off--
-		buf[off] = sign
-	}
-	return buf[off:]
-}
-
-// GetInt64Bytes returns the []byte representation of i in base 10.
-func GetInt64Bytes(i int64) []byte {
+// GetIntBytes returns the []byte representation of i in base 10.
+func GetIntBytes(i int64) []byte {
 	if (i >= 0) && (i <= 9) {
 		return digits[i : i+1]
 	}
@@ -197,50 +143,8 @@ func GetInt64Bytes(i int64) []byte {
 	return buf[off:]
 }
 
-// GetUint32Bytes returns the []byte representation of i in base 10.
-func GetUint32Bytes(i uint32) []byte {
-	if (i >= 0) && (i <= 9) {
-		return digits[i : i+1]
-	}
-	if (i >= 10) && (i < 100) {
-		p := 2 * i
-		return digit2Table[p : p+2]
-	}
-	if (i >= 100) && (i < 1000) {
-		p := 3 * i
-		return digit3Table[p : p+3]
-	}
-	var buf [12]byte
-	off := 12
-	var q, p uint32
-	digit3 := digit3Table
-	digit2 := digit2Table
-	for i >= 100 {
-		q = i / 1000
-		p = (i - (q * 1000)) * 3
-		i = q
-		off -= 3
-		buf[off] = digit3[p]
-		buf[off+1] = digit3[p+1]
-		buf[off+2] = digit3[p+2]
-	}
-	for i >= 10 {
-		q = i / 100
-		p = (i - (q * 100)) * 2
-		i = q
-		off -= 2
-		buf[off] = digit2[p]
-		buf[off+1] = digit2[p+1]
-	}
-	if i > 0 {
-		off--
-		buf[off] = digits[i]
-	}
-	return buf[off:]
-}
-
-// GetUint64Bytes returns the []byte representation of i in base 10.
-func GetUint64Bytes(i uint64) []byte {
+// GetUintBytes returns the []byte representation of i in base 10.
+func GetUintBytes(i uint64) []byte {
 	if (i >= 0) && (i <= 9) {
 		return digits[i : i+1]
 	}
