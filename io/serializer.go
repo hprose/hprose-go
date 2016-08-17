@@ -12,7 +12,7 @@
  *                                                        *
  * hprose seriaizer for Go.                               *
  *                                                        *
- * LastModified: Aug 15, 2016                             *
+ * LastModified: Aug 17, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -63,7 +63,7 @@ func (boolSerializer) Serialize(writer *Writer, v interface{}) (err error) {
 
 type intSerializer struct{}
 
-func (intSerializer) Serializer(writer *Writer, v interface{}) (err error) {
+func (intSerializer) Serialize(writer *Writer, v interface{}) (err error) {
 	s := writer.Stream
 	i := v.(int)
 	if (i >= 0) && (i <= 9) {

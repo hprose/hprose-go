@@ -12,7 +12,7 @@
  *                                                        *
  * hprose writer for Go.                                  *
  *                                                        *
- * LastModified: Aug 15, 2016                             *
+ * LastModified: Aug 17, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -37,6 +37,7 @@ type Marshaler interface {
 var SerializerList = [...]Serializer{
 	invalidSerializer{},
 	boolSerializer{},
+	intSerializer{},
 }
 
 // WriteRef writes reference of an object
