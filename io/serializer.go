@@ -41,9 +41,9 @@ func (s refSerializer) Serialize(writer *Writer, v interface{}) error {
 	return s.value.Serialize(writer, v)
 }
 
-type invalidSerializer struct{}
+type nilSerializer struct{}
 
-func (invalidSerializer) Serialize(writer *Writer, v interface{}) (err error) {
+func (nilSerializer) Serialize(writer *Writer, v interface{}) (err error) {
 	_, err = writer.Stream.Write([]byte{TagNull})
 	return err
 }
@@ -79,6 +79,25 @@ func (intSerializer) Serialize(writer *Writer, v interface{}) (err error) {
 		return err
 	}
 	if _, err = s.Write(util.GetInt64Bytes(int64(i))); err != nil {
+		return err
+	}
+	_, err = s.Write([]byte{TagSemicolon})
+	return err
+}
+
+type int8Serializer struct{}
+
+func (int8Serializer) Serialize(writer *Writer, v interface{}) (err error) {
+	s := writer.Stream
+	i := v.(int8)
+	if (i >= 0) && (i <= 9) {
+		_, err = s.Write([]byte{byte('0' + i)})
+		return err
+	}
+	if _, err = s.Write([]byte{TagInteger}); err != nil {
+		return err
+	}
+	if _, err = s.Write(util.GetInt32Bytes(int32(i))); err != nil {
 		return err
 	}
 	_, err = s.Write([]byte{TagSemicolon})
