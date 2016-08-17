@@ -82,9 +82,6 @@ func testSerializeInt(t *testing.T, writer *Writer, b *bytes.Buffer) {
 			t.Error(b.String())
 		}
 	}
-}
-
-func testSerializeLong(t *testing.T, writer *Writer, b *bytes.Buffer) {
 	for i := 0; i <= 100; i++ {
 		b.Truncate(0)
 		x := rand.Intn(math.MaxInt64-math.MaxInt32-1) + math.MaxInt32 + 1
@@ -131,6 +128,47 @@ func testSerializeInt8(t *testing.T, writer *Writer, b *bytes.Buffer) {
 	}
 }
 
+func testSerializeInt16(t *testing.T, writer *Writer, b *bytes.Buffer) {
+	b.Truncate(0)
+	err := writer.Serialize(int16(math.MaxInt16))
+	if err != nil {
+		t.Error(err.Error())
+	}
+	if b.String() != "i"+strconv.Itoa(math.MaxInt16)+";" {
+		t.Error(b.String())
+	}
+}
+
+func testSerializeInt32(t *testing.T, writer *Writer, b *bytes.Buffer) {
+	b.Truncate(0)
+	err := writer.Serialize(int32(math.MaxInt32))
+	if err != nil {
+		t.Error(err.Error())
+	}
+	if b.String() != "i"+strconv.Itoa(math.MaxInt32)+";" {
+		t.Error(b.String())
+	}
+}
+
+func testSerializeInt64(t *testing.T, writer *Writer, b *bytes.Buffer) {
+	b.Truncate(0)
+	err := writer.Serialize(int64(math.MaxInt32))
+	if err != nil {
+		t.Error(err.Error())
+	}
+	if b.String() != "i"+strconv.Itoa(math.MaxInt32)+";" {
+		t.Error(b.String())
+	}
+	b.Truncate(0)
+	err = writer.Serialize(int64(math.MaxInt64))
+	if err != nil {
+		t.Error(err.Error())
+	}
+	if b.String() != "l"+strconv.Itoa(math.MaxInt64)+";" {
+		t.Error(b.String())
+	}
+}
+
 func TestSerialize(t *testing.T) {
 	b := new(bytes.Buffer)
 	writer := NewWriter(b, false)
@@ -139,6 +177,8 @@ func TestSerialize(t *testing.T) {
 	testSerializeFalse(t, writer, b)
 	testSerializeDigit(t, writer, b)
 	testSerializeInt(t, writer, b)
-	testSerializeLong(t, writer, b)
 	testSerializeInt8(t, writer, b)
+	testSerializeInt16(t, writer, b)
+	testSerializeInt32(t, writer, b)
+	testSerializeInt64(t, writer, b)
 }

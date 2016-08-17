@@ -61,11 +61,8 @@ func (boolSerializer) Serialize(writer *Writer, v interface{}) (err error) {
 	return err
 }
 
-type intSerializer struct{}
-
-func (intSerializer) Serialize(writer *Writer, v interface{}) (err error) {
+func serializeInt64(writer *Writer, i int64) (err error) {
 	s := writer.Stream
-	i := v.(int)
 	if (i >= 0) && (i <= 9) {
 		_, err = s.Write([]byte{byte('0' + i)})
 		return err
@@ -76,7 +73,7 @@ func (intSerializer) Serialize(writer *Writer, v interface{}) (err error) {
 		_, err = s.Write([]byte{TagLong})
 	}
 	if err == nil {
-		_, err = s.Write(util.GetInt64Bytes(int64(i)))
+		_, err = s.Write(util.GetInt64Bytes(i))
 	}
 	if err == nil {
 		_, err = s.Write([]byte{TagSemicolon})
@@ -84,20 +81,47 @@ func (intSerializer) Serialize(writer *Writer, v interface{}) (err error) {
 	return err
 }
 
-type int8Serializer struct{}
-
-func (int8Serializer) Serialize(writer *Writer, v interface{}) (err error) {
+func serializeInt32(writer *Writer, i int32) (err error) {
 	s := writer.Stream
-	i := v.(int8)
 	if (i >= 0) && (i <= 9) {
 		_, err = s.Write([]byte{byte('0' + i)})
 		return err
 	}
 	if _, err = s.Write([]byte{TagInteger}); err == nil {
-		_, err = s.Write(util.GetInt32Bytes(int32(i)))
+		_, err = s.Write(util.GetInt32Bytes(i))
 	}
 	if err == nil {
 		_, err = s.Write([]byte{TagSemicolon})
 	}
 	return err
+}
+
+type intSerializer struct{}
+
+func (intSerializer) Serialize(writer *Writer, v interface{}) (err error) {
+	return serializeInt64(writer, int64(v.(int)))
+}
+
+type int8Serializer struct{}
+
+func (int8Serializer) Serialize(writer *Writer, v interface{}) (err error) {
+	return serializeInt32(writer, int32(v.(int8)))
+}
+
+type int16Serializer struct{}
+
+func (int16Serializer) Serialize(writer *Writer, v interface{}) (err error) {
+	return serializeInt32(writer, int32(v.(int16)))
+}
+
+type int32Serializer struct{}
+
+func (int32Serializer) Serialize(writer *Writer, v interface{}) (err error) {
+	return serializeInt32(writer, v.(int32))
+}
+
+type int64Serializer struct{}
+
+func (int64Serializer) Serialize(writer *Writer, v interface{}) (err error) {
+	return serializeInt64(writer, v.(int64))
 }
