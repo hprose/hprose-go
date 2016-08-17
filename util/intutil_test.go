@@ -137,225 +137,50 @@ func BenchmarkItoaParallel(b *testing.B) {
 }
 
 func TestGetInt32Bytes(t *testing.T) {
-	b := GetInt32Bytes(0)
-	if !reflect.DeepEqual(b, []byte{'0'}) {
-		t.Error("b must be []byte{'0'}")
-	}
-	b = GetInt32Bytes(9)
-	if !reflect.DeepEqual(b, []byte{'9'}) {
-		t.Error("b must be []byte{'9'}")
-	}
-	b = GetInt32Bytes(10)
-	if !reflect.DeepEqual(b, []byte{'1', '0'}) {
-		t.Error("b must be []byte{'1', '0'}")
-	}
-	b = GetInt32Bytes(99)
-	if !reflect.DeepEqual(b, []byte{'9', '9'}) {
-		t.Error("b must be []byte{'9', '9'}")
-	}
-	b = GetInt32Bytes(100)
-	if !reflect.DeepEqual(b, []byte{'1', '0', '0'}) {
-		t.Error("b must be []byte{'1', '0', '0'}")
-	}
-	b = GetInt32Bytes(999)
-	if !reflect.DeepEqual(b, []byte{'9', '9', '9'}) {
-		t.Error("b must be []byte{'9', '9', '9'}")
-	}
-	b = GetInt32Bytes(1000)
-	if !reflect.DeepEqual(b, []byte{'1', '0', '0', '0'}) {
-		t.Error("b must be []byte{'1', '0', '0', '0'}")
-	}
-	b = GetInt32Bytes(-1000)
-	if !reflect.DeepEqual(b, []byte{'-', '1', '0', '0', '0'}) {
-		t.Error("b must be []byte{'-', '1', '0', '0', '0'}")
-	}
-	b = GetInt32Bytes(10000)
-	if !reflect.DeepEqual(b, []byte{'1', '0', '0', '0', '0'}) {
-		t.Error("b must be []byte{'1', '0', '0', '0', '0'}")
-	}
-	b = GetInt32Bytes(-10000)
-	if !reflect.DeepEqual(b, []byte{'-', '1', '0', '0', '0', '0'}) {
-		t.Error("b must be []byte{'-', '1', '0', '0', '0', '0'}")
-	}
-	b = GetInt32Bytes(123456789)
-	if !reflect.DeepEqual(b, []byte("123456789")) {
-		t.Error("b must be []byte(\"123456789\")")
-	}
-	b = GetInt32Bytes(-123456789)
-	if !reflect.DeepEqual(b, []byte("-123456789")) {
-		t.Error("b must be []byte(\"-123456789\")")
-	}
-	b = GetInt32Bytes(math.MaxInt32)
-	if !reflect.DeepEqual(b, []byte("2147483647")) {
-		t.Error("b must be []byte(\"2147483647\")")
-	}
-	b = GetInt32Bytes(math.MinInt32)
-	if !reflect.DeepEqual(b, []byte("-2147483648")) {
-		t.Error("b must be []byte(\"-2147483648\")")
+	data := []int32{
+		0, 9, 10, 99, 100, 999, 1000, -1000, 10000, -10000,
+		123456789, -123456789, math.MaxInt32, math.MinInt32}
+	for _, i := range data {
+		b := GetInt32Bytes(i)
+		if !reflect.DeepEqual(b, []byte(strconv.Itoa(int(i)))) {
+			t.Error("b must be []byte(\"" + strconv.Itoa(int(i)) + "\")")
+		}
 	}
 }
 
 func TestGetInt64Bytes(t *testing.T) {
-	b := GetInt64Bytes(0)
-	if !reflect.DeepEqual(b, []byte{'0'}) {
-		t.Error("b must be []byte{'0'}")
-	}
-	b = GetInt64Bytes(9)
-	if !reflect.DeepEqual(b, []byte{'9'}) {
-		t.Error("b must be []byte{'9'}")
-	}
-	b = GetInt64Bytes(10)
-	if !reflect.DeepEqual(b, []byte{'1', '0'}) {
-		t.Error("b must be []byte{'1', '0'}")
-	}
-	b = GetInt64Bytes(99)
-	if !reflect.DeepEqual(b, []byte{'9', '9'}) {
-		t.Error("b must be []byte{'9', '9'}")
-	}
-	b = GetInt64Bytes(100)
-	if !reflect.DeepEqual(b, []byte{'1', '0', '0'}) {
-		t.Error("b must be []byte{'1', '0', '0'}")
-	}
-	b = GetInt64Bytes(999)
-	if !reflect.DeepEqual(b, []byte{'9', '9', '9'}) {
-		t.Error("b must be []byte{'9', '9', '9'}")
-	}
-	b = GetInt64Bytes(1000)
-	if !reflect.DeepEqual(b, []byte{'1', '0', '0', '0'}) {
-		t.Error("b must be []byte{'1', '0', '0', '0'}")
-	}
-	b = GetInt64Bytes(-1000)
-	if !reflect.DeepEqual(b, []byte{'-', '1', '0', '0', '0'}) {
-		t.Error("b must be []byte{'-', '1', '0', '0', '0'}")
-	}
-	b = GetInt64Bytes(10000)
-	if !reflect.DeepEqual(b, []byte{'1', '0', '0', '0', '0'}) {
-		t.Error("b must be []byte{'1', '0', '0', '0', '0'}")
-	}
-	b = GetInt64Bytes(-10000)
-	if !reflect.DeepEqual(b, []byte{'-', '1', '0', '0', '0', '0'}) {
-		t.Error("b must be []byte{'-', '1', '0', '0', '0', '0'}")
-	}
-	b = GetInt64Bytes(123456789)
-	if !reflect.DeepEqual(b, []byte("123456789")) {
-		t.Error("b must be []byte(\"123456789\")")
-	}
-	b = GetInt64Bytes(-123456789)
-	if !reflect.DeepEqual(b, []byte("-123456789")) {
-		t.Error("b must be []byte(\"-123456789\")")
-	}
-	b = GetInt64Bytes(math.MaxInt32)
-	if !reflect.DeepEqual(b, []byte("2147483647")) {
-		t.Error("b must be []byte(\"2147483647\")")
-	}
-	b = GetInt64Bytes(math.MinInt32)
-	if !reflect.DeepEqual(b, []byte("-2147483648")) {
-		t.Error("b must be []byte(\"-2147483648\")")
-	}
-	b = GetInt64Bytes(math.MaxInt64)
-	if !reflect.DeepEqual(b, []byte(strconv.Itoa(math.MaxInt64))) {
-		t.Error("b must be []byte(\"" + strconv.Itoa(math.MaxInt64) + "\")")
-	}
-	b = GetInt64Bytes(math.MinInt64)
-	if !reflect.DeepEqual(b, []byte(strconv.Itoa(math.MinInt64))) {
-		t.Error("b must be []byte(\"" + strconv.Itoa(math.MinInt64) + "\")")
+	data := []int64{
+		0, 9, 10, 99, 100, 999, 1000, -1000, 10000, -10000,
+		123456789, -123456789, math.MaxInt32, math.MinInt32,
+		math.MaxInt64, math.MinInt64}
+	for _, i := range data {
+		b := GetInt64Bytes(i)
+		if !reflect.DeepEqual(b, []byte(strconv.Itoa(int(i)))) {
+			t.Error("b must be []byte(\"" + strconv.Itoa(int(i)) + "\")")
+		}
 	}
 }
 
 func TestGetUint32Bytes(t *testing.T) {
-	b := GetUint32Bytes(0)
-	if !reflect.DeepEqual(b, []byte{'0'}) {
-		t.Error("b must be []byte{'0'}")
-	}
-	b = GetUint32Bytes(9)
-	if !reflect.DeepEqual(b, []byte{'9'}) {
-		t.Error("b must be []byte{'9'}")
-	}
-	b = GetUint32Bytes(10)
-	if !reflect.DeepEqual(b, []byte{'1', '0'}) {
-		t.Error("b must be []byte{'1', '0'}")
-	}
-	b = GetUint32Bytes(99)
-	if !reflect.DeepEqual(b, []byte{'9', '9'}) {
-		t.Error("b must be []byte{'9', '9'}")
-	}
-	b = GetUint32Bytes(100)
-	if !reflect.DeepEqual(b, []byte{'1', '0', '0'}) {
-		t.Error("b must be []byte{'1', '0', '0'}")
-	}
-	b = GetUint32Bytes(999)
-	if !reflect.DeepEqual(b, []byte{'9', '9', '9'}) {
-		t.Error("b must be []byte{'9', '9', '9'}")
-	}
-	b = GetUint32Bytes(1000)
-	if !reflect.DeepEqual(b, []byte{'1', '0', '0', '0'}) {
-		t.Error("b must be []byte{'1', '0', '0', '0'}")
-	}
-	b = GetUint32Bytes(10000)
-	if !reflect.DeepEqual(b, []byte{'1', '0', '0', '0', '0'}) {
-		t.Error("b must be []byte{'1', '0', '0', '0', '0'}")
-	}
-	b = GetUint32Bytes(123456789)
-	if !reflect.DeepEqual(b, []byte("123456789")) {
-		t.Error("b must be []byte(\"123456789\")")
-	}
-	b = GetUint32Bytes(math.MaxInt32)
-	if !reflect.DeepEqual(b, []byte("2147483647")) {
-		t.Error("b must be []byte(\"2147483647\")")
-	}
-	b = GetUint32Bytes(math.MaxUint32)
-	if !reflect.DeepEqual(b, []byte("4294967295")) {
-		t.Error("b must be []byte(\"4294967295\")")
+	data := []uint32{
+		0, 9, 10, 99, 100, 999, 1000, 10000, 123456789,
+		math.MaxInt32, math.MaxUint32}
+	for _, i := range data {
+		b := GetUint32Bytes(i)
+		if !reflect.DeepEqual(b, []byte(strconv.Itoa(int(i)))) {
+			t.Error("b must be []byte(\"" + strconv.Itoa(int(i)) + "\")")
+		}
 	}
 }
 
 func TestGetUint64Bytes(t *testing.T) {
-	b := GetUint64Bytes(0)
-	if !reflect.DeepEqual(b, []byte{'0'}) {
-		t.Error("b must be []byte{'0'}")
-	}
-	b = GetUint64Bytes(9)
-	if !reflect.DeepEqual(b, []byte{'9'}) {
-		t.Error("b must be []byte{'9'}")
-	}
-	b = GetUint64Bytes(10)
-	if !reflect.DeepEqual(b, []byte{'1', '0'}) {
-		t.Error("b must be []byte{'1', '0'}")
-	}
-	b = GetUint64Bytes(99)
-	if !reflect.DeepEqual(b, []byte{'9', '9'}) {
-		t.Error("b must be []byte{'9', '9'}")
-	}
-	b = GetUint64Bytes(100)
-	if !reflect.DeepEqual(b, []byte{'1', '0', '0'}) {
-		t.Error("b must be []byte{'1', '0', '0'}")
-	}
-	b = GetUint64Bytes(999)
-	if !reflect.DeepEqual(b, []byte{'9', '9', '9'}) {
-		t.Error("b must be []byte{'9', '9', '9'}")
-	}
-	b = GetUint64Bytes(1000)
-	if !reflect.DeepEqual(b, []byte{'1', '0', '0', '0'}) {
-		t.Error("b must be []byte{'1', '0', '0', '0'}")
-	}
-	b = GetUint64Bytes(123456789)
-	if !reflect.DeepEqual(b, []byte("123456789")) {
-		t.Error("b must be []byte(\"123456789\")")
-	}
-	b = GetUint64Bytes(math.MaxInt32)
-	if !reflect.DeepEqual(b, []byte("2147483647")) {
-		t.Error("b must be []byte(\"2147483647\")")
-	}
-	b = GetUint64Bytes(math.MaxUint32)
-	if !reflect.DeepEqual(b, []byte("4294967295")) {
-		t.Error("b must be []byte(\"4294967295\")")
-	}
-	b = GetUint64Bytes(math.MaxInt64)
-	if !reflect.DeepEqual(b, []byte(strconv.Itoa(math.MaxInt64))) {
-		t.Error("b must be []byte(\"" + strconv.Itoa(math.MaxInt64) + "\")")
-	}
-	b = GetUint64Bytes(math.MaxUint64)
-	if !reflect.DeepEqual(b, []byte(strconv.FormatUint(math.MaxUint64, 10))) {
-		t.Error("b must be []byte(\"" + strconv.FormatUint(math.MaxUint64, 10) + "\")")
+	data := []uint64{
+		0, 9, 10, 99, 100, 999, 1000, 10000, 123456789,
+		math.MaxInt32, math.MaxUint32, math.MaxInt64, math.MaxUint64}
+	for _, i := range data {
+		b := GetUint64Bytes(i)
+		if !reflect.DeepEqual(b, []byte(strconv.FormatUint(i, 10))) {
+			t.Error("b must be []byte(\"" + strconv.FormatUint(i, 10) + "\")")
+		}
 	}
 }
