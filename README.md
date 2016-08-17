@@ -5,7 +5,7 @@
 [![GoDoc](https://godoc.org/github.com/hprose/hprose-golang?status.svg&style=flat)](https://godoc.org/github.com/hprose/hprose-golang)
 [![Go Report Card](https://goreportcard.com/badge/github.com/hprose/hprose-golang)](https://goreportcard.com/report/github.com/hprose/hprose-golang)
 [![codebeat badge](https://img.shields.io/badge/codebeat-A-398b39.svg)](https://codebeat.co/projects/github-com-hprose-hprose-golang)
-[![Coverage Status](https://coveralls.io/repos/github/hprose/hprose-golang/badge.svg)](https://coveralls.io/github/hprose/hprose-golang)
+[![Coverage Status](https://coveralls.io/repos/github/hprose/hprose-golang/badge.svg?branch=master)](https://coveralls.io/github/hprose/hprose-golang?branch=master)
 [![License](https://img.shields.io/github/license/hprose/hprose-golang.svg)](http://opensource.org/licenses/MIT)
 
 *Hprose* is a High Performance Remote Object Service Engine.
