@@ -69,6 +69,7 @@ func testSerializeDigit(t *testing.T, writer *Writer, b *bytes.Buffer) {
 		}
 	}
 }
+
 func testSerializeInt(t *testing.T, writer *Writer, b *bytes.Buffer) {
 	for i := 0; i <= 100; i++ {
 		b.Truncate(0)
@@ -97,6 +98,39 @@ func testSerializeLong(t *testing.T, writer *Writer, b *bytes.Buffer) {
 	}
 }
 
+func testSerializeInt8(t *testing.T, writer *Writer, b *bytes.Buffer) {
+	for i := 0; i <= 9; i++ {
+		b.Truncate(0)
+		err := writer.Serialize(int8(i))
+		if err != nil {
+			t.Error(err.Error())
+		}
+		if b.String() != strconv.Itoa(i) {
+			t.Error(b.String())
+		}
+	}
+	for i := 10; i <= 127; i++ {
+		b.Truncate(0)
+		err := writer.Serialize(int8(i))
+		if err != nil {
+			t.Error(err.Error())
+		}
+		if b.String() != "i"+strconv.Itoa(i)+";" {
+			t.Error(b.String())
+		}
+	}
+	for i := -128; i < 0; i++ {
+		b.Truncate(0)
+		err := writer.Serialize(int8(i))
+		if err != nil {
+			t.Error(err.Error())
+		}
+		if b.String() != "i"+strconv.Itoa(i)+";" {
+			t.Error(b.String())
+		}
+	}
+}
+
 func TestSerialize(t *testing.T) {
 	b := new(bytes.Buffer)
 	writer := NewWriter(b, false)
@@ -106,4 +140,5 @@ func TestSerialize(t *testing.T) {
 	testSerializeDigit(t, writer, b)
 	testSerializeInt(t, writer, b)
 	testSerializeLong(t, writer, b)
+	testSerializeInt8(t, writer, b)
 }
