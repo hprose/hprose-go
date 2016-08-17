@@ -8,11 +8,11 @@
 \**********************************************************/
 /**********************************************************\
  *                                                        *
- * util/ioutil.go                                         *
+ * util/intutil.go                                        *
  *                                                        *
- * hprose io util for Go.                                 *
+ * int to bytes util for Go.                              *
  *                                                        *
- * LastModified: Aug 15, 2016                             *
+ * LastModified: Aug 17, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
