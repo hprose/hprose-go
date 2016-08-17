@@ -169,6 +169,14 @@ func TestGetInt32Bytes(t *testing.T) {
 	if !reflect.DeepEqual(b, []byte{'-', '1', '0', '0', '0'}) {
 		t.Error("b must be []byte{'-', '1', '0', '0', '0'}")
 	}
+	b = GetInt32Bytes(10000)
+	if !reflect.DeepEqual(b, []byte{'1', '0', '0', '0', '0'}) {
+		t.Error("b must be []byte{'1', '0', '0', '0', '0'}")
+	}
+	b = GetInt32Bytes(-10000)
+	if !reflect.DeepEqual(b, []byte{'-', '1', '0', '0', '0', '0'}) {
+		t.Error("b must be []byte{'-', '1', '0', '0', '0', '0'}")
+	}
 	b = GetInt32Bytes(123456789)
 	if !reflect.DeepEqual(b, []byte("123456789")) {
 		t.Error("b must be []byte(\"123456789\")")
@@ -219,6 +227,14 @@ func TestGetInt64Bytes(t *testing.T) {
 	b = GetInt64Bytes(-1000)
 	if !reflect.DeepEqual(b, []byte{'-', '1', '0', '0', '0'}) {
 		t.Error("b must be []byte{'-', '1', '0', '0', '0'}")
+	}
+	b = GetInt64Bytes(10000)
+	if !reflect.DeepEqual(b, []byte{'1', '0', '0', '0', '0'}) {
+		t.Error("b must be []byte{'1', '0', '0', '0', '0'}")
+	}
+	b = GetInt64Bytes(-10000)
+	if !reflect.DeepEqual(b, []byte{'-', '1', '0', '0', '0', '0'}) {
+		t.Error("b must be []byte{'-', '1', '0', '0', '0', '0'}")
 	}
 	b = GetInt64Bytes(123456789)
 	if !reflect.DeepEqual(b, []byte("123456789")) {
@@ -274,6 +290,10 @@ func TestGetUint32Bytes(t *testing.T) {
 	b = GetUint32Bytes(1000)
 	if !reflect.DeepEqual(b, []byte{'1', '0', '0', '0'}) {
 		t.Error("b must be []byte{'1', '0', '0', '0'}")
+	}
+	b = GetUint32Bytes(10000)
+	if !reflect.DeepEqual(b, []byte{'1', '0', '0', '0', '0'}) {
+		t.Error("b must be []byte{'1', '0', '0', '0', '0'}")
 	}
 	b = GetUint32Bytes(123456789)
 	if !reflect.DeepEqual(b, []byte("123456789")) {
