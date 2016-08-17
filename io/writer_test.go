@@ -21,6 +21,8 @@ package io
 
 import (
 	"bytes"
+	"math"
+	"math/rand"
 	"strconv"
 	"testing"
 )
@@ -67,6 +69,19 @@ func testSerializeDigit(t *testing.T, writer *Writer, b *bytes.Buffer) {
 		}
 	}
 }
+func testSerializeInt(t *testing.T, writer *Writer, b *bytes.Buffer) {
+	for i := 0; i <= 100; i++ {
+		b.Truncate(0)
+		x := rand.Intn(math.MaxInt32-10) + 10
+		err := writer.Serialize(x)
+		if err != nil {
+			t.Error(err.Error())
+		}
+		if b.String() != "i"+strconv.Itoa(x)+";" {
+			t.Error(b.String())
+		}
+	}
+}
 
 func TestSerialize(t *testing.T) {
 	b := new(bytes.Buffer)
@@ -75,5 +90,5 @@ func TestSerialize(t *testing.T) {
 	testSerializeTrue(t, writer, b)
 	testSerializeFalse(t, writer, b)
 	testSerializeDigit(t, writer, b)
-
+	testSerializeInt(t, writer, b)
 }
