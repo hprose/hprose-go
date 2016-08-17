@@ -75,13 +75,12 @@ func (intSerializer) Serialize(writer *Writer, v interface{}) (err error) {
 	} else {
 		_, err = s.Write([]byte{TagLong})
 	}
-	if err != nil {
-		return err
+	if err == nil {
+		_, err = s.Write(util.GetInt64Bytes(int64(i)))
 	}
-	if _, err = s.Write(util.GetInt64Bytes(int64(i))); err != nil {
-		return err
+	if err == nil {
+		_, err = s.Write([]byte{TagSemicolon})
 	}
-	_, err = s.Write([]byte{TagSemicolon})
 	return err
 }
 
@@ -94,12 +93,11 @@ func (int8Serializer) Serialize(writer *Writer, v interface{}) (err error) {
 		_, err = s.Write([]byte{byte('0' + i)})
 		return err
 	}
-	if _, err = s.Write([]byte{TagInteger}); err != nil {
-		return err
+	if _, err = s.Write([]byte{TagInteger}); err == nil {
+		_, err = s.Write(util.GetInt32Bytes(int32(i)))
 	}
-	if _, err = s.Write(util.GetInt32Bytes(int32(i))); err != nil {
-		return err
+	if err == nil {
+		_, err = s.Write([]byte{TagSemicolon})
 	}
-	_, err = s.Write([]byte{TagSemicolon})
 	return err
 }
