@@ -44,6 +44,24 @@ func BenchmarkGetInt64Bytes(b *testing.B) {
 	}
 }
 
+func BenchmarkGetUint32Bytes(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		GetUint32Bytes(uint32(i))
+		GetUint32Bytes(math.MaxUint32 - uint32(i))
+		GetUint32Bytes(uint32(-i))
+		GetUint32Bytes(math.MaxUint32 + uint32(i))
+	}
+}
+
+func BenchmarkGetUint64Bytes(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		GetUint64Bytes(uint64(i))
+		GetUint64Bytes(math.MaxUint64 - uint64(i))
+		GetUint64Bytes(uint64(-i))
+		GetUint64Bytes(math.MaxUint64 + uint64(i))
+	}
+}
+
 func BenchmarkItoa(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		strconv.Itoa(i)
@@ -74,6 +92,32 @@ func BenchmarkGetInt64BytesParallel(b *testing.B) {
 			GetInt64Bytes(math.MaxInt64 - i)
 			GetInt64Bytes(-i)
 			GetInt64Bytes(math.MinInt64 + i)
+			i++
+		}
+	})
+}
+
+func BenchmarkGetUint32BytesParallel(b *testing.B) {
+	b.RunParallel(func(pb *testing.PB) {
+		var i uint32
+		for pb.Next() {
+			GetUint32Bytes(i)
+			GetUint32Bytes(math.MaxUint32 - i)
+			GetUint32Bytes(-i)
+			GetUint32Bytes(math.MaxUint32 + i)
+			i++
+		}
+	})
+}
+
+func BenchmarkGetUint64BytesParallel(b *testing.B) {
+	b.RunParallel(func(pb *testing.PB) {
+		var i uint64
+		for pb.Next() {
+			GetUint64Bytes(i)
+			GetUint64Bytes(math.MaxUint64 - i)
+			GetUint64Bytes(-i)
+			GetUint64Bytes(math.MaxUint64 + i)
 			i++
 		}
 	})
@@ -199,5 +243,99 @@ func TestGetInt64Bytes(t *testing.T) {
 	b = GetInt64Bytes(math.MinInt64)
 	if !reflect.DeepEqual(b, []byte(strconv.Itoa(math.MinInt64))) {
 		t.Error("b must be []byte(\"" + strconv.Itoa(math.MinInt64) + "\")")
+	}
+}
+
+func TestGetUint32Bytes(t *testing.T) {
+	b := GetUint32Bytes(0)
+	if !reflect.DeepEqual(b, []byte{'0'}) {
+		t.Error("b must be []byte{'0'}")
+	}
+	b = GetUint32Bytes(9)
+	if !reflect.DeepEqual(b, []byte{'9'}) {
+		t.Error("b must be []byte{'9'}")
+	}
+	b = GetUint32Bytes(10)
+	if !reflect.DeepEqual(b, []byte{'1', '0'}) {
+		t.Error("b must be []byte{'1', '0'}")
+	}
+	b = GetUint32Bytes(99)
+	if !reflect.DeepEqual(b, []byte{'9', '9'}) {
+		t.Error("b must be []byte{'9', '9'}")
+	}
+	b = GetUint32Bytes(100)
+	if !reflect.DeepEqual(b, []byte{'1', '0', '0'}) {
+		t.Error("b must be []byte{'1', '0', '0'}")
+	}
+	b = GetUint32Bytes(999)
+	if !reflect.DeepEqual(b, []byte{'9', '9', '9'}) {
+		t.Error("b must be []byte{'9', '9', '9'}")
+	}
+	b = GetUint32Bytes(1000)
+	if !reflect.DeepEqual(b, []byte{'1', '0', '0', '0'}) {
+		t.Error("b must be []byte{'1', '0', '0', '0'}")
+	}
+	b = GetUint32Bytes(123456789)
+	if !reflect.DeepEqual(b, []byte("123456789")) {
+		t.Error("b must be []byte(\"123456789\")")
+	}
+	b = GetUint32Bytes(math.MaxInt32)
+	if !reflect.DeepEqual(b, []byte("2147483647")) {
+		t.Error("b must be []byte(\"2147483647\")")
+	}
+	b = GetUint32Bytes(math.MaxUint32)
+	if !reflect.DeepEqual(b, []byte("4294967295")) {
+		t.Error("b must be []byte(\"4294967295\")")
+	}
+}
+
+func TestGetUint64Bytes(t *testing.T) {
+	b := GetUint64Bytes(0)
+	if !reflect.DeepEqual(b, []byte{'0'}) {
+		t.Error("b must be []byte{'0'}")
+	}
+	b = GetUint64Bytes(9)
+	if !reflect.DeepEqual(b, []byte{'9'}) {
+		t.Error("b must be []byte{'9'}")
+	}
+	b = GetUint64Bytes(10)
+	if !reflect.DeepEqual(b, []byte{'1', '0'}) {
+		t.Error("b must be []byte{'1', '0'}")
+	}
+	b = GetUint64Bytes(99)
+	if !reflect.DeepEqual(b, []byte{'9', '9'}) {
+		t.Error("b must be []byte{'9', '9'}")
+	}
+	b = GetUint64Bytes(100)
+	if !reflect.DeepEqual(b, []byte{'1', '0', '0'}) {
+		t.Error("b must be []byte{'1', '0', '0'}")
+	}
+	b = GetUint64Bytes(999)
+	if !reflect.DeepEqual(b, []byte{'9', '9', '9'}) {
+		t.Error("b must be []byte{'9', '9', '9'}")
+	}
+	b = GetUint64Bytes(1000)
+	if !reflect.DeepEqual(b, []byte{'1', '0', '0', '0'}) {
+		t.Error("b must be []byte{'1', '0', '0', '0'}")
+	}
+	b = GetUint64Bytes(123456789)
+	if !reflect.DeepEqual(b, []byte("123456789")) {
+		t.Error("b must be []byte(\"123456789\")")
+	}
+	b = GetUint64Bytes(math.MaxInt32)
+	if !reflect.DeepEqual(b, []byte("2147483647")) {
+		t.Error("b must be []byte(\"2147483647\")")
+	}
+	b = GetUint64Bytes(math.MaxUint32)
+	if !reflect.DeepEqual(b, []byte("4294967295")) {
+		t.Error("b must be []byte(\"4294967295\")")
+	}
+	b = GetUint64Bytes(math.MaxInt64)
+	if !reflect.DeepEqual(b, []byte(strconv.Itoa(math.MaxInt64))) {
+		t.Error("b must be []byte(\"" + strconv.Itoa(math.MaxInt64) + "\")")
+	}
+	b = GetUint64Bytes(math.MaxUint64)
+	if !reflect.DeepEqual(b, []byte(strconv.FormatUint(math.MaxUint64, 10))) {
+		t.Error("b must be []byte(\"" + strconv.FormatUint(math.MaxUint64, 10) + "\")")
 	}
 }
