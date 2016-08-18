@@ -28,7 +28,7 @@ type refSerializer struct {
 	value Serializer
 }
 
-func (s refSerializer) Serialize(writer *Writer, v interface{}) error {
+func (s *refSerializer) Serialize(writer *Writer, v interface{}) error {
 	if ok, err := writer.WriteRef(v); ok || err != nil {
 		return err
 	}
