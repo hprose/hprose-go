@@ -21,10 +21,16 @@ package util
 
 import "math"
 
-var digits = [...]byte{
-	'0', '1', '2', '3', '4', '5', '6', '7', '8', '9'}
+const digits = "0123456789"
 
-var digit3Table = ([]byte)("" +
+const digit2 = "" +
+	"0001020304050607080910111213141516171819" +
+	"2021222324252627282930313233343536373839" +
+	"4041424344454647484950515253545556575859" +
+	"6061626364656667686970717273747576777879" +
+	"8081828384858687888990919293949596979899"
+
+const digit3 = "" +
 	"000001002003004005006007008009010011012013014015016017018019" +
 	"020021022023024025026027028029030031032033034035036037038039" +
 	"040041042043044045046047048049050051052053054055056057058059" +
@@ -74,14 +80,7 @@ var digit3Table = ([]byte)("" +
 	"920921922923924925926927928929930931932933934935936937938939" +
 	"940941942943944945946947948949950951952953954955956957958959" +
 	"960961962963964965966967968969970971972973974975976977978979" +
-	"980981982983984985986987988989990991992993994995996997998999")
-
-var digit2Table = ([]byte)("" +
-	"0001020304050607080910111213141516171819" +
-	"2021222324252627282930313233343536373839" +
-	"4041424344454647484950515253545556575859" +
-	"6061626364656667686970717273747576777879" +
-	"8081828384858687888990919293949596979899")
+	"980981982983984985986987988989990991992993994995996997998999"
 
 var minInt32Buf = [...]byte{'-', '2', '1', '4', '7', '4', '8', '3', '6', '4', '8'}
 
@@ -91,16 +90,8 @@ var minInt64Buf = [...]byte{
 
 // GetIntBytes returns the []byte representation of i in base 10.
 func GetIntBytes(i int64) []byte {
-	if (i >= 0) && (i <= 9) {
-		return digits[i : i+1]
-	}
-	if (i >= 10) && (i < 100) {
-		p := 2 * i
-		return digit2Table[p : p+2]
-	}
-	if (i >= 100) && (i < 1000) {
-		p := 3 * i
-		return digit3Table[p : p+3]
+	if i == 0 {
+		return []byte{'0'}
 	}
 	if i == math.MinInt64 {
 		return minInt64Buf[:]
@@ -113,8 +104,6 @@ func GetIntBytes(i int64) []byte {
 	}
 	off := 20
 	var q, p int64
-	digit3 := digit3Table
-	digit2 := digit2Table
 	for i >= 100 {
 		q = i / 1000
 		p = (i - (q * 1000)) * 3
@@ -124,7 +113,7 @@ func GetIntBytes(i int64) []byte {
 		buf[off+1] = digit3[p+1]
 		buf[off+2] = digit3[p+2]
 	}
-	for i >= 10 {
+	if i >= 10 {
 		q = i / 100
 		p = (i - (q * 100)) * 2
 		i = q
@@ -145,22 +134,12 @@ func GetIntBytes(i int64) []byte {
 
 // GetUintBytes returns the []byte representation of i in base 10.
 func GetUintBytes(i uint64) []byte {
-	if (i >= 0) && (i <= 9) {
-		return digits[i : i+1]
-	}
-	if (i >= 10) && (i < 100) {
-		p := 2 * i
-		return digit2Table[p : p+2]
-	}
-	if (i >= 100) && (i < 1000) {
-		p := 3 * i
-		return digit3Table[p : p+3]
+	if i == 0 {
+		return []byte{'0'}
 	}
 	var buf [20]byte
 	off := 20
 	var q, p uint64
-	digit3 := digit3Table
-	digit2 := digit2Table
 	for i >= 100 {
 		q = i / 1000
 		p = (i - (q * 1000)) * 3
@@ -170,7 +149,7 @@ func GetUintBytes(i uint64) []byte {
 		buf[off+1] = digit3[p+1]
 		buf[off+2] = digit3[p+2]
 	}
-	for i >= 10 {
+	if i >= 10 {
 		q = i / 100
 		p = (i - (q * 100)) * 2
 		i = q
