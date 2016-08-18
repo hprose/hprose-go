@@ -12,7 +12,7 @@
  *                                                        *
  * hprose writer for Go.                                  *
  *                                                        *
- * LastModified: Aug 17, 2016                             *
+ * LastModified: Aug 18, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -21,7 +21,11 @@ package io
 
 import (
 	"io"
+	"math"
 	"reflect"
+	"strconv"
+
+	"github.com/hprose/hprose-golang/util"
 )
 
 // Writer is a fine-grained operation struct for Hprose serialization
@@ -75,12 +79,112 @@ func NewWriter(stream io.Writer, simple bool) *Writer {
 // Serialize a data v to stream
 func (writer *Writer) Serialize(v interface{}) error {
 	if v == nil {
-		return SerializerList[0].Serialize(writer, nil)
+		return writer.WriteNil()
 	}
 	return SerializerList[reflect.TypeOf(v).Kind()].Serialize(writer, v)
 }
 
-// WriteRef writes reference of an object
+// WriteNil to stream
+func (writer *Writer) WriteNil() (err error) {
+	_, err = writer.Stream.Write([]byte{TagNull})
+	return err
+}
+
+// WriteBool to stream
+func (writer *Writer) WriteBool(b bool) (err error) {
+	s := writer.Stream
+	if b {
+		_, err = s.Write([]byte{TagTrue})
+	} else {
+		_, err = s.Write([]byte{TagFalse})
+	}
+	return err
+}
+
+// WriteInt32 to stream
+func (writer *Writer) WriteInt32(i int32) (err error) {
+	s := writer.Stream
+	if (i >= 0) && (i <= 9) {
+		_, err = s.Write([]byte{byte('0' + i)})
+		return err
+	}
+	if _, err = s.Write([]byte{TagInteger}); err == nil {
+		_, err = s.Write(util.GetIntBytes(int64(i)))
+	}
+	if err == nil {
+		_, err = s.Write([]byte{TagSemicolon})
+	}
+	return err
+}
+
+// WriteInt to stream
+func (writer *Writer) WriteInt(i int64) (err error) {
+	s := writer.Stream
+	if (i >= 0) && (i <= 9) {
+		_, err = s.Write([]byte{byte('0' + i)})
+		return err
+	}
+	if (i >= math.MinInt32) && (i <= math.MaxInt32) {
+		_, err = s.Write([]byte{TagInteger})
+	} else {
+		_, err = s.Write([]byte{TagLong})
+	}
+	if err == nil {
+		_, err = s.Write(util.GetIntBytes(i))
+	}
+	if err == nil {
+		_, err = s.Write([]byte{TagSemicolon})
+	}
+	return err
+}
+
+// WriteUint to stream
+func (writer *Writer) WriteUint(i uint64) (err error) {
+	s := writer.Stream
+	if (i >= 0) && (i <= 9) {
+		_, err = s.Write([]byte{byte('0' + i)})
+		return err
+	}
+	if i <= math.MaxInt32 {
+		_, err = s.Write([]byte{TagInteger})
+	} else {
+		_, err = s.Write([]byte{TagLong})
+	}
+	if err == nil {
+		_, err = s.Write(util.GetUintBytes(i))
+	}
+	if err == nil {
+		_, err = s.Write([]byte{TagSemicolon})
+	}
+	return err
+}
+
+// WriteFloat to stream
+func (writer *Writer) WriteFloat(f float64, bitSize int) (err error) {
+	s := writer.Stream
+	if f != f {
+		_, err = s.Write([]byte{TagNaN})
+		return err
+	}
+	if f > math.MaxFloat64 {
+		_, err = s.Write([]byte{TagInfinity, TagPos})
+		return err
+	}
+	if f < -math.MaxFloat64 {
+		_, err = s.Write([]byte{TagInfinity, TagNeg})
+		return err
+	}
+	if _, err = s.Write([]byte{TagDouble}); err == nil {
+		var buf [32]byte
+		_, err = s.Write(strconv.AppendFloat(buf[:0], f, 'g', -1, bitSize))
+	}
+	if err == nil {
+		_, err = s.Write([]byte{TagSemicolon})
+	}
+	return err
+}
+
+// WriteRef writes reference of an object to stream
 func (writer *Writer) WriteRef(v interface{}) (bool, error) {
 	return false, nil
 }
