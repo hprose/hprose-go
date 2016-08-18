@@ -12,7 +12,7 @@
  *                                                        *
  * future promise implementation for Go.                  *
  *                                                        *
- * LastModified: Aug 13, 2016                             *
+ * LastModified: Aug 18, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -53,12 +53,12 @@ func (p *future) Then(onFulfilled OnFulfilled, rest ...OnRejected) Promise {
 	switch State(p.state) {
 	case FULFILLED:
 		if onFulfilled == nil {
-			return fulfilled{p.value}
+			return &fulfilled{p.value}
 		}
 		resolve(next, onFulfilled, p.value)
 	case REJECTED:
 		if onRejected == nil {
-			return rejected{p.reason}
+			return &rejected{p.reason}
 		}
 		reject(next, onRejected, p.reason)
 	default:

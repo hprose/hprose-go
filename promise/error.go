@@ -12,7 +12,7 @@
  *                                                        *
  * promise error for Go.                                  *
  *                                                        *
- * LastModified: Aug 13, 2016                             *
+ * LastModified: Aug 18, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -72,6 +72,6 @@ func NewPanicError(v interface{}) *PanicError {
 }
 
 // Error implements the PanicError Error method.
-func (pe PanicError) Error() string {
+func (pe *PanicError) Error() string {
 	return fmt.Sprintf("%v", pe.Panic)
 }
