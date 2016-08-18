@@ -118,3 +118,15 @@ type float64Serializer struct{}
 func (*float64Serializer) Serialize(writer *Writer, v interface{}) error {
 	return writer.WriteFloat(v.(float64), 64)
 }
+
+type complex64Serializer struct{}
+
+func (*complex64Serializer) Serialize(writer *Writer, v interface{}) error {
+	return writer.WriteComplex64(v.(complex64))
+}
+
+type complex128Serializer struct{}
+
+func (*complex128Serializer) Serialize(writer *Writer, v interface{}) error {
+	return writer.WriteComplex128(v.(complex128))
+}

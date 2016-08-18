@@ -57,8 +57,8 @@ var SerializerList = [...]Serializer{
 	reflect.Uintptr:       &nilSerializer{},
 	reflect.Float32:       &float32Serializer{},
 	reflect.Float64:       &float64Serializer{},
-	reflect.Complex64:     &nilSerializer{},
-	reflect.Complex128:    &nilSerializer{},
+	reflect.Complex64:     &complex64Serializer{},
+	reflect.Complex128:    &complex128Serializer{},
 	reflect.Array:         &nilSerializer{},
 	reflect.Chan:          &nilSerializer{},
 	reflect.Func:          &nilSerializer{},
@@ -180,6 +180,48 @@ func (writer *Writer) WriteFloat(f float64, bitSize int) (err error) {
 	}
 	if err == nil {
 		_, err = s.Write([]byte{TagSemicolon})
+	}
+	return err
+}
+
+// WriteComplex64 to stream
+func (writer *Writer) WriteComplex64(c complex64) error {
+	if imag(c) == 0 {
+		return writer.WriteFloat(float64(real(c)), 32)
+	}
+	return writer.WriteTuple(real(c), imag(c))
+}
+
+// WriteComplex128 to stream
+func (writer *Writer) WriteComplex128(c complex128) error {
+	if imag(c) == 0 {
+		return writer.WriteFloat(real(c), 64)
+	}
+	return writer.WriteTuple(real(c), imag(c))
+}
+
+// WriteTuple to stream
+func (writer *Writer) WriteTuple(tuple ...interface{}) (err error) {
+	s := writer.Stream
+	writer.SetRef(tuple)
+	count := len(tuple)
+	if count == 0 {
+		_, err = s.Write([]byte{TagList, TagOpenbrace, TagClosebrace})
+		return err
+	}
+	if _, err = s.Write([]byte{TagList}); err == nil {
+		_, err = s.Write(util.GetIntBytes(int64(count)))
+	}
+	if err == nil {
+		_, err = s.Write([]byte{TagOpenbrace})
+	}
+	for _, v := range tuple {
+		if err == nil {
+			err = writer.Serialize(v)
+		}
+	}
+	if err == nil {
+		_, err = s.Write([]byte{TagClosebrace})
 	}
 	return err
 }

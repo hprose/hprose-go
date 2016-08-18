@@ -338,6 +338,44 @@ func testSerializeFloat64(t *testing.T, writer *Writer, b *bytes.Buffer) {
 	}
 }
 
+func testSerializeComplex64(t *testing.T, writer *Writer, b *bytes.Buffer) {
+	b.Truncate(0)
+	err := writer.Serialize(complex(float32(100), 0))
+	if err != nil {
+		t.Error(err.Error())
+	}
+	if b.String() != "d100;" {
+		t.Error(b.String())
+	}
+	b.Truncate(0)
+	err = writer.Serialize(complex(0, float32(100)))
+	if err != nil {
+		t.Error(err.Error())
+	}
+	if b.String() != "a2{d0;d100;}" {
+		t.Error(b.String())
+	}
+}
+
+func testSerializeComplex128(t *testing.T, writer *Writer, b *bytes.Buffer) {
+	b.Truncate(0)
+	err := writer.Serialize(complex(100, 0))
+	if err != nil {
+		t.Error(err.Error())
+	}
+	if b.String() != "d100;" {
+		t.Error(b.String())
+	}
+	b.Truncate(0)
+	err = writer.Serialize(complex(0, 100))
+	if err != nil {
+		t.Error(err.Error())
+	}
+	if b.String() != "a2{d0;d100;}" {
+		t.Error(b.String())
+	}
+}
+
 func TestSerialize(t *testing.T) {
 	b := new(bytes.Buffer)
 	writer := NewWriter(b, false)
@@ -357,4 +395,6 @@ func TestSerialize(t *testing.T) {
 	testSerializeUint64(t, writer, b)
 	testSerializeFloat32(t, writer, b)
 	testSerializeFloat64(t, writer, b)
+	testSerializeComplex64(t, writer, b)
+	testSerializeComplex128(t, writer, b)
 }
