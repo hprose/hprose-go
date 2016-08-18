@@ -21,6 +21,7 @@ package io
 
 import (
 	"math"
+	"strconv"
 
 	"github.com/hprose/hprose-golang/util"
 )
@@ -118,60 +119,96 @@ func serializeUint(writer *Writer, i uint64) (err error) {
 
 type intSerializer struct{}
 
-func (intSerializer) Serialize(writer *Writer, v interface{}) (err error) {
+func (intSerializer) Serialize(writer *Writer, v interface{}) error {
 	return serializeInt64(writer, int64(v.(int)))
 }
 
 type int8Serializer struct{}
 
-func (int8Serializer) Serialize(writer *Writer, v interface{}) (err error) {
+func (int8Serializer) Serialize(writer *Writer, v interface{}) error {
 	return serializeInt32(writer, int32(v.(int8)))
 }
 
 type int16Serializer struct{}
 
-func (int16Serializer) Serialize(writer *Writer, v interface{}) (err error) {
+func (int16Serializer) Serialize(writer *Writer, v interface{}) error {
 	return serializeInt32(writer, int32(v.(int16)))
 }
 
 type int32Serializer struct{}
 
-func (int32Serializer) Serialize(writer *Writer, v interface{}) (err error) {
+func (int32Serializer) Serialize(writer *Writer, v interface{}) error {
 	return serializeInt32(writer, v.(int32))
 }
 
 type int64Serializer struct{}
 
-func (int64Serializer) Serialize(writer *Writer, v interface{}) (err error) {
+func (int64Serializer) Serialize(writer *Writer, v interface{}) error {
 	return serializeInt64(writer, v.(int64))
 }
 
 type uintSerializer struct{}
 
-func (uintSerializer) Serialize(writer *Writer, v interface{}) (err error) {
+func (uintSerializer) Serialize(writer *Writer, v interface{}) error {
 	return serializeUint(writer, uint64(v.(uint)))
 }
 
 type uint8Serializer struct{}
 
-func (uint8Serializer) Serialize(writer *Writer, v interface{}) (err error) {
+func (uint8Serializer) Serialize(writer *Writer, v interface{}) error {
 	return serializeUint(writer, uint64(v.(uint8)))
 }
 
 type uint16Serializer struct{}
 
-func (uint16Serializer) Serialize(writer *Writer, v interface{}) (err error) {
+func (uint16Serializer) Serialize(writer *Writer, v interface{}) error {
 	return serializeUint(writer, uint64(v.(uint16)))
 }
 
 type uint32Serializer struct{}
 
-func (uint32Serializer) Serialize(writer *Writer, v interface{}) (err error) {
+func (uint32Serializer) Serialize(writer *Writer, v interface{}) error {
 	return serializeUint(writer, uint64(v.(uint32)))
 }
 
 type uint64Serializer struct{}
 
-func (uint64Serializer) Serialize(writer *Writer, v interface{}) (err error) {
+func (uint64Serializer) Serialize(writer *Writer, v interface{}) error {
 	return serializeUint(writer, v.(uint64))
+}
+
+func serializeFloat(writer *Writer, f float64, bitSize int) (err error) {
+	s := writer.Stream
+	if f != f {
+		_, err = s.Write([]byte{TagNaN})
+		return err
+	}
+	if f > math.MaxFloat64 {
+		_, err = s.Write([]byte{TagInfinity, TagPos})
+		return err
+	}
+	if f < -math.MaxFloat64 {
+		_, err = s.Write([]byte{TagInfinity, TagNeg})
+		return err
+	}
+	if _, err = s.Write([]byte{TagDouble}); err == nil {
+		var buf [32]byte
+		_, err = s.Write(strconv.AppendFloat(buf[:0], f, 'g', -1, bitSize))
+	}
+	if err == nil {
+		_, err = s.Write([]byte{TagSemicolon})
+	}
+	return err
+}
+
+type float32Serializer struct{}
+
+func (float32Serializer) Serialize(writer *Writer, v interface{}) error {
+	return serializeFloat(writer, float64(v.(float32)), 32)
+}
+
+type float64Serializer struct{}
+
+func (float64Serializer) Serialize(writer *Writer, v interface{}) error {
+	return serializeFloat(writer, v.(float64), 64)
 }

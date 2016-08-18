@@ -257,6 +257,77 @@ func testSerializeUint64(t *testing.T, writer *Writer, b *bytes.Buffer) {
 		t.Error(b.String())
 	}
 }
+
+func testSerializeFloat32(t *testing.T, writer *Writer, b *bytes.Buffer) {
+	b.Truncate(0)
+	err := writer.Serialize(float32(math.NaN()))
+	if err != nil {
+		t.Error(err.Error())
+	}
+	if b.String() != "N" {
+		t.Error(b.String())
+	}
+	b.Truncate(0)
+	err = writer.Serialize(float32(math.Inf(1)))
+	if err != nil {
+		t.Error(err.Error())
+	}
+	if b.String() != "I+" {
+		t.Error(b.String())
+	}
+	b.Truncate(0)
+	err = writer.Serialize(float32(math.Inf(-1)))
+	if err != nil {
+		t.Error(err.Error())
+	}
+	if b.String() != "I-" {
+		t.Error(b.String())
+	}
+	b.Truncate(0)
+	err = writer.Serialize(float32(3.14159))
+	if err != nil {
+		t.Error(err.Error())
+	}
+	if b.String() != "d3.14159;" {
+		t.Error(b.String())
+	}
+}
+
+func testSerializeFloat64(t *testing.T, writer *Writer, b *bytes.Buffer) {
+	b.Truncate(0)
+	err := writer.Serialize(math.NaN())
+	if err != nil {
+		t.Error(err.Error())
+	}
+	if b.String() != "N" {
+		t.Error(b.String())
+	}
+	b.Truncate(0)
+	err = writer.Serialize(math.Inf(1))
+	if err != nil {
+		t.Error(err.Error())
+	}
+	if b.String() != "I+" {
+		t.Error(b.String())
+	}
+	b.Truncate(0)
+	err = writer.Serialize(math.Inf(-1))
+	if err != nil {
+		t.Error(err.Error())
+	}
+	if b.String() != "I-" {
+		t.Error(b.String())
+	}
+	b.Truncate(0)
+	err = writer.Serialize(3.14159265358979)
+	if err != nil {
+		t.Error(err.Error())
+	}
+	if b.String() != "d3.14159265358979;" {
+		t.Error(b.String())
+	}
+}
+
 func TestSerialize(t *testing.T) {
 	b := new(bytes.Buffer)
 	writer := NewWriter(b, false)
@@ -274,4 +345,6 @@ func TestSerialize(t *testing.T) {
 	testSerializeUint16(t, writer, b)
 	testSerializeUint32(t, writer, b)
 	testSerializeUint64(t, writer, b)
+	testSerializeFloat32(t, writer, b)
+	testSerializeFloat64(t, writer, b)
 }
