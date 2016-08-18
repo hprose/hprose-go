@@ -12,7 +12,7 @@
  *                                                        *
  * hprose seriaizer for Go.                               *
  *                                                        *
- * LastModified: Aug 17, 2016                             *
+ * LastModified: Aug 18, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -37,84 +37,84 @@ func (s refSerializer) Serialize(writer *Writer, v interface{}) error {
 
 type nilSerializer struct{}
 
-func (nilSerializer) Serialize(writer *Writer, v interface{}) (err error) {
+func (*nilSerializer) Serialize(writer *Writer, v interface{}) (err error) {
 	return writer.WriteNil()
 }
 
 type boolSerializer struct{}
 
-func (boolSerializer) Serialize(writer *Writer, v interface{}) (err error) {
+func (*boolSerializer) Serialize(writer *Writer, v interface{}) (err error) {
 	return writer.WriteBool(v.(bool))
 }
 
 type intSerializer struct{}
 
-func (intSerializer) Serialize(writer *Writer, v interface{}) error {
+func (*intSerializer) Serialize(writer *Writer, v interface{}) error {
 	return writer.WriteInt(int64(v.(int)))
 }
 
 type int8Serializer struct{}
 
-func (int8Serializer) Serialize(writer *Writer, v interface{}) error {
+func (*int8Serializer) Serialize(writer *Writer, v interface{}) error {
 	return writer.WriteInt32(int32(v.(int8)))
 }
 
 type int16Serializer struct{}
 
-func (int16Serializer) Serialize(writer *Writer, v interface{}) error {
+func (*int16Serializer) Serialize(writer *Writer, v interface{}) error {
 	return writer.WriteInt32(int32(v.(int16)))
 }
 
 type int32Serializer struct{}
 
-func (int32Serializer) Serialize(writer *Writer, v interface{}) error {
+func (*int32Serializer) Serialize(writer *Writer, v interface{}) error {
 	return writer.WriteInt32(v.(int32))
 }
 
 type int64Serializer struct{}
 
-func (int64Serializer) Serialize(writer *Writer, v interface{}) error {
+func (*int64Serializer) Serialize(writer *Writer, v interface{}) error {
 	return writer.WriteInt(v.(int64))
 }
 
 type uintSerializer struct{}
 
-func (uintSerializer) Serialize(writer *Writer, v interface{}) error {
+func (*uintSerializer) Serialize(writer *Writer, v interface{}) error {
 	return writer.WriteUint(uint64(v.(uint)))
 }
 
 type uint8Serializer struct{}
 
-func (uint8Serializer) Serialize(writer *Writer, v interface{}) error {
+func (*uint8Serializer) Serialize(writer *Writer, v interface{}) error {
 	return writer.WriteUint(uint64(v.(uint8)))
 }
 
 type uint16Serializer struct{}
 
-func (uint16Serializer) Serialize(writer *Writer, v interface{}) error {
+func (*uint16Serializer) Serialize(writer *Writer, v interface{}) error {
 	return writer.WriteUint(uint64(v.(uint16)))
 }
 
 type uint32Serializer struct{}
 
-func (uint32Serializer) Serialize(writer *Writer, v interface{}) error {
+func (*uint32Serializer) Serialize(writer *Writer, v interface{}) error {
 	return writer.WriteUint(uint64(v.(uint32)))
 }
 
 type uint64Serializer struct{}
 
-func (uint64Serializer) Serialize(writer *Writer, v interface{}) error {
+func (*uint64Serializer) Serialize(writer *Writer, v interface{}) error {
 	return writer.WriteUint(v.(uint64))
 }
 
 type float32Serializer struct{}
 
-func (float32Serializer) Serialize(writer *Writer, v interface{}) error {
+func (*float32Serializer) Serialize(writer *Writer, v interface{}) error {
 	return writer.WriteFloat(float64(v.(float32)), 32)
 }
 
 type float64Serializer struct{}
 
-func (float64Serializer) Serialize(writer *Writer, v interface{}) error {
+func (*float64Serializer) Serialize(writer *Writer, v interface{}) error {
 	return writer.WriteFloat(v.(float64), 64)
 }

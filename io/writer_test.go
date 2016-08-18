@@ -12,7 +12,7 @@
  *                                                        *
  * hprose writer test for Go.                             *
  *                                                        *
- * LastModified: Aug 17, 2016                             *
+ * LastModified: Aug 18, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -26,6 +26,16 @@ import (
 	"strconv"
 	"testing"
 )
+
+/*
+func BenchmarkSerializeInt(b *testing.B) {
+	buf := new(bytes.Buffer)
+	writer := NewWriter(buf, false)
+	for i := 0; i < b.N; i++ {
+		writer.Serialize(i)
+	}
+}
+*/
 
 func testSerializeNil(t *testing.T, writer *Writer, b *bytes.Buffer) {
 	b.Truncate(0)
