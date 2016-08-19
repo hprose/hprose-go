@@ -12,7 +12,7 @@
  *                                                        *
  * hprose writer for Go.                                  *
  *                                                        *
- * LastModified: Aug 18, 2016                             *
+ * LastModified: Aug 19, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -59,7 +59,7 @@ var SerializerList = [...]Serializer{
 	reflect.Float64:       &float64Serializer{},
 	reflect.Complex64:     &complex64Serializer{},
 	reflect.Complex128:    &complex128Serializer{},
-	reflect.Array:         &nilSerializer{},
+	reflect.Array:         &arraySerializer{},
 	reflect.Chan:          &nilSerializer{},
 	reflect.Func:          &nilSerializer{},
 	reflect.Interface:     &nilSerializer{},
@@ -202,8 +202,8 @@ func (writer *Writer) WriteComplex128(c complex128) error {
 
 // WriteTuple to stream
 func (writer *Writer) WriteTuple(tuple ...interface{}) (err error) {
-	s := writer.Stream
 	writer.SetRef(tuple)
+	s := writer.Stream
 	count := len(tuple)
 	if count == 0 {
 		_, err = s.Write([]byte{TagList, TagOpenbrace, TagClosebrace})
@@ -222,6 +222,58 @@ func (writer *Writer) WriteTuple(tuple ...interface{}) (err error) {
 	}
 	if err == nil {
 		_, err = s.Write([]byte{TagClosebrace})
+	}
+	return err
+}
+
+// WriterArray to stream
+func (writer *Writer) WriterArray(v interface{}) (err error) {
+	writer.SetRef(v)
+	s := writer.Stream
+	array := reflect.ValueOf(v)
+	count := array.Len()
+	if count == 0 {
+		_, err = s.Write([]byte{TagList, TagOpenbrace, TagClosebrace})
+		return err
+	}
+	if _, err = s.Write([]byte{TagList}); err == nil {
+		_, err = s.Write(util.GetIntBytes(int64(count)))
+	}
+	if err == nil {
+		_, err = s.Write([]byte{TagOpenbrace})
+	}
+	serializer := SerializerList[array.Type().Elem().Kind()]
+	for i := 0; i < count; i++ {
+		if err == nil {
+			err = serializer.Serialize(writer, array.Index(i).Interface())
+		}
+	}
+	if err == nil {
+		_, err = s.Write([]byte{TagClosebrace})
+	}
+	return err
+}
+
+// WriterBytes to stream
+func (writer *Writer) WriterBytes(bytes []byte) (err error) {
+	writer.SetRef(bytes)
+	s := writer.Stream
+	count := len(bytes)
+	if count == 0 {
+		_, err = s.Write([]byte{TagEmpty})
+		return err
+	}
+	if _, err = s.Write([]byte{TagBytes}); err == nil {
+		_, err = s.Write(util.GetIntBytes(int64(count)))
+	}
+	if err == nil {
+		_, err = s.Write([]byte{TagQuote})
+	}
+	if err == nil {
+		_, err = s.Write(bytes)
+	}
+	if err == nil {
+		_, err = s.Write([]byte{TagQuote})
 	}
 	return err
 }

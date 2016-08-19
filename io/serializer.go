@@ -12,12 +12,17 @@
  *                                                        *
  * hprose seriaizer for Go.                               *
  *                                                        *
- * LastModified: Aug 18, 2016                             *
+ * LastModified: Aug 19, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 
 package io
+
+import (
+	"reflect"
+	"unsafe"
+)
 
 // Serializer is a interface for serializing build-in type
 type Serializer interface {
@@ -129,4 +134,23 @@ type complex128Serializer struct{}
 
 func (*complex128Serializer) Serialize(writer *Writer, v interface{}) error {
 	return writer.WriteComplex128(v.(complex128))
+}
+
+type arraySerializer struct{}
+
+func (*arraySerializer) Serialize(writer *Writer, v interface{}) error {
+	t := reflect.TypeOf(v)
+	kind := t.Elem().Kind()
+	if kind == reflect.Uint8 {
+		byteSlice := reflect.SliceHeader{}
+		byteSlice.Data = (*struct {
+			typ uintptr
+			ptr uintptr
+		})(unsafe.Pointer(&v)).ptr
+		byteSlice.Len = t.Len()
+		byteSlice.Cap = byteSlice.Len
+		bytes := *(*[]byte)(unsafe.Pointer(&byteSlice))
+		return writer.WriterBytes(bytes)
+	}
+	return writer.WriterArray(v)
 }

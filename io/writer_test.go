@@ -12,7 +12,7 @@
  *                                                        *
  * hprose writer test for Go.                             *
  *                                                        *
- * LastModified: Aug 18, 2016                             *
+ * LastModified: Aug 19, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -376,6 +376,68 @@ func testSerializeComplex128(t *testing.T, writer *Writer, b *bytes.Buffer) {
 	}
 }
 
+func testWriteTuple(t *testing.T, writer *Writer, b *bytes.Buffer) {
+	b.Truncate(0)
+	err := writer.WriteTuple()
+	if err != nil {
+		t.Error(err.Error())
+	}
+	if b.String() != "a{}" {
+		t.Error(b.String())
+	}
+	b.Truncate(0)
+	err = writer.WriteTuple(1, 3.14, true)
+	if err != nil {
+		t.Error(err.Error())
+	}
+	if b.String() != "a3{1d3.14;t}" {
+		t.Error(b.String())
+	}
+}
+
+func testSerializeArray(t *testing.T, writer *Writer, b *bytes.Buffer) {
+	b.Truncate(0)
+	err := writer.Serialize([...]int{1, 2, 3})
+	if err != nil {
+		t.Error(err.Error())
+	}
+	if b.String() != "a3{123}" {
+		t.Error(b.String())
+	}
+	b.Truncate(0)
+	err = writer.Serialize([...]float64{1, 2, 3})
+	if err != nil {
+		t.Error(err.Error())
+	}
+	if b.String() != "a3{d1;d2;d3;}" {
+		t.Error(b.String())
+	}
+	b.Truncate(0)
+	err = writer.Serialize([...]int{})
+	if err != nil {
+		t.Error(err.Error())
+	}
+	if b.String() != "a{}" {
+		t.Error(b.String())
+	}
+	b.Truncate(0)
+	err = writer.Serialize([...]byte{'h', 'e', 'l', 'l', 'o'})
+	if err != nil {
+		t.Error(err.Error())
+	}
+	if b.String() != "b5\"hello\"" {
+		t.Error(b.String())
+	}
+	b.Truncate(0)
+	err = writer.Serialize([...]byte{})
+	if err != nil {
+		t.Error(err.Error())
+	}
+	if b.String() != "e" {
+		t.Error(b.String())
+	}
+}
+
 func TestSerialize(t *testing.T) {
 	b := new(bytes.Buffer)
 	writer := NewWriter(b, false)
@@ -397,4 +459,6 @@ func TestSerialize(t *testing.T) {
 	testSerializeFloat64(t, writer, b)
 	testSerializeComplex64(t, writer, b)
 	testSerializeComplex128(t, writer, b)
+	testWriteTuple(t, writer, b)
+	testSerializeArray(t, writer, b)
 }
