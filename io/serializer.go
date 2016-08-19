@@ -142,14 +142,14 @@ func (*arraySerializer) Serialize(writer *Writer, v interface{}) error {
 	t := reflect.TypeOf(v)
 	kind := t.Elem().Kind()
 	if kind == reflect.Uint8 {
-		byteSlice := reflect.SliceHeader{}
+		byteSlice := new(reflect.SliceHeader)
 		byteSlice.Data = (*struct {
 			typ uintptr
 			ptr uintptr
 		})(unsafe.Pointer(&v)).ptr
 		byteSlice.Len = t.Len()
 		byteSlice.Cap = byteSlice.Len
-		bytes := *(*[]byte)(unsafe.Pointer(&byteSlice))
+		bytes := *(*[]byte)(unsafe.Pointer(byteSlice))
 		return writer.WriterBytes(bytes)
 	}
 	return writer.WriterArray(v)
