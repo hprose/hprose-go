@@ -223,6 +223,14 @@ func testSerializeUint64(t *testing.T, writer *Writer, b *bytes.Buffer) {
 	}
 }
 
+func testSerializeUintptr(t *testing.T, writer *Writer, b *bytes.Buffer) {
+	b.Truncate(0)
+	writer.Serialize(uintptr(123))
+	if b.String() != "i123;" {
+		t.Error(b.String())
+	}
+}
+
 func testSerializeFloat32(t *testing.T, writer *Writer, b *bytes.Buffer) {
 	b.Truncate(0)
 	writer.Serialize(float32(math.NaN()))
@@ -353,6 +361,7 @@ func TestSerialize(t *testing.T) {
 	testSerializeUint16(t, writer, b)
 	testSerializeUint32(t, writer, b)
 	testSerializeUint64(t, writer, b)
+	testSerializeUintptr(t, writer, b)
 	testSerializeFloat32(t, writer, b)
 	testSerializeFloat64(t, writer, b)
 	testSerializeComplex64(t, writer, b)
