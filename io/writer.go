@@ -12,7 +12,7 @@
  *                                                        *
  * hprose writer for Go.                                  *
  *                                                        *
- * LastModified: Aug 19, 2016                             *
+ * LastModified: Aug 20, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -24,6 +24,7 @@ import (
 	"math"
 	"reflect"
 	"strconv"
+	"unsafe"
 
 	"github.com/hprose/hprose-golang/util"
 )
@@ -69,6 +70,12 @@ var SerializerList = [...]Serializer{
 	reflect.String:        &nilSerializer{},
 	reflect.Struct:        &nilSerializer{},
 	reflect.UnsafePointer: &nilSerializer{},
+}
+
+// emptyInterface is the header for an interface{} value.
+type emptyInterface struct {
+	typ uintptr
+	ptr uintptr
 }
 
 // NewWriter is the constructor for Hprose Writer
@@ -226,12 +233,23 @@ func (writer *Writer) WriteTuple(tuple ...interface{}) (err error) {
 	return err
 }
 
-// WriterArray to stream
-func (writer *Writer) WriterArray(v interface{}) (err error) {
+// WriteArray to stream
+func (writer *Writer) WriteArray(v interface{}) (err error) {
+	t := reflect.TypeOf(v)
+	count := t.Len()
+	et := t.Elem()
+	kind := et.Kind()
+	ptr := (*emptyInterface)(unsafe.Pointer(&v)).ptr
+	if kind == reflect.Uint8 {
+		var bytes []byte
+		byteSlice := (*reflect.SliceHeader)(unsafe.Pointer(&bytes))
+		byteSlice.Data = ptr
+		byteSlice.Len = count
+		byteSlice.Cap = count
+		return writer.WriteBytes(bytes)
+	}
 	writer.SetRef(v)
 	s := writer.Stream
-	array := reflect.ValueOf(v)
-	count := array.Len()
 	if count == 0 {
 		_, err = s.Write([]byte{TagList, TagOpenbrace, TagClosebrace})
 		return err
@@ -242,10 +260,16 @@ func (writer *Writer) WriterArray(v interface{}) (err error) {
 	if err == nil {
 		_, err = s.Write([]byte{TagOpenbrace})
 	}
-	serializer := SerializerList[array.Type().Elem().Kind()]
+	serializer := SerializerList[kind]
+	typ := (*emptyInterface)(unsafe.Pointer(&et)).ptr
+	size := et.Size()
 	for i := 0; i < count; i++ {
 		if err == nil {
-			err = serializer.Serialize(writer, array.Index(i).Interface())
+			var e interface{}
+			es := (*emptyInterface)(unsafe.Pointer(&e))
+			es.typ = typ
+			es.ptr = ptr + uintptr(i)*size
+			err = serializer.Serialize(writer, e)
 		}
 	}
 	if err == nil {
@@ -254,8 +278,8 @@ func (writer *Writer) WriterArray(v interface{}) (err error) {
 	return err
 }
 
-// WriterBytes to stream
-func (writer *Writer) WriterBytes(bytes []byte) (err error) {
+// WriteBytes to stream
+func (writer *Writer) WriteBytes(bytes []byte) (err error) {
 	writer.SetRef(bytes)
 	s := writer.Stream
 	count := len(bytes)

@@ -12,7 +12,7 @@
  *                                                        *
  * hprose writer test for Go.                             *
  *                                                        *
- * LastModified: Aug 19, 2016                             *
+ * LastModified: Aug 20, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -33,6 +33,24 @@ func BenchmarkSerializeInt(b *testing.B) {
 	writer := NewWriter(buf, false)
 	for i := 0; i < b.N; i++ {
 		writer.Serialize(i)
+	}
+}
+
+func BenchmarkSerializeArray(b *testing.B) {
+	buf := new(bytes.Buffer)
+	writer := NewWriter(buf, false)
+	array := [...]int{0, 1, 2, 3, 4}
+	for i := 0; i < b.N; i++ {
+		writer.Serialize(array)
+	}
+}
+
+func BenchmarkWriteArray(b *testing.B) {
+	buf := new(bytes.Buffer)
+	writer := NewWriter(buf, false)
+	array := [...]int{0, 1, 2, 3, 4}
+	for i := 0; i < b.N; i++ {
+		writer.WriteArray(array)
 	}
 }
 */
