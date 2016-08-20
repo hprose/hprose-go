@@ -43,33 +43,33 @@ type Marshaler interface {
 
 // SerializerList stores a list of build-in type serializer
 var SerializerList = [...]Serializer{
-	reflect.Invalid:       &nilSerializer{},
-	reflect.Bool:          &boolSerializer{},
-	reflect.Int:           &intSerializer{},
-	reflect.Int8:          &int8Serializer{},
-	reflect.Int16:         &int16Serializer{},
-	reflect.Int32:         &int32Serializer{},
-	reflect.Int64:         &int64Serializer{},
-	reflect.Uint:          &uintSerializer{},
-	reflect.Uint8:         &uint8Serializer{},
-	reflect.Uint16:        &uint16Serializer{},
-	reflect.Uint32:        &uint32Serializer{},
-	reflect.Uint64:        &uint64Serializer{},
-	reflect.Uintptr:       &nilSerializer{},
-	reflect.Float32:       &float32Serializer{},
-	reflect.Float64:       &float64Serializer{},
-	reflect.Complex64:     &complex64Serializer{},
-	reflect.Complex128:    &complex128Serializer{},
-	reflect.Array:         &arraySerializer{},
-	reflect.Chan:          &nilSerializer{},
-	reflect.Func:          &nilSerializer{},
-	reflect.Interface:     &nilSerializer{},
-	reflect.Map:           &nilSerializer{},
-	reflect.Ptr:           &nilSerializer{},
-	reflect.Slice:         &nilSerializer{},
-	reflect.String:        &nilSerializer{},
-	reflect.Struct:        &nilSerializer{},
-	reflect.UnsafePointer: &nilSerializer{},
+	reflect.Invalid:       Nil,
+	reflect.Bool:          Bool,
+	reflect.Int:           Int,
+	reflect.Int8:          Int8,
+	reflect.Int16:         Int16,
+	reflect.Int32:         Int32,
+	reflect.Int64:         Int64,
+	reflect.Uint:          Uint,
+	reflect.Uint8:         Uint8,
+	reflect.Uint16:        Uint16,
+	reflect.Uint32:        Uint32,
+	reflect.Uint64:        Uint64,
+	reflect.Uintptr:       Uintptr,
+	reflect.Float32:       Float32,
+	reflect.Float64:       Float64,
+	reflect.Complex64:     Complex64,
+	reflect.Complex128:    Complex128,
+	reflect.Array:         Array,
+	reflect.Chan:          Nil,
+	reflect.Func:          Nil,
+	reflect.Interface:     Nil,
+	reflect.Map:           Nil,
+	reflect.Ptr:           Nil,
+	reflect.Slice:         Nil,
+	reflect.String:        Nil,
+	reflect.Struct:        Nil,
+	reflect.UnsafePointer: Nil,
 }
 
 // emptyInterface is the header for an interface{} value.
@@ -87,9 +87,9 @@ func NewWriter(stream *bytes.Buffer, simple bool) *Writer {
 func (writer *Writer) Serialize(v interface{}) {
 	if v == nil {
 		writer.WriteNil()
-		return
+	} else {
+		SerializerList[reflect.TypeOf(v).Kind()].Serialize(writer, v)
 	}
-	SerializerList[reflect.TypeOf(v).Kind()].Serialize(writer, v)
 }
 
 // WriteNil to stream
