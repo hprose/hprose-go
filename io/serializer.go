@@ -197,3 +197,12 @@ func (*arraySerializer) Serialize(writer *Writer, v interface{}) {
 
 // Array is an implementation of Serializer interface for serializing array
 var Array = &arraySerializer{}
+
+type sliceSerializer struct{}
+
+func (*sliceSerializer) Serialize(writer *Writer, v interface{}) {
+	writer.WriteSlice(v)
+}
+
+// Slice is an implementation of Serializer interface for serializing slice
+var Slice = &sliceSerializer{}

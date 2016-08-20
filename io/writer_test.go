@@ -53,6 +53,15 @@ func BenchmarkWriteArray(b *testing.B) {
 		writer.WriteArray(array)
 	}
 }
+
+func BenchmarkWriteSlice(b *testing.B) {
+	buf := new(bytes.Buffer)
+	writer := NewWriter(buf, false)
+	slice := []int{0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 1, 2, 3, 4, 0, 1, 2, 3, 4}
+	for i := 0; i < b.N; i++ {
+		writer.WriteSlice(slice)
+	}
+}
 */
 
 func testSerializeNil(t *testing.T, writer *Writer, b *bytes.Buffer) {
@@ -344,6 +353,34 @@ func testSerializeArray(t *testing.T, writer *Writer, b *bytes.Buffer) {
 	}
 }
 
+func testSerializeSlice(t *testing.T, writer *Writer, b *bytes.Buffer) {
+	b.Truncate(0)
+	writer.Serialize([]int{1, 2, 3})
+	if b.String() != "a3{123}" {
+		t.Error(b.String())
+	}
+	b.Truncate(0)
+	writer.Serialize([]float64{1, 2, 3})
+	if b.String() != "a3{d1;d2;d3;}" {
+		t.Error(b.String())
+	}
+	b.Truncate(0)
+	writer.Serialize([]int{})
+	if b.String() != "a{}" {
+		t.Error(b.String())
+	}
+	b.Truncate(0)
+	writer.Serialize([]byte{'h', 'e', 'l', 'l', 'o'})
+	if b.String() != "b5\"hello\"" {
+		t.Error(b.String())
+	}
+	b.Truncate(0)
+	writer.Serialize([]byte{})
+	if b.String() != "e" {
+		t.Error(b.String())
+	}
+}
+
 func TestSerialize(t *testing.T) {
 	b := new(bytes.Buffer)
 	writer := NewWriter(b, false)
@@ -368,4 +405,5 @@ func TestSerialize(t *testing.T) {
 	testSerializeComplex128(t, writer, b)
 	testWriteTuple(t, writer, b)
 	testSerializeArray(t, writer, b)
+	testSerializeSlice(t, writer, b)
 }

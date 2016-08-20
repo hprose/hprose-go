@@ -66,16 +66,20 @@ var SerializerList = [...]Serializer{
 	reflect.Interface:     Nil,
 	reflect.Map:           Nil,
 	reflect.Ptr:           Nil,
-	reflect.Slice:         Nil,
+	reflect.Slice:         Slice,
 	reflect.String:        Nil,
 	reflect.Struct:        Nil,
 	reflect.UnsafePointer: Nil,
 }
 
-// emptyInterface is the header for an interface{} value.
 type emptyInterface struct {
 	typ uintptr
 	ptr uintptr
+}
+
+type emptyInterface2 struct {
+	typ uintptr
+	ptr unsafe.Pointer
 }
 
 // NewWriter is the constructor for Hprose Writer
@@ -192,7 +196,7 @@ func (writer *Writer) WriteComplex128(c complex128) {
 
 // WriteTuple to stream
 func (writer *Writer) WriteTuple(tuple ...interface{}) {
-	writer.SetRef(tuple)
+	writer.SetRef(nil)
 	s := writer.Stream
 	count := len(tuple)
 	if count == 0 {
@@ -224,7 +228,7 @@ func (writer *Writer) WriteArray(v interface{}) {
 		writer.WriteBytes(bytes)
 		return
 	}
-	writer.SetRef(v)
+	writer.SetRef(nil)
 	s := writer.Stream
 	if count == 0 {
 		s.Write([]byte{TagList, TagOpenbrace, TagClosebrace})
@@ -241,6 +245,39 @@ func (writer *Writer) WriteArray(v interface{}) {
 		es := (*emptyInterface)(unsafe.Pointer(&e))
 		es.typ = typ
 		es.ptr = ptr + uintptr(i)*size
+		serializer.Serialize(writer, e)
+	}
+	s.WriteByte(TagClosebrace)
+}
+
+// WriteSlice to stream
+func (writer *Writer) WriteSlice(v interface{}) {
+	if bytes, ok := v.([]byte); ok {
+		writer.WriteBytes(bytes)
+		return
+	}
+	writer.SetRef(v)
+	s := writer.Stream
+	slice := (*reflect.SliceHeader)((*emptyInterface2)(unsafe.Pointer(&v)).ptr)
+	count := slice.Len
+	if count == 0 {
+		s.Write([]byte{TagList, TagOpenbrace, TagClosebrace})
+		return
+	}
+	s.WriteByte(TagList)
+	s.Write(util.GetIntBytes(int64(count)))
+	s.WriteByte(TagOpenbrace)
+	t := reflect.TypeOf(v)
+	et := t.Elem()
+	size := et.Size()
+	kind := et.Kind()
+	serializer := SerializerList[kind]
+	typ := (*emptyInterface)(unsafe.Pointer(&et)).ptr
+	for i := 0; i < count; i++ {
+		var e interface{}
+		es := (*emptyInterface)(unsafe.Pointer(&e))
+		es.typ = typ
+		es.ptr = slice.Data + uintptr(i)*size
 		serializer.Serialize(writer, e)
 	}
 	s.WriteByte(TagClosebrace)
