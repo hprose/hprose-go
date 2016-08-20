@@ -12,7 +12,7 @@
  *                                                        *
  * some functions of promise for Go.                      *
  *                                                        *
- * LastModified: Aug 14, 2016                             *
+ * LastModified: Aug 20, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -153,16 +153,14 @@ func anyHandler(promise Promise, count *int64) func() {
 //
 // The callback parameter is a function to execute for each element:
 //
-//		func(index int, value interface{})
-//
-// index: The index of the current element being processed.
+//		func(value interface{})
 //
 // value: The current element being processed.
 //
 // If any of the promises in iterable is rejected, the callback will not be
 // executed. the returned promise will be rejected with the rejection reason
 // of the first promise that was rejected.
-func Each(callback func(int, interface{}), iterable ...interface{}) Promise {
+func Each(callback func(interface{}), iterable ...interface{}) Promise {
 	return All(iterable...).Then(func(a interface{}) {
 		if a != nil {
 			each(callback, a.([]interface{}))
@@ -170,9 +168,9 @@ func Each(callback func(int, interface{}), iterable ...interface{}) Promise {
 	})
 }
 
-func each(callback func(int, interface{}), iterable []interface{}) {
-	for index, value := range iterable {
-		callback(index, value)
+func each(callback func(interface{}), iterable []interface{}) {
+	for _, value := range iterable {
+		callback(value)
 	}
 }
 
@@ -181,9 +179,7 @@ func each(callback func(int, interface{}), iterable []interface{}) {
 //
 // The callback parameter is a function to test for each element:
 //
-//		func(index int, value interface{}) bool
-//
-// index: The index of the current element being processed.
+//		func(value interface{}) bool
 //
 // value: The current element being processed.
 //
@@ -196,7 +192,7 @@ func each(callback func(int, interface{}), iterable []interface{}) {
 // a true value for all elements, Every will return promise fulfill with true.
 //
 // If iterable is empty, The returned promise will fulfill with true.
-func Every(callback func(int, interface{}) bool, iterable ...interface{}) Promise {
+func Every(callback func(interface{}) bool, iterable ...interface{}) Promise {
 	return All(iterable...).Then(func(a interface{}) (interface{}, error) {
 		if a == nil {
 			return true, nil
@@ -205,9 +201,9 @@ func Every(callback func(int, interface{}) bool, iterable ...interface{}) Promis
 	})
 }
 
-func every(callback func(int, interface{}) bool, iterable []interface{}) bool {
-	for index, value := range iterable {
-		if !callback(index, value) {
+func every(callback func(interface{}) bool, iterable []interface{}) bool {
+	for _, value := range iterable {
+		if !callback(value) {
 			return false
 		}
 	}
@@ -219,9 +215,7 @@ func every(callback func(int, interface{}) bool, iterable []interface{}) bool {
 //
 // The callback parameter is a function to test for each element:
 //
-//		func(index int, value interface{}) bool
-//
-// index: The index of the current element being processed.
+//		func(value interface{}) bool
 //
 // value: The current element being processed.
 //
@@ -234,7 +228,7 @@ func every(callback func(int, interface{}) bool, iterable []interface{}) bool {
 // false value for all elements, Some will return promise fulfill with false.
 //
 // If iterable is empty, The returned promise will fulfill with false.
-func Some(callback func(int, interface{}) bool, iterable ...interface{}) Promise {
+func Some(callback func(interface{}) bool, iterable ...interface{}) Promise {
 	return All(iterable...).Then(func(a interface{}) (interface{}, error) {
 		if a == nil {
 			return false, nil
@@ -243,9 +237,9 @@ func Some(callback func(int, interface{}) bool, iterable ...interface{}) Promise
 	})
 }
 
-func some(callback func(int, interface{}) bool, iterable []interface{}) bool {
-	for index, value := range iterable {
-		if callback(index, value) {
+func some(callback func(interface{}) bool, iterable []interface{}) bool {
+	for _, value := range iterable {
+		if callback(value) {
 			return true
 		}
 	}
@@ -257,16 +251,14 @@ func some(callback func(int, interface{}) bool, iterable []interface{}) bool {
 //
 // The callback parameter is a function to test for each element:
 //
-//		func(index int, value interface{}) bool
-//
-// index: The index of the current element being processed.
+//		func(value interface{}) bool
 //
 // value: The current element being processed.
 //
 // If any of the promises in iterable is rejected, the callback will not be
 // executed. the returned promise will be rejected with the rejection reason
 // of the first promise that was rejected.
-func Filter(callback func(int, interface{}) bool, iterable ...interface{}) Promise {
+func Filter(callback func(interface{}) bool, iterable ...interface{}) Promise {
 	return All(iterable...).Then(func(a interface{}) (interface{}, error) {
 		if a == nil {
 			return nil, nil
@@ -275,10 +267,10 @@ func Filter(callback func(int, interface{}) bool, iterable ...interface{}) Promi
 	})
 }
 
-func filter(callback func(int, interface{}) bool, iterable []interface{}) []interface{} {
+func filter(callback func(interface{}) bool, iterable []interface{}) []interface{} {
 	result := make([]interface{}, 0, len(iterable))
-	for index, value := range iterable {
-		if callback(index, value) {
+	for _, value := range iterable {
+		if callback(value) {
 			result = append(result, value)
 		}
 	}
@@ -290,16 +282,14 @@ func filter(callback func(int, interface{}) bool, iterable []interface{}) []inte
 //
 // The callback parameter produces an element of the new slice:
 //
-//		func(index int, value interface{}) interface{}
-//
-// index: The index of the current element being processed.
+//		func(value interface{}) interface{}
 //
 // value: The current element being processed.
 //
 // If any of the promises in iterable is rejected, the callback will not be
 // executed. the returned promise will be rejected with the rejection reason
 // of the first promise that was rejected.
-func Map(callback func(int, interface{}) interface{}, iterable ...interface{}) Promise {
+func Map(callback func(interface{}) interface{}, iterable ...interface{}) Promise {
 	return All(iterable...).Then(func(a interface{}) (interface{}, error) {
 		if a == nil {
 			return nil, nil
@@ -307,7 +297,7 @@ func Map(callback func(int, interface{}) interface{}, iterable ...interface{}) P
 		iterable := a.([]interface{})
 		result := make([]interface{}, len(iterable))
 		for index, value := range iterable {
-			result[index] = callback(index, value)
+			result[index] = callback(value)
 		}
 		return result, nil
 	})
@@ -319,13 +309,11 @@ func Map(callback func(int, interface{}) interface{}, iterable ...interface{}) P
 // The callback parameter executes on each value in the iterable, taking three
 // arguments:
 //
-//     func(index int, value interface{}, prev interface{}) interface{}
-//
-// index: The index of the current element being processed.
-//
-// value: The current element being processed.
+//     func(prev interface{}, value interface{}) interface{}
 //
 //  prev: The value previously returned in the last invocation of the callback.
+//
+// value: The current element being processed.
 //
 // The first time the callback is called, prev will be equal to the first value
 // in the iterable and value will be equal to the second.
@@ -336,7 +324,7 @@ func Map(callback func(int, interface{}) interface{}, iterable ...interface{}) P
 //
 // If iterable is empty, the returned promise will be rejected with a
 // IllegalArgumentError.
-func Reduce(callback func(int, interface{}, interface{}) interface{}, iterable ...interface{}) Promise {
+func Reduce(callback func(interface{}, interface{}) interface{}, iterable ...interface{}) Promise {
 	return All(iterable...).Then(func(a interface{}) (interface{}, error) {
 		if a == nil {
 			return nil, IllegalArgumentError("Reduce(): iterable must not be empty")
@@ -345,11 +333,11 @@ func Reduce(callback func(int, interface{}, interface{}) interface{}, iterable .
 	})
 }
 
-func reduce(callback func(int, interface{}, interface{}) interface{}, iterable []interface{}) interface{} {
+func reduce(callback func(interface{}, interface{}) interface{}, iterable []interface{}) interface{} {
 	count := len(iterable)
 	result := iterable[0]
 	for index := 1; index < count; index++ {
-		result = callback(index, iterable[index], result)
+		result = callback(result, iterable[index])
 	}
 	return result
 }
