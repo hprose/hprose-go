@@ -20,7 +20,7 @@
 package io
 
 import (
-	"io"
+	"bytes"
 	"math"
 	"reflect"
 	"strconv"
@@ -31,14 +31,14 @@ import (
 
 // Writer is a fine-grained operation struct for Hprose serialization
 type Writer struct {
-	Stream   io.Writer
+	Stream   *bytes.Buffer
 	Simple   bool
 	classref map[string]int
 }
 
 // Marshaler is a interface for serializing user custum type
 type Marshaler interface {
-	MarshalHprose(writer *Writer) error
+	MarshalHprose(writer *Writer)
 }
 
 // SerializerList stores a list of build-in type serializer
@@ -79,162 +79,137 @@ type emptyInterface struct {
 }
 
 // NewWriter is the constructor for Hprose Writer
-func NewWriter(stream io.Writer, simple bool) *Writer {
+func NewWriter(stream *bytes.Buffer, simple bool) *Writer {
 	return &Writer{stream, simple, nil}
 }
 
 // Serialize a data v to stream
-func (writer *Writer) Serialize(v interface{}) error {
+func (writer *Writer) Serialize(v interface{}) {
 	if v == nil {
-		return writer.WriteNil()
+		writer.WriteNil()
+		return
 	}
-	return SerializerList[reflect.TypeOf(v).Kind()].Serialize(writer, v)
+	SerializerList[reflect.TypeOf(v).Kind()].Serialize(writer, v)
 }
 
 // WriteNil to stream
-func (writer *Writer) WriteNil() (err error) {
-	_, err = writer.Stream.Write([]byte{TagNull})
-	return err
+func (writer *Writer) WriteNil() {
+	writer.Stream.WriteByte(TagNull)
 }
 
 // WriteBool to stream
-func (writer *Writer) WriteBool(b bool) (err error) {
+func (writer *Writer) WriteBool(b bool) {
 	s := writer.Stream
 	if b {
-		_, err = s.Write([]byte{TagTrue})
+		s.WriteByte(TagTrue)
 	} else {
-		_, err = s.Write([]byte{TagFalse})
+		s.WriteByte(TagFalse)
 	}
-	return err
 }
 
 // WriteInt32 to stream
-func (writer *Writer) WriteInt32(i int32) (err error) {
+func (writer *Writer) WriteInt32(i int32) {
 	s := writer.Stream
 	if (i >= 0) && (i <= 9) {
-		_, err = s.Write([]byte{byte('0' + i)})
-		return err
+		s.WriteByte(byte('0' + i))
+		return
 	}
-	if _, err = s.Write([]byte{TagInteger}); err == nil {
-		_, err = s.Write(util.GetIntBytes(int64(i)))
-	}
-	if err == nil {
-		_, err = s.Write([]byte{TagSemicolon})
-	}
-	return err
+	s.WriteByte(TagInteger)
+	s.Write(util.GetIntBytes(int64(i)))
+	s.WriteByte(TagSemicolon)
 }
 
 // WriteInt to stream
-func (writer *Writer) WriteInt(i int64) (err error) {
+func (writer *Writer) WriteInt(i int64) {
 	s := writer.Stream
 	if (i >= 0) && (i <= 9) {
-		_, err = s.Write([]byte{byte('0' + i)})
-		return err
+		s.WriteByte(byte('0' + i))
+		return
 	}
 	if (i >= math.MinInt32) && (i <= math.MaxInt32) {
-		_, err = s.Write([]byte{TagInteger})
+		s.WriteByte(TagInteger)
 	} else {
-		_, err = s.Write([]byte{TagLong})
+		s.WriteByte(TagLong)
 	}
-	if err == nil {
-		_, err = s.Write(util.GetIntBytes(i))
-	}
-	if err == nil {
-		_, err = s.Write([]byte{TagSemicolon})
-	}
-	return err
+	s.Write(util.GetIntBytes(i))
+	s.WriteByte(TagSemicolon)
 }
 
 // WriteUint to stream
-func (writer *Writer) WriteUint(i uint64) (err error) {
+func (writer *Writer) WriteUint(i uint64) {
 	s := writer.Stream
 	if (i >= 0) && (i <= 9) {
-		_, err = s.Write([]byte{byte('0' + i)})
-		return err
+		s.WriteByte(byte('0' + i))
+		return
 	}
 	if i <= math.MaxInt32 {
-		_, err = s.Write([]byte{TagInteger})
+		s.WriteByte(TagInteger)
 	} else {
-		_, err = s.Write([]byte{TagLong})
+		s.WriteByte(TagLong)
 	}
-	if err == nil {
-		_, err = s.Write(util.GetUintBytes(i))
-	}
-	if err == nil {
-		_, err = s.Write([]byte{TagSemicolon})
-	}
-	return err
+	s.Write(util.GetUintBytes(i))
+	s.WriteByte(TagSemicolon)
 }
 
 // WriteFloat to stream
-func (writer *Writer) WriteFloat(f float64, bitSize int) (err error) {
+func (writer *Writer) WriteFloat(f float64, bitSize int) {
 	s := writer.Stream
 	if f != f {
-		_, err = s.Write([]byte{TagNaN})
-		return err
+		s.WriteByte(TagNaN)
+		return
 	}
 	if f > math.MaxFloat64 {
-		_, err = s.Write([]byte{TagInfinity, TagPos})
-		return err
+		s.Write([]byte{TagInfinity, TagPos})
+		return
 	}
 	if f < -math.MaxFloat64 {
-		_, err = s.Write([]byte{TagInfinity, TagNeg})
-		return err
+		s.Write([]byte{TagInfinity, TagNeg})
+		return
 	}
-	if _, err = s.Write([]byte{TagDouble}); err == nil {
-		var buf [32]byte
-		_, err = s.Write(strconv.AppendFloat(buf[:0], f, 'g', -1, bitSize))
-	}
-	if err == nil {
-		_, err = s.Write([]byte{TagSemicolon})
-	}
-	return err
+	var buf [64]byte
+	s.WriteByte(TagDouble)
+	s.Write(strconv.AppendFloat(buf[:0], f, 'g', -1, bitSize))
+	s.WriteByte(TagSemicolon)
 }
 
 // WriteComplex64 to stream
-func (writer *Writer) WriteComplex64(c complex64) error {
+func (writer *Writer) WriteComplex64(c complex64) {
 	if imag(c) == 0 {
-		return writer.WriteFloat(float64(real(c)), 32)
+		writer.WriteFloat(float64(real(c)), 32)
+		return
 	}
-	return writer.WriteTuple(real(c), imag(c))
+	writer.WriteTuple(real(c), imag(c))
 }
 
 // WriteComplex128 to stream
-func (writer *Writer) WriteComplex128(c complex128) error {
+func (writer *Writer) WriteComplex128(c complex128) {
 	if imag(c) == 0 {
-		return writer.WriteFloat(real(c), 64)
+		writer.WriteFloat(real(c), 64)
+		return
 	}
-	return writer.WriteTuple(real(c), imag(c))
+	writer.WriteTuple(real(c), imag(c))
 }
 
 // WriteTuple to stream
-func (writer *Writer) WriteTuple(tuple ...interface{}) (err error) {
+func (writer *Writer) WriteTuple(tuple ...interface{}) {
 	writer.SetRef(tuple)
 	s := writer.Stream
 	count := len(tuple)
 	if count == 0 {
-		_, err = s.Write([]byte{TagList, TagOpenbrace, TagClosebrace})
-		return err
+		s.Write([]byte{TagList, TagOpenbrace, TagClosebrace})
+		return
 	}
-	if _, err = s.Write([]byte{TagList}); err == nil {
-		_, err = s.Write(util.GetIntBytes(int64(count)))
-	}
-	if err == nil {
-		_, err = s.Write([]byte{TagOpenbrace})
-	}
+	s.WriteByte(TagList)
+	s.Write(util.GetIntBytes(int64(count)))
+	s.WriteByte(TagOpenbrace)
 	for _, v := range tuple {
-		if err == nil {
-			err = writer.Serialize(v)
-		}
+		writer.Serialize(v)
 	}
-	if err == nil {
-		_, err = s.Write([]byte{TagClosebrace})
-	}
-	return err
+	s.WriteByte(TagClosebrace)
 }
 
 // WriteArray to stream
-func (writer *Writer) WriteArray(v interface{}) (err error) {
+func (writer *Writer) WriteArray(v interface{}) {
 	t := reflect.TypeOf(v)
 	count := t.Len()
 	et := t.Elem()
@@ -246,65 +221,50 @@ func (writer *Writer) WriteArray(v interface{}) (err error) {
 		byteSlice.Data = ptr
 		byteSlice.Len = count
 		byteSlice.Cap = count
-		return writer.WriteBytes(bytes)
+		writer.WriteBytes(bytes)
+		return
 	}
 	writer.SetRef(v)
 	s := writer.Stream
 	if count == 0 {
-		_, err = s.Write([]byte{TagList, TagOpenbrace, TagClosebrace})
-		return err
+		s.Write([]byte{TagList, TagOpenbrace, TagClosebrace})
+		return
 	}
-	if _, err = s.Write([]byte{TagList}); err == nil {
-		_, err = s.Write(util.GetIntBytes(int64(count)))
-	}
-	if err == nil {
-		_, err = s.Write([]byte{TagOpenbrace})
-	}
+	s.WriteByte(TagList)
+	s.Write(util.GetIntBytes(int64(count)))
+	s.WriteByte(TagOpenbrace)
 	serializer := SerializerList[kind]
 	typ := (*emptyInterface)(unsafe.Pointer(&et)).ptr
 	size := et.Size()
 	for i := 0; i < count; i++ {
-		if err == nil {
-			var e interface{}
-			es := (*emptyInterface)(unsafe.Pointer(&e))
-			es.typ = typ
-			es.ptr = ptr + uintptr(i)*size
-			err = serializer.Serialize(writer, e)
-		}
+		var e interface{}
+		es := (*emptyInterface)(unsafe.Pointer(&e))
+		es.typ = typ
+		es.ptr = ptr + uintptr(i)*size
+		serializer.Serialize(writer, e)
 	}
-	if err == nil {
-		_, err = s.Write([]byte{TagClosebrace})
-	}
-	return err
+	s.WriteByte(TagClosebrace)
 }
 
 // WriteBytes to stream
-func (writer *Writer) WriteBytes(bytes []byte) (err error) {
+func (writer *Writer) WriteBytes(bytes []byte) {
 	writer.SetRef(bytes)
 	s := writer.Stream
 	count := len(bytes)
 	if count == 0 {
-		_, err = s.Write([]byte{TagEmpty})
-		return err
+		s.WriteByte(TagEmpty)
+		return
 	}
-	if _, err = s.Write([]byte{TagBytes}); err == nil {
-		_, err = s.Write(util.GetIntBytes(int64(count)))
-	}
-	if err == nil {
-		_, err = s.Write([]byte{TagQuote})
-	}
-	if err == nil {
-		_, err = s.Write(bytes)
-	}
-	if err == nil {
-		_, err = s.Write([]byte{TagQuote})
-	}
-	return err
+	s.WriteByte(TagBytes)
+	s.Write(util.GetIntBytes(int64(count)))
+	s.WriteByte(TagQuote)
+	s.Write(bytes)
+	s.WriteByte(TagQuote)
 }
 
 // WriteRef writes reference of an object to stream
-func (writer *Writer) WriteRef(v interface{}) (bool, error) {
-	return false, nil
+func (writer *Writer) WriteRef(v interface{}) bool {
+	return false
 }
 
 // SetRef add v to reference list, if WriteRef is call with the same v, it will
