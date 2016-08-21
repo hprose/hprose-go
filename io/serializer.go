@@ -12,16 +12,49 @@
  *                                                        *
  * hprose seriaizer for Go.                               *
  *                                                        *
- * LastModified: Aug 20, 2016                             *
+ * LastModified: Aug 22, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 
 package io
 
+import "reflect"
+
 // Serializer is a interface for serializing build-in type
 type Serializer interface {
 	Serialize(writer *Writer, v interface{})
+}
+
+// Serializers stores a list of build-in type serializer
+var Serializers = [...]Serializer{
+	reflect.Invalid:       Nil,
+	reflect.Bool:          Bool,
+	reflect.Int:           Int,
+	reflect.Int8:          Int8,
+	reflect.Int16:         Int16,
+	reflect.Int32:         Int32,
+	reflect.Int64:         Int64,
+	reflect.Uint:          Uint,
+	reflect.Uint8:         Uint8,
+	reflect.Uint16:        Uint16,
+	reflect.Uint32:        Uint32,
+	reflect.Uint64:        Uint64,
+	reflect.Uintptr:       Uintptr,
+	reflect.Float32:       Float32,
+	reflect.Float64:       Float64,
+	reflect.Complex64:     Complex64,
+	reflect.Complex128:    Complex128,
+	reflect.Array:         Array,
+	reflect.Chan:          Nil,
+	reflect.Func:          Nil,
+	reflect.Interface:     Ptr,
+	reflect.Map:           Nil,
+	reflect.Ptr:           Ptr,
+	reflect.Slice:         Slice,
+	reflect.String:        Nil,
+	reflect.Struct:        Nil,
+	reflect.UnsafePointer: Nil,
 }
 
 type refSerializer struct {

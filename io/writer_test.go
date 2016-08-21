@@ -502,8 +502,8 @@ func TestSerializeArray(t *testing.T) {
 	testdata := map[interface{}]string{
 		[...]int{1, 2, 3}:                  "a3{123}",
 		[...]float64{1, 2, 3}:              "a3{d1;d2;d3;}",
-		[...]byte{'h', 'e', 'l', 'l', 'o'}: "b5\"hello\"",
-		[...]byte{}:                        "e",
+		[...]byte{'h', 'e', 'l', 'l', 'o'}: "a5{i104;i101;i108;i108;i111;}",
+		[...]byte{}:                        "a{}",
 		[...]interface{}{1, 2.0, true}:     "a3{1d2;t}",
 		[...]bool{true, false, true}:       "a3{tft}",
 		[...]int{}:                         "a{}",
@@ -545,7 +545,7 @@ func TestSerializeSlice(t *testing.T) {
 func BenchmarkSerializeArray(b *testing.B) {
 	buf := new(bytes.Buffer)
 	writer := NewWriter(buf, false)
-	array := [...]int{0, 1, 2, 3, 4}
+	array := [...]int{0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 1, 2, 3, 4, 0, 1, 2, 3, 4}
 	for i := 0; i < b.N; i++ {
 		writer.Serialize(array)
 	}
@@ -554,7 +554,7 @@ func BenchmarkSerializeArray(b *testing.B) {
 func BenchmarkWriteArray(b *testing.B) {
 	buf := new(bytes.Buffer)
 	writer := NewWriter(buf, false)
-	array := [...]int{0, 1, 2, 3, 4}
+	array := [...]int{0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 1, 2, 3, 4, 0, 1, 2, 3, 4}
 	for i := 0; i < b.N; i++ {
 		writer.WriteArray(array)
 	}
@@ -566,14 +566,5 @@ func BenchmarkWriteSlice(b *testing.B) {
 	slice := []int{0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 1, 2, 3, 4, 0, 1, 2, 3, 4}
 	for i := 0; i < b.N; i++ {
 		writer.WriteSlice(slice)
-	}
-}
-
-func BenchmarkWriteIntSlice(b *testing.B) {
-	buf := new(bytes.Buffer)
-	writer := NewWriter(buf, false)
-	slice := []int{0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 1, 2, 3, 4, 0, 1, 2, 3, 4}
-	for i := 0; i < b.N; i++ {
-		writer.WriteIntSlice(slice)
 	}
 }
