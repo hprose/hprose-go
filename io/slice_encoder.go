@@ -34,14 +34,14 @@ func boolSliceEncoder(writer *Writer, ptr unsafe.Pointer) {
 func intSliceEncoder(writer *Writer, ptr unsafe.Pointer) {
 	slice := *(*[]int)(ptr)
 	for _, e := range slice {
-		writer.WriteInt((int64(e)))
+		writer.WriteInt(int64(e))
 	}
 }
 
 func int8SliceEncoder(writer *Writer, ptr unsafe.Pointer) {
 	slice := *(*[]int8)(ptr)
 	for _, e := range slice {
-		writer.WriteInt32((int32(e)))
+		writer.WriteInt32(int32(e))
 	}
 }
 
@@ -70,6 +70,13 @@ func uintSliceEncoder(writer *Writer, ptr unsafe.Pointer) {
 	slice := *(*[]uint)(ptr)
 	for _, e := range slice {
 		writer.WriteUint(uint64(e))
+	}
+}
+
+func uint8SliceEncoder(writer *Writer, ptr unsafe.Pointer) {
+	slice := *(*[]uint8)(ptr)
+	for _, e := range slice {
+		writer.WriteInt32(int32(e))
 	}
 }
 
@@ -129,39 +136,45 @@ func complex128SliceEncoder(writer *Writer, ptr unsafe.Pointer) {
 	}
 }
 
-var sliceBodyEncoder = [...]func(*Writer, unsafe.Pointer){
-	reflect.Invalid:       nil,
-	reflect.Bool:          boolSliceEncoder,
-	reflect.Int:           intSliceEncoder,
-	reflect.Int8:          int8SliceEncoder,
-	reflect.Int16:         int16SliceEncoder,
-	reflect.Int32:         int32SliceEncoder,
-	reflect.Int64:         int64SliceEncoder,
-	reflect.Uint:          uintSliceEncoder,
-	reflect.Uint8:         nil,
-	reflect.Uint16:        uint16SliceEncoder,
-	reflect.Uint32:        uint32SliceEncoder,
-	reflect.Uint64:        uint64SliceEncoder,
-	reflect.Uintptr:       uintptrSliceEncoder,
-	reflect.Float32:       float32SliceEncoder,
-	reflect.Float64:       float64SliceEncoder,
-	reflect.Complex64:     complex64SliceEncoder,
-	reflect.Complex128:    complex128SliceEncoder,
-	reflect.Array:         nil,
-	reflect.Chan:          nil,
-	reflect.Func:          nil,
-	reflect.Interface:     nil,
-	reflect.Map:           nil,
-	reflect.Ptr:           nil,
-	reflect.Slice:         nil,
-	reflect.String:        nil,
-	reflect.Struct:        nil,
-	reflect.UnsafePointer: nil,
-}
-
 func iterableEncoder(writer *Writer, iterable reflect.Value) {
 	n := iterable.Len()
 	for i := 0; i < n; i++ {
 		writer.WriteValue(iterable.Index(i))
+	}
+}
+
+type sliceBodyEncoder func(*Writer, unsafe.Pointer)
+
+var sliceBodyEncoders []sliceBodyEncoder
+
+func init() {
+	sliceBodyEncoders = []sliceBodyEncoder{
+		reflect.Invalid:       nil,
+		reflect.Bool:          boolSliceEncoder,
+		reflect.Int:           intSliceEncoder,
+		reflect.Int8:          int8SliceEncoder,
+		reflect.Int16:         int16SliceEncoder,
+		reflect.Int32:         int32SliceEncoder,
+		reflect.Int64:         int64SliceEncoder,
+		reflect.Uint:          uintSliceEncoder,
+		reflect.Uint8:         uint8SliceEncoder,
+		reflect.Uint16:        uint16SliceEncoder,
+		reflect.Uint32:        uint32SliceEncoder,
+		reflect.Uint64:        uint64SliceEncoder,
+		reflect.Uintptr:       uintptrSliceEncoder,
+		reflect.Float32:       float32SliceEncoder,
+		reflect.Float64:       float64SliceEncoder,
+		reflect.Complex64:     complex64SliceEncoder,
+		reflect.Complex128:    complex128SliceEncoder,
+		reflect.Array:         nil,
+		reflect.Chan:          nil,
+		reflect.Func:          nil,
+		reflect.Interface:     nil,
+		reflect.Map:           nil,
+		reflect.Ptr:           nil,
+		reflect.Slice:         nil,
+		reflect.String:        nil,
+		reflect.Struct:        nil,
+		reflect.UnsafePointer: nil,
 	}
 }

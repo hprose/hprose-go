@@ -56,7 +56,8 @@ func (writer *Writer) Serialize(v interface{}) {
 	if v == nil {
 		writer.WriteNil()
 	} else {
-		Serializers[reflect.TypeOf(v).Kind()].Serialize(writer, v)
+		v := reflect.ValueOf(v)
+		valueEncoders[v.Kind()](writer, v)
 	}
 }
 
@@ -187,14 +188,10 @@ func (writer *Writer) WriteTuple(tuple ...interface{}) {
 }
 
 // WriteArray to stream
-func (writer *Writer) writeArray(array reflect.Value) {
-	if array.CanAddr() {
-		writer.WriteSlice(array.Slice(array.Len(), array.Len()).Interface())
-		return
-	}
+func (writer *Writer) writeArray(v reflect.Value) {
 	writer.SetRef(nil)
 	s := writer.Stream
-	count := array.Len()
+	count := v.Len()
 	if count == 0 {
 		s.Write([]byte{TagList, TagOpenbrace, TagClosebrace})
 		return
@@ -202,19 +199,29 @@ func (writer *Writer) writeArray(array reflect.Value) {
 	s.WriteByte(TagList)
 	s.Write(util.GetIntBytes(int64(count)))
 	s.WriteByte(TagOpenbrace)
-	iterableEncoder(writer, array)
+	kind := v.Type().Elem().Kind()
+	if encoder := sliceBodyEncoders[kind]; encoder != nil {
+		ptr := (*emptyInterface)(unsafe.Pointer(&v)).ptr
+		sliceHeader := reflect.SliceHeader{
+			Data: uintptr(ptr),
+			Len:  count,
+			Cap:  count,
+		}
+		encoder(writer, unsafe.Pointer(&sliceHeader))
+	} else {
+		iterableEncoder(writer, v)
+	}
 	s.WriteByte(TagClosebrace)
 }
 
 // WriteArray to stream
 func (writer *Writer) WriteArray(v interface{}) {
-	writer.writeArray(reflect.ValueOf(v))
+	array := reflect.ValueOf(v)
+	writer.writeArray(array)
 }
 
-// WriteSlice to stream
-func (writer *Writer) WriteSlice(v interface{}) {
-	t := reflect.TypeOf(v)
-	kind := t.Elem().Kind()
+func (writer *Writer) writeSlice(v reflect.Value) {
+	kind := v.Type().Elem().Kind()
 	ptr := (*emptyInterface)(unsafe.Pointer(&v)).ptr
 	if kind == reflect.Uint8 {
 		writer.WriteBytes(*(*[]byte)(ptr))
@@ -222,8 +229,7 @@ func (writer *Writer) WriteSlice(v interface{}) {
 	}
 	writer.SetRef(v)
 	s := writer.Stream
-	slice := (*reflect.SliceHeader)(ptr)
-	count := slice.Len
+	count := v.Len()
 	if count == 0 {
 		s.Write([]byte{TagList, TagOpenbrace, TagClosebrace})
 		return
@@ -231,12 +237,18 @@ func (writer *Writer) WriteSlice(v interface{}) {
 	s.WriteByte(TagList)
 	s.Write(util.GetIntBytes(int64(count)))
 	s.WriteByte(TagOpenbrace)
-	if encoder := sliceBodyEncoder[kind]; encoder != nil {
+	if encoder := sliceBodyEncoders[kind]; encoder != nil {
 		encoder(writer, ptr)
 	} else {
-		iterableEncoder(writer, reflect.ValueOf(v))
+		iterableEncoder(writer, v)
 	}
 	s.WriteByte(TagClosebrace)
+}
+
+// WriteSlice to stream
+func (writer *Writer) WriteSlice(v interface{}) {
+	slice := reflect.ValueOf(v)
+	writer.writeSlice(slice)
 }
 
 // WriteBytes to stream

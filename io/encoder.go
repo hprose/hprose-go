@@ -12,7 +12,7 @@
  *                                                        *
  * hprose encoder for Go.                                 *
  *                                                        *
- * LastModified: Aug 21, 2016                             *
+ * LastModified: Aug 22, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -54,7 +54,7 @@ func complex128Encoder(writer *Writer, v reflect.Value) {
 }
 
 func arrayEncoder(writer *Writer, v reflect.Value) {
-	writer.WriteArray(v.Interface())
+	writer.writeArray(v)
 }
 
 func ptrEncoder(writer *Writer, v reflect.Value) {
@@ -66,7 +66,7 @@ func ptrEncoder(writer *Writer, v reflect.Value) {
 }
 
 func sliceEncoder(writer *Writer, v reflect.Value) {
-	writer.WriteSlice(v.Interface())
+	writer.writeSlice(v)
 }
 
 type valueEncoder func(writer *Writer, v reflect.Value)
