@@ -212,22 +212,43 @@ func (writer *Writer) WriteTuple(tuple ...interface{}) {
 	s.WriteByte(TagClosebrace)
 }
 
-// WriteArray to stream
-func (writer *Writer) WriteArray(v interface{}) {
+func initSlice(slice unsafe.Pointer, ptr uintptr, count int) {
+	sliceHeader := (*reflect.SliceHeader)(slice)
+	sliceHeader.Data = ptr
+	sliceHeader.Len = count
+	sliceHeader.Cap = count
+}
+
+func (writer *Writer) fastWriteArray(v interface{}) bool {
 	t := reflect.TypeOf(v)
 	count := t.Len()
-	et := t.Elem()
-	kind := et.Kind()
 	ptr := (*emptyInterface)(unsafe.Pointer(&v)).ptr
-	if kind == reflect.Uint8 {
-		var bytes []byte
-		byteSlice := (*reflect.SliceHeader)(unsafe.Pointer(&bytes))
-		byteSlice.Data = ptr
-		byteSlice.Len = count
-		byteSlice.Cap = count
-		writer.WriteBytes(bytes)
+	switch t.Elem().Kind() {
+	case reflect.Uint8:
+		var slice []byte
+		initSlice(unsafe.Pointer(&slice), ptr, count)
+		writer.WriteBytes(slice)
+	case reflect.Int:
+		var slice []int
+		initSlice(unsafe.Pointer(&slice), ptr, count)
+		writer.WriteIntSlice(slice)
+	case reflect.Interface:
+		var slice []interface{}
+		initSlice(unsafe.Pointer(&slice), ptr, count)
+		writer.WriteInterfaceSlice(slice)
+	default:
+		return false
+	}
+	return true
+}
+
+// WriteArray to stream
+func (writer *Writer) WriteArray(v interface{}) {
+	if writer.fastWriteArray(v) {
 		return
 	}
+	t := reflect.TypeOf(v)
+	count := t.Len()
 	writer.SetRef(nil)
 	s := writer.Stream
 	if count == 0 {
@@ -237,9 +258,11 @@ func (writer *Writer) WriteArray(v interface{}) {
 	s.WriteByte(TagList)
 	s.Write(util.GetIntBytes(int64(count)))
 	s.WriteByte(TagOpenbrace)
-	serializer := SerializerList[kind]
-	typ := (*emptyInterface)(unsafe.Pointer(&et)).ptr
+	et := t.Elem()
 	size := et.Size()
+	serializer := SerializerList[et.Kind()]
+	ptr := (*emptyInterface)(unsafe.Pointer(&v)).ptr
+	typ := (*emptyInterface)(unsafe.Pointer(&et)).ptr
 	for i := 0; i < count; i++ {
 		var e interface{}
 		es := (*emptyInterface)(unsafe.Pointer(&e))
@@ -250,10 +273,23 @@ func (writer *Writer) WriteArray(v interface{}) {
 	s.WriteByte(TagClosebrace)
 }
 
+func (writer *Writer) fastWriteSlice(v interface{}) bool {
+	switch slice := v.(type) {
+	case []byte:
+		writer.WriteBytes(slice)
+	case []int:
+		writer.WriteIntSlice(slice)
+	case []interface{}:
+		writer.WriteInterfaceSlice(slice)
+	default:
+		return false
+	}
+	return true
+}
+
 // WriteSlice to stream
 func (writer *Writer) WriteSlice(v interface{}) {
-	if bytes, ok := v.([]byte); ok {
-		writer.WriteBytes(bytes)
+	if writer.fastWriteSlice(v) {
 		return
 	}
 	writer.SetRef(v)
@@ -273,11 +309,12 @@ func (writer *Writer) WriteSlice(v interface{}) {
 	kind := et.Kind()
 	serializer := SerializerList[kind]
 	typ := (*emptyInterface)(unsafe.Pointer(&et)).ptr
+	ptr := slice.Data
 	for i := 0; i < count; i++ {
 		var e interface{}
 		es := (*emptyInterface)(unsafe.Pointer(&e))
 		es.typ = typ
-		es.ptr = slice.Data + uintptr(i)*size
+		es.ptr = ptr + uintptr(i)*size
 		serializer.Serialize(writer, e)
 	}
 	s.WriteByte(TagClosebrace)
@@ -297,6 +334,42 @@ func (writer *Writer) WriteBytes(bytes []byte) {
 	s.WriteByte(TagQuote)
 	s.Write(bytes)
 	s.WriteByte(TagQuote)
+}
+
+// WriteIntSlice to stream
+func (writer *Writer) WriteIntSlice(slice []int) {
+	writer.SetRef(slice)
+	s := writer.Stream
+	count := len(slice)
+	if count == 0 {
+		s.Write([]byte{TagList, TagOpenbrace, TagClosebrace})
+		return
+	}
+	s.WriteByte(TagList)
+	s.Write(util.GetIntBytes(int64(count)))
+	s.WriteByte(TagOpenbrace)
+	for _, e := range slice {
+		writer.WriteInt(int64(e))
+	}
+	s.WriteByte(TagClosebrace)
+}
+
+// WriteInterfaceSlice to stream
+func (writer *Writer) WriteInterfaceSlice(slice []interface{}) {
+	writer.SetRef(slice)
+	s := writer.Stream
+	count := len(slice)
+	if count == 0 {
+		s.Write([]byte{TagList, TagOpenbrace, TagClosebrace})
+		return
+	}
+	s.WriteByte(TagList)
+	s.Write(util.GetIntBytes(int64(count)))
+	s.WriteByte(TagOpenbrace)
+	for _, e := range slice {
+		writer.Serialize(e)
+	}
+	s.WriteByte(TagClosebrace)
 }
 
 // WriteRef writes reference of an object to stream
