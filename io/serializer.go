@@ -198,6 +198,15 @@ func (*arraySerializer) Serialize(writer *Writer, v interface{}) {
 // Array is an implementation of Serializer interface for serializing array
 var Array = &arraySerializer{}
 
+type ptrSerializer struct{}
+
+func (*ptrSerializer) Serialize(writer *Writer, v interface{}) {
+	writer.WritePtr(v)
+}
+
+// Ptr is an implementation of Serializer interface for serializing ptr
+var Ptr = &ptrSerializer{}
+
 type sliceSerializer struct{}
 
 func (*sliceSerializer) Serialize(writer *Writer, v interface{}) {

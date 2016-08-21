@@ -63,9 +63,9 @@ var SerializerList = [...]Serializer{
 	reflect.Array:         Array,
 	reflect.Chan:          Nil,
 	reflect.Func:          Nil,
-	reflect.Interface:     Nil,
+	reflect.Interface:     Ptr,
 	reflect.Map:           Nil,
-	reflect.Ptr:           Nil,
+	reflect.Ptr:           Ptr,
 	reflect.Slice:         Slice,
 	reflect.String:        Nil,
 	reflect.Struct:        Nil,
@@ -194,6 +194,11 @@ func (writer *Writer) WriteComplex128(c complex128) {
 	writer.WriteTuple(real(c), imag(c))
 }
 
+// WritePtr to stream
+func (writer *Writer) WritePtr(v interface{}) {
+	writer.Serialize(reflect.ValueOf(v).Elem().Interface())
+}
+
 // WriteTuple to stream
 func (writer *Writer) WriteTuple(tuple ...interface{}) {
 	writer.SetRef(nil)
@@ -228,6 +233,10 @@ func (writer *Writer) fastWriteArray(v interface{}) bool {
 		var slice []byte
 		initSlice(unsafe.Pointer(&slice), ptr, count)
 		writer.WriteBytes(slice)
+	case reflect.Bool:
+		var slice []bool
+		initSlice(unsafe.Pointer(&slice), ptr, count)
+		writer.WriteBoolSlice(slice)
 	case reflect.Int:
 		var slice []int
 		initSlice(unsafe.Pointer(&slice), ptr, count)
@@ -277,6 +286,8 @@ func (writer *Writer) fastWriteSlice(v interface{}) bool {
 	switch slice := v.(type) {
 	case []byte:
 		writer.WriteBytes(slice)
+	case []bool:
+		writer.WriteBoolSlice(slice)
 	case []int:
 		writer.WriteIntSlice(slice)
 	case []interface{}:
@@ -350,6 +361,24 @@ func (writer *Writer) WriteIntSlice(slice []int) {
 	s.WriteByte(TagOpenbrace)
 	for _, e := range slice {
 		writer.WriteInt(int64(e))
+	}
+	s.WriteByte(TagClosebrace)
+}
+
+// WriteBoolSlice to stream
+func (writer *Writer) WriteBoolSlice(slice []bool) {
+	writer.SetRef(slice)
+	s := writer.Stream
+	count := len(slice)
+	if count == 0 {
+		s.Write([]byte{TagList, TagOpenbrace, TagClosebrace})
+		return
+	}
+	s.WriteByte(TagList)
+	s.Write(util.GetIntBytes(int64(count)))
+	s.WriteByte(TagOpenbrace)
+	for _, e := range slice {
+		writer.WriteBool(e)
 	}
 	s.WriteByte(TagClosebrace)
 }
