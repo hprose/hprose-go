@@ -164,11 +164,6 @@ func (writer *Writer) WriteComplex128(c complex128) {
 	writer.WriteTuple(real(c), imag(c))
 }
 
-// WritePtr to stream
-func (writer *Writer) WritePtr(v interface{}) {
-	writer.WriteValue(reflect.ValueOf(v).Elem())
-}
-
 // WriteTuple to stream
 func (writer *Writer) WriteTuple(tuple ...interface{}) {
 	writer.SetRef(nil)
