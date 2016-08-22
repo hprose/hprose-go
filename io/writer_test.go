@@ -573,6 +573,87 @@ func TestWriteInt64Slice(t *testing.T) {
 		b.Truncate(0)
 	}
 }
+
+func TestWriteUintSlice(t *testing.T) {
+	b := new(bytes.Buffer)
+	writer := NewWriter(b, false)
+	testdata := map[*[]uint]string{
+		&[]uint{1, 2, 3}: "a3{123}",
+		&[]uint{}:        "a{}",
+	}
+	for k, v := range testdata {
+		writer.WriteUintSlice(*k)
+		if b.String() != v {
+			t.Error(b.String())
+		}
+		b.Truncate(0)
+	}
+}
+
+func TestWriteUint8Slice(t *testing.T) {
+	b := new(bytes.Buffer)
+	writer := NewWriter(b, false)
+	testdata := map[*[]uint8]string{
+		&[]uint8{1, 2, 3}: "a3{123}",
+		&[]uint8{}:        "a{}",
+	}
+	for k, v := range testdata {
+		writer.WriteUint8Slice(*k)
+		if b.String() != v {
+			t.Error(b.String())
+		}
+		b.Truncate(0)
+	}
+}
+
+func TestWriteUint16Slice(t *testing.T) {
+	b := new(bytes.Buffer)
+	writer := NewWriter(b, false)
+	testdata := map[*[]uint16]string{
+		&[]uint16{1, 2, 3}: "a3{123}",
+		&[]uint16{}:        "a{}",
+	}
+	for k, v := range testdata {
+		writer.WriteUint16Slice(*k)
+		if b.String() != v {
+			t.Error(b.String())
+		}
+		b.Truncate(0)
+	}
+}
+
+func TestWriteUint32Slice(t *testing.T) {
+	b := new(bytes.Buffer)
+	writer := NewWriter(b, false)
+	testdata := map[*[]uint32]string{
+		&[]uint32{1, 2, 3}: "a3{123}",
+		&[]uint32{}:        "a{}",
+	}
+	for k, v := range testdata {
+		writer.WriteUint32Slice(*k)
+		if b.String() != v {
+			t.Error(b.String())
+		}
+		b.Truncate(0)
+	}
+}
+
+func TestWriteUint64Slice(t *testing.T) {
+	b := new(bytes.Buffer)
+	writer := NewWriter(b, false)
+	testdata := map[*[]uint64]string{
+		&[]uint64{1, 2, 3}: "a3{123}",
+		&[]uint64{}:        "a{}",
+	}
+	for k, v := range testdata {
+		writer.WriteUint64Slice(*k)
+		if b.String() != v {
+			t.Error(b.String())
+		}
+		b.Truncate(0)
+	}
+}
+
 func BenchmarkSerializeArray(b *testing.B) {
 	buf := new(bytes.Buffer)
 	writer := NewWriter(buf, false)
