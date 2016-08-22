@@ -509,7 +509,6 @@ func (writer *Writer) WriteComplex128Slice(slice []complex128) {
 	writer.writeListFooter()
 }
 
-// WriteBytes to stream
 func (writer *Writer) writeBytes(bytes []byte) {
 	s := writer.Stream
 	count := len(bytes)
