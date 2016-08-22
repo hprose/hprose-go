@@ -558,6 +558,21 @@ func TestWriteInt32Slice(t *testing.T) {
 	}
 }
 
+func TestWriteInt64Slice(t *testing.T) {
+	b := new(bytes.Buffer)
+	writer := NewWriter(b, false)
+	testdata := map[*[]int64]string{
+		&[]int64{1, 2, 3}: "a3{123}",
+		&[]int64{}:        "a{}",
+	}
+	for k, v := range testdata {
+		writer.WriteInt64Slice(*k)
+		if b.String() != v {
+			t.Error(b.String())
+		}
+		b.Truncate(0)
+	}
+}
 func BenchmarkSerializeArray(b *testing.B) {
 	buf := new(bytes.Buffer)
 	writer := NewWriter(buf, false)
