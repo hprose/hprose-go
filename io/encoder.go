@@ -66,6 +66,9 @@ func ptrEncoder(writer *Writer, v reflect.Value) {
 }
 
 func sliceEncoder(writer *Writer, v reflect.Value) {
+	if writer.WriteRef(v) {
+		return
+	}
 	writer.writeSlice(v)
 }
 
