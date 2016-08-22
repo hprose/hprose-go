@@ -510,6 +510,22 @@ func TestWriteIntSlice(t *testing.T) {
 	}
 }
 
+func TestWriteInt8Slice(t *testing.T) {
+	b := new(bytes.Buffer)
+	writer := NewWriter(b, false)
+	testdata := map[*[]int8]string{
+		&[]int8{1, 2, 3}: "a3{123}",
+		&[]int8{}:        "a{}",
+	}
+	for k, v := range testdata {
+		writer.WriteInt8Slice(*k)
+		if b.String() != v {
+			t.Error(b.String())
+		}
+		b.Truncate(0)
+	}
+}
+
 func BenchmarkSerializeArray(b *testing.B) {
 	buf := new(bytes.Buffer)
 	writer := NewWriter(buf, false)
