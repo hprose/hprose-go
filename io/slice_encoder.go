@@ -136,6 +136,13 @@ func complex128SliceEncoder(writer *Writer, ptr unsafe.Pointer) {
 	}
 }
 
+func stringSliceEncoder(writer *Writer, ptr unsafe.Pointer) {
+	slice := *(*[]string)(ptr)
+	for _, e := range slice {
+		writer.WriteString(e)
+	}
+}
+
 type sliceBodyEncoder func(*Writer, unsafe.Pointer)
 
 var sliceBodyEncoders []sliceBodyEncoder
@@ -166,7 +173,7 @@ func init() {
 		reflect.Map:           nil,
 		reflect.Ptr:           nil,
 		reflect.Slice:         nil,
-		reflect.String:        nil,
+		reflect.String:        stringSliceEncoder,
 		reflect.Struct:        nil,
 		reflect.UnsafePointer: nil,
 	}

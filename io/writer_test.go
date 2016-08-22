@@ -12,7 +12,7 @@
  *                                                        *
  * hprose writer test for Go.                             *
  *                                                        *
- * LastModified: Aug 20, 2016                             *
+ * LastModified: Aug 22, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -454,8 +454,8 @@ func TestSerializeArray(t *testing.T) {
 	testdata := map[interface{}]string{
 		&[...]int{1, 2, 3}:                  "a3{123}",
 		&[...]float64{1, 2, 3}:              "a3{d1;d2;d3;}",
-		&[...]byte{'h', 'e', 'l', 'l', 'o'}: "a5{i104;i101;i108;i108;i111;}",
-		&[...]byte{}:                        "a{}",
+		&[...]byte{'h', 'e', 'l', 'l', 'o'}: "b5\"hello\"",
+		&[...]byte{}:                        "b\"\"",
 		&[...]interface{}{1, 2.0, true}:     "a3{1d2;t}",
 		&[...]bool{true, false, true}:       "a3{tft}",
 		&[...]int{}:                         "a{}",
@@ -478,7 +478,7 @@ func TestSerializeSlice(t *testing.T) {
 		&[]int{1, 2, 3}:                  "a3{123}",
 		&[]float64{1, 2, 3}:              "a3{d1;d2;d3;}",
 		&[]byte{'h', 'e', 'l', 'l', 'o'}: "b5\"hello\"",
-		&[]byte{}:                        "e",
+		&[]byte{}:                        "b\"\"",
 		&[]interface{}{1, 2.0, true}:     "a3{1d2;t}",
 		&[]bool{true, false, true}:       "a3{tft}",
 		&[]int{}:                         "a{}",
@@ -750,6 +750,60 @@ func TestWriteComplex128Slice(t *testing.T) {
 	}
 }
 
+func TestWriteBytes(t *testing.T) {
+	b := new(bytes.Buffer)
+	writer := NewWriter(b, false)
+	testdata := map[*[]byte]string{
+		&[]byte{'h', 'e', 'l', 'l', 'o'}: "b5\"hello\"",
+		&[]byte{}:                        "b\"\"",
+	}
+	for k, v := range testdata {
+		writer.WriteBytes(*k)
+		if b.String() != v {
+			t.Error(b.String())
+		}
+		b.Truncate(0)
+	}
+}
+
+func TestSerializeString(t *testing.T) {
+	b := new(bytes.Buffer)
+	writer := NewWriter(b, false)
+	testdata := map[string]string{
+		"":           "e",
+		"你":          "u你",
+		"你好":         "s2\"你好\"",
+		"你好啊,hello!": "s10\"你好啊,hello!\"",
+		"🇨🇳":         "s4\"🇨🇳\"",
+	}
+	for k, v := range testdata {
+		writer.Serialize(k)
+		if b.String() != v {
+			t.Error(b.String())
+		}
+		b.Truncate(0)
+	}
+}
+
+func TestWriteString(t *testing.T) {
+	b := new(bytes.Buffer)
+	writer := NewWriter(b, false)
+	testdata := map[string]string{
+		"":           "e",
+		"你":          "u你",
+		"你好":         "s2\"你好\"",
+		"你好啊,hello!": "s10\"你好啊,hello!\"",
+		"🇨🇳":         "s4\"🇨🇳\"",
+	}
+	for k, v := range testdata {
+		writer.WriteString(k)
+		if b.String() != v {
+			t.Error(b.String())
+		}
+		b.Truncate(0)
+	}
+}
+
 func BenchmarkSerializeArray(b *testing.B) {
 	buf := new(bytes.Buffer)
 	writer := NewWriter(buf, false)
@@ -774,5 +828,23 @@ func BenchmarkWriteIntSlice(b *testing.B) {
 	slice := []int{0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 1, 2, 3, 4, 0, 1, 2, 3, 4}
 	for i := 0; i < b.N; i++ {
 		writer.WriteIntSlice(slice)
+	}
+}
+
+func BenchmarkWriteBytes(b *testing.B) {
+	buf := new(bytes.Buffer)
+	writer := NewWriter(buf, false)
+	slice := ([]byte)("你好,hello!")
+	for i := 0; i < b.N; i++ {
+		writer.WriteBytes(slice)
+	}
+}
+
+func BenchmarkWriteString(b *testing.B) {
+	buf := new(bytes.Buffer)
+	writer := NewWriter(buf, false)
+	str := "你好,hello!"
+	for i := 0; i < b.N; i++ {
+		writer.WriteString(str)
 	}
 }
