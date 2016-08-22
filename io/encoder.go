@@ -12,7 +12,7 @@
  *                                                        *
  * hprose encoder for Go.                                 *
  *                                                        *
- * LastModified: Aug 22, 2016                             *
+ * LastModified: Aug 23, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -142,29 +142,8 @@ func ptrEncoder(writer *Writer, v reflect.Value) {
 		return
 	}
 	e := v.Elem()
-	switch e.Kind() {
-	case reflect.Bool:
-		writer.WriteBool(e.Bool())
-	case reflect.Int, reflect.Int64:
-		writer.WriteInt(e.Int())
-	case reflect.Int8, reflect.Int16, reflect.Int32:
-		writer.WriteInt32(int32(e.Int()))
-	case reflect.Uint8, reflect.Uint16:
-		writer.WriteInt32(int32(e.Uint()))
-	case reflect.Uint, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		writer.WriteUint(e.Uint())
-	case reflect.Float32:
-		writer.WriteFloat(e.Float(), 32)
-	case reflect.Float64:
-		writer.WriteFloat(e.Float(), 64)
-	case reflect.Complex64:
-		writer.WriteComplex64(complex64(v.Complex()))
-	case reflect.Complex128:
-		writer.WriteComplex128(v.Complex())
-	case reflect.Ptr:
-		ptrEncoder(writer, e)
-	case reflect.Interface:
-		interfaceEncoder(writer, e)
+	kind := e.Kind()
+	switch kind {
 	case reflect.Array:
 		arrayPtrEncoder(writer, e, v.Pointer())
 	case reflect.Map:
@@ -176,7 +155,7 @@ func ptrEncoder(writer *Writer, v reflect.Value) {
 	case reflect.Struct:
 		structPtrEncoder(writer, e, v.Pointer())
 	default:
-		writer.WriteNil()
+		valueEncoders[kind](writer, e)
 	}
 }
 
