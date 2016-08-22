@@ -513,3 +513,12 @@ func BenchmarkWriteSlice(b *testing.B) {
 		writer.WriteSlice(slice)
 	}
 }
+
+func BenchmarkWriteIntSlice(b *testing.B) {
+	buf := new(bytes.Buffer)
+	writer := NewWriter(buf, false)
+	slice := []int{0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 1, 2, 3, 4, 0, 1, 2, 3, 4}
+	for i := 0; i < b.N; i++ {
+		writer.WriteIntSlice(slice)
+	}
+}

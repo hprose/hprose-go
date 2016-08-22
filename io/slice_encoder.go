@@ -136,13 +136,6 @@ func complex128SliceEncoder(writer *Writer, ptr unsafe.Pointer) {
 	}
 }
 
-func iterableEncoder(writer *Writer, iterable reflect.Value) {
-	n := iterable.Len()
-	for i := 0; i < n; i++ {
-		writer.WriteValue(iterable.Index(i))
-	}
-}
-
 type sliceBodyEncoder func(*Writer, unsafe.Pointer)
 
 var sliceBodyEncoders []sliceBodyEncoder
