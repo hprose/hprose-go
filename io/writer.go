@@ -81,18 +81,6 @@ func (writer *Writer) WriteBool(b bool) {
 	}
 }
 
-// WriteInt32 to stream
-func (writer *Writer) WriteInt32(i int32) {
-	s := writer.Stream
-	if i >= 0 && i <= 9 {
-		s.WriteByte(byte('0' + i))
-		return
-	}
-	s.WriteByte(TagInteger)
-	s.Write(util.GetIntBytes(int64(i)))
-	s.WriteByte(TagSemicolon)
-}
-
 // WriteInt to stream
 func (writer *Writer) WriteInt(i int64) {
 	s := writer.Stream
@@ -112,7 +100,7 @@ func (writer *Writer) WriteInt(i int64) {
 // WriteUint to stream
 func (writer *Writer) WriteUint(i uint64) {
 	s := writer.Stream
-	if i >= 0 && i <= 9 {
+	if i <= 9 {
 		s.WriteByte(byte('0' + i))
 		return
 	}

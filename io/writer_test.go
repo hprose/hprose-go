@@ -203,14 +203,6 @@ func BenchmarkSerializeInt32(b *testing.B) {
 	}
 }
 
-func BenchmarkWriteInt32(b *testing.B) {
-	buf := new(bytes.Buffer)
-	writer := NewWriter(buf, false)
-	for i := 0; i < b.N; i++ {
-		writer.WriteInt32(int32(i))
-	}
-}
-
 func TestSerializeInt64(t *testing.T) {
 	b := new(bytes.Buffer)
 	writer := NewWriter(b, false)

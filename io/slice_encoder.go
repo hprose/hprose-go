@@ -45,21 +45,21 @@ func intSliceEncoder(writer *Writer, ptr unsafe.Pointer) {
 func int8SliceEncoder(writer *Writer, ptr unsafe.Pointer) {
 	slice := *(*[]int8)(ptr)
 	for _, e := range slice {
-		writer.WriteInt32(int32(e))
+		writer.WriteInt(int64(e))
 	}
 }
 
 func int16SliceEncoder(writer *Writer, ptr unsafe.Pointer) {
 	slice := *(*[]int16)(ptr)
 	for _, e := range slice {
-		writer.WriteInt32(int32(e))
+		writer.WriteInt(int64(e))
 	}
 }
 
 func int32SliceEncoder(writer *Writer, ptr unsafe.Pointer) {
 	slice := *(*[]int32)(ptr)
 	for _, e := range slice {
-		writer.WriteInt32(e)
+		writer.WriteInt(int64(e))
 	}
 }
 
@@ -80,14 +80,14 @@ func uintSliceEncoder(writer *Writer, ptr unsafe.Pointer) {
 func uint8SliceEncoder(writer *Writer, ptr unsafe.Pointer) {
 	slice := *(*[]uint8)(ptr)
 	for _, e := range slice {
-		writer.WriteInt32(int32(e))
+		writer.WriteUint(uint64(e))
 	}
 }
 
 func uint16SliceEncoder(writer *Writer, ptr unsafe.Pointer) {
 	slice := *(*[]uint16)(ptr)
 	for _, e := range slice {
-		writer.WriteInt32(int32(e))
+		writer.WriteUint(uint64(e))
 	}
 }
 
