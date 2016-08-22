@@ -542,6 +542,22 @@ func TestWriteInt16Slice(t *testing.T) {
 	}
 }
 
+func TestWriteInt32Slice(t *testing.T) {
+	b := new(bytes.Buffer)
+	writer := NewWriter(b, false)
+	testdata := map[*[]int32]string{
+		&[]int32{1, 2, 3}: "a3{123}",
+		&[]int32{}:        "a{}",
+	}
+	for k, v := range testdata {
+		writer.WriteInt32Slice(*k)
+		if b.String() != v {
+			t.Error(b.String())
+		}
+		b.Truncate(0)
+	}
+}
+
 func BenchmarkSerializeArray(b *testing.B) {
 	buf := new(bytes.Buffer)
 	writer := NewWriter(buf, false)
