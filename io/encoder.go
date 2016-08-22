@@ -73,12 +73,12 @@ func interfaceEncoder(writer *Writer, v reflect.Value) {
 
 func arrayEncoder(writer *Writer, v reflect.Value) {
 	writer.SetRef(nil)
-	writer.writeArray(v)
+	writeArray(writer, v)
 }
 
 func sliceEncoder(writer *Writer, v reflect.Value) {
 	writer.SetRef(nil)
-	writer.writeSlice(v)
+	writeSlice(writer, v)
 }
 
 func stringEncoder(writer *Writer, v reflect.Value) {
@@ -88,39 +88,40 @@ func stringEncoder(writer *Writer, v reflect.Value) {
 func arrayPtrEncoder(writer *Writer, v reflect.Value, addr uintptr) {
 	if !writer.WriteRef(addr) {
 		writer.SetRef(addr)
-		writer.writeArray(v)
+		writeArray(writer, v)
 	}
 }
 
 func mapPtrEncoder(writer *Writer, v reflect.Value, addr uintptr) {
 	if !writer.WriteRef(addr) {
 		writer.SetRef(addr)
-		//writer.writeMap(v)
+		//writeMap(writer, v)
 	}
 }
 
 func slicePtrEncoder(writer *Writer, v reflect.Value, addr uintptr) {
 	if !writer.WriteRef(addr) {
 		writer.SetRef(addr)
-		writer.writeSlice(v)
+		writeSlice(writer, v)
 	}
 }
 
 func stringPtrEncoder(writer *Writer, v reflect.Value, addr uintptr) {
 	str := v.String()
 	length := util.UTF16Length(str)
+	s := writer.Stream
 	switch {
 	case length == 0:
-		writer.Stream.WriteByte(TagEmpty)
+		s.WriteByte(TagEmpty)
 	case length < 0:
 		writer.WriteBytes(*(*[]byte)(unsafe.Pointer(&str)))
 	case length == 1:
-		writer.Stream.WriteByte(TagUTF8Char)
-		writer.Stream.WriteString(str)
+		s.WriteByte(TagUTF8Char)
+		s.WriteString(str)
 	default:
 		if !writer.WriteRef(addr) {
 			writer.SetRef(addr)
-			writer.writeString(str, length)
+			writeString(s, str, length)
 		}
 	}
 }
@@ -132,7 +133,7 @@ func structPtrEncoder(writer *Writer, v reflect.Value, addr uintptr) {
 	}
 	if !writer.WriteRef(addr) {
 		writer.SetRef(addr)
-		//writer.writeStruct(v)
+		//writeStruct(writer, v)
 	}
 }
 
