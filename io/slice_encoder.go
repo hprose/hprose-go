@@ -24,6 +24,10 @@ import (
 	"unsafe"
 )
 
+type sliceBodyEncoder func(*Writer, unsafe.Pointer)
+
+var sliceBodyEncoders []sliceBodyEncoder
+
 func boolSliceEncoder(writer *Writer, ptr unsafe.Pointer) {
 	slice := *(*[]bool)(ptr)
 	for _, e := range slice {
@@ -142,10 +146,6 @@ func stringSliceEncoder(writer *Writer, ptr unsafe.Pointer) {
 		writer.WriteString(e)
 	}
 }
-
-type sliceBodyEncoder func(*Writer, unsafe.Pointer)
-
-var sliceBodyEncoders []sliceBodyEncoder
 
 func init() {
 	sliceBodyEncoders = []sliceBodyEncoder{

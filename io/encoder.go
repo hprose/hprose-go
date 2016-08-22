@@ -26,6 +26,10 @@ import (
 	"github.com/hprose/hprose-golang/util"
 )
 
+type valueEncoder func(writer *Writer, v reflect.Value)
+
+var valueEncoders []valueEncoder
+
 func nilEncoder(writer *Writer, v reflect.Value) {
 	writer.WriteNil()
 }
@@ -58,9 +62,27 @@ func complex128Encoder(writer *Writer, v reflect.Value) {
 	writer.WriteComplex128(v.Complex())
 }
 
+func interfaceEncoder(writer *Writer, v reflect.Value) {
+	if v.IsNil() {
+		writer.WriteNil()
+		return
+	}
+	e := v.Elem()
+	valueEncoders[e.Kind()](writer, e)
+}
+
 func arrayEncoder(writer *Writer, v reflect.Value) {
 	writer.SetRef(nil)
 	writer.writeArray(v)
+}
+
+func sliceEncoder(writer *Writer, v reflect.Value) {
+	writer.SetRef(nil)
+	writer.writeSlice(v)
+}
+
+func stringEncoder(writer *Writer, v reflect.Value) {
+	writer.WriteString(v.String())
 }
 
 func arrayPtrEncoder(writer *Writer, v reflect.Value, addr uintptr) {
@@ -113,6 +135,7 @@ func structPtrEncoder(writer *Writer, v reflect.Value, addr uintptr) {
 		//writer.writeStruct(v)
 	}
 }
+
 func ptrEncoder(writer *Writer, v reflect.Value) {
 	if v.IsNil() {
 		writer.WriteNil()
@@ -138,8 +161,10 @@ func ptrEncoder(writer *Writer, v reflect.Value) {
 		writer.WriteComplex64(complex64(v.Complex()))
 	case reflect.Complex128:
 		writer.WriteComplex128(v.Complex())
-	case reflect.Ptr, reflect.Interface:
+	case reflect.Ptr:
 		ptrEncoder(writer, e)
+	case reflect.Interface:
+		interfaceEncoder(writer, e)
 	case reflect.Array:
 		arrayPtrEncoder(writer, e, v.Pointer())
 	case reflect.Map:
@@ -154,19 +179,6 @@ func ptrEncoder(writer *Writer, v reflect.Value) {
 		writer.WriteNil()
 	}
 }
-
-func sliceEncoder(writer *Writer, v reflect.Value) {
-	writer.SetRef(nil)
-	writer.writeSlice(v)
-}
-
-func stringEncoder(writer *Writer, v reflect.Value) {
-	writer.WriteString(v.String())
-}
-
-type valueEncoder func(writer *Writer, v reflect.Value)
-
-var valueEncoders []valueEncoder
 
 func init() {
 	valueEncoders = []valueEncoder{
@@ -190,7 +202,7 @@ func init() {
 		reflect.Array:         arrayEncoder,
 		reflect.Chan:          nilEncoder,
 		reflect.Func:          nilEncoder,
-		reflect.Interface:     ptrEncoder,
+		reflect.Interface:     interfaceEncoder,
 		reflect.Map:           nilEncoder,
 		reflect.Ptr:           ptrEncoder,
 		reflect.Slice:         sliceEncoder,
