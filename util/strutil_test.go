@@ -26,11 +26,13 @@ import (
 
 func TestUTF16Length(t *testing.T) {
 	data := map[string]int{
-		"":           0,
-		"你":          1,
-		"你好":         2,
-		"你好啊,hello!": 10,
-		"🇨🇳":         4,
+		"":                            0,
+		"π":                           1,
+		"你":                           1,
+		"你好":                          2,
+		"你好啊,hello!":                  10,
+		"🇨🇳":                          4,
+		string([]byte{128, 129, 130}): -1,
 	}
 	for k, v := range data {
 		if UTF16Length(k) != v {
