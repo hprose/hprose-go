@@ -452,15 +452,15 @@ func TestSerializeArray(t *testing.T) {
 	b := new(bytes.Buffer)
 	writer := NewWriter(b, false)
 	testdata := map[interface{}]string{
-		[...]int{1, 2, 3}:                  "a3{123}",
-		[...]float64{1, 2, 3}:              "a3{d1;d2;d3;}",
-		[...]byte{'h', 'e', 'l', 'l', 'o'}: "a5{i104;i101;i108;i108;i111;}",
-		[...]byte{}:                        "a{}",
-		[...]interface{}{1, 2.0, true}:     "a3{1d2;t}",
-		[...]bool{true, false, true}:       "a3{tft}",
-		[...]int{}:                         "a{}",
-		[...]bool{}:                        "a{}",
-		[...]interface{}{}:                 "a{}",
+		&[...]int{1, 2, 3}:                  "a3{123}",
+		&[...]float64{1, 2, 3}:              "a3{d1;d2;d3;}",
+		&[...]byte{'h', 'e', 'l', 'l', 'o'}: "a5{i104;i101;i108;i108;i111;}",
+		&[...]byte{}:                        "a{}",
+		&[...]interface{}{1, 2.0, true}:     "a3{1d2;t}",
+		&[...]bool{true, false, true}:       "a3{tft}",
+		&[...]int{}:                         "a{}",
+		&[...]bool{}:                        "a{}",
+		&[...]interface{}{}:                 "a{}",
 	}
 	for k, v := range testdata {
 		writer.Serialize(k)
