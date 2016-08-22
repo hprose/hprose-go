@@ -353,7 +353,7 @@ func (writer *Writer) WriteUintSlice(slice []uint) {
 		return
 	}
 	writer.writeListHeader(count)
-	intSliceEncoder(writer, unsafe.Pointer(&slice))
+	uintSliceEncoder(writer, unsafe.Pointer(&slice))
 	writer.writeListFooter()
 }
 
