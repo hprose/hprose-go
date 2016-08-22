@@ -340,6 +340,22 @@ func TestSerializeFloat32(t *testing.T) {
 	}
 }
 
+func BenchmarkSerializeFloat32(b *testing.B) {
+	buf := new(bytes.Buffer)
+	writer := NewWriter(buf, false)
+	for i := 0; i < b.N; i++ {
+		writer.Serialize(float32(i))
+	}
+}
+
+func BenchmarkWriteFloat32(b *testing.B) {
+	buf := new(bytes.Buffer)
+	writer := NewWriter(buf, false)
+	for i := 0; i < b.N; i++ {
+		writer.WriteFloat(float64(i), 32)
+	}
+}
+
 func TestSerializeFloat64(t *testing.T) {
 	b := new(bytes.Buffer)
 	writer := NewWriter(b, false)
@@ -647,6 +663,38 @@ func TestWriteUint64Slice(t *testing.T) {
 	}
 	for k, v := range testdata {
 		writer.WriteUint64Slice(*k)
+		if b.String() != v {
+			t.Error(b.String())
+		}
+		b.Truncate(0)
+	}
+}
+
+func TestWriteFloat32Slice(t *testing.T) {
+	b := new(bytes.Buffer)
+	writer := NewWriter(b, false)
+	testdata := map[*[]float32]string{
+		&[]float32{1, 2, 3}: "a3{d1;d2;d3;}",
+		&[]float32{}:        "a{}",
+	}
+	for k, v := range testdata {
+		writer.WriteFloat32Slice(*k)
+		if b.String() != v {
+			t.Error(b.String())
+		}
+		b.Truncate(0)
+	}
+}
+
+func TestWriteFloat64Slice(t *testing.T) {
+	b := new(bytes.Buffer)
+	writer := NewWriter(b, false)
+	testdata := map[*[]float64]string{
+		&[]float64{1, 2, 3}: "a3{d1;d2;d3;}",
+		&[]float64{}:        "a{}",
+	}
+	for k, v := range testdata {
+		writer.WriteFloat64Slice(*k)
 		if b.String() != v {
 			t.Error(b.String())
 		}
