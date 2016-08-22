@@ -311,7 +311,7 @@ func Map(callback func(interface{}) interface{}, iterable ...interface{}) Promis
 //
 //     func(prev interface{}, value interface{}) interface{}
 //
-//  prev: The value previously returned in the last invocation of the callback.
+// prev: The value previously returned in the last invocation of the callback.
 //
 // value: The current element being processed.
 //
