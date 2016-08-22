@@ -702,6 +702,38 @@ func TestWriteFloat64Slice(t *testing.T) {
 	}
 }
 
+func TestWriteComplex64Slice(t *testing.T) {
+	b := new(bytes.Buffer)
+	writer := NewWriter(b, false)
+	testdata := map[*[]complex64]string{
+		&[]complex64{complex(0, 0), complex(1, 0), complex(0, 1)}: "a3{d0;d1;a2{d0;d1;}}",
+		&[]complex64{}: "a{}",
+	}
+	for k, v := range testdata {
+		writer.WriteComplex64Slice(*k)
+		if b.String() != v {
+			t.Error(b.String())
+		}
+		b.Truncate(0)
+	}
+}
+
+func TestWriteComplex128Slice(t *testing.T) {
+	b := new(bytes.Buffer)
+	writer := NewWriter(b, false)
+	testdata := map[*[]complex128]string{
+		&[]complex128{complex(0, 0), complex(1, 0), complex(0, 1)}: "a3{d0;d1;a2{d0;d1;}}",
+		&[]complex128{}:                                            "a{}",
+	}
+	for k, v := range testdata {
+		writer.WriteComplex128Slice(*k)
+		if b.String() != v {
+			t.Error(b.String())
+		}
+		b.Truncate(0)
+	}
+}
+
 func BenchmarkSerializeArray(b *testing.B) {
 	buf := new(bytes.Buffer)
 	writer := NewWriter(buf, false)
