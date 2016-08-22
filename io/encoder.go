@@ -63,6 +63,56 @@ func arrayEncoder(writer *Writer, v reflect.Value) {
 	writer.writeArray(v)
 }
 
+func arrayPtrEncoder(writer *Writer, v reflect.Value, addr uintptr) {
+	if !writer.WriteRef(addr) {
+		writer.SetRef(addr)
+		writer.writeArray(v)
+	}
+}
+
+func mapPtrEncoder(writer *Writer, v reflect.Value, addr uintptr) {
+	if !writer.WriteRef(addr) {
+		writer.SetRef(addr)
+		//writer.writeMap(v)
+	}
+}
+
+func slicePtrEncoder(writer *Writer, v reflect.Value, addr uintptr) {
+	if !writer.WriteRef(addr) {
+		writer.SetRef(addr)
+		writer.writeSlice(v)
+	}
+}
+
+func stringPtrEncoder(writer *Writer, v reflect.Value, addr uintptr) {
+	str := v.String()
+	length := util.UTF16Length(str)
+	switch {
+	case length == 0:
+		writer.Stream.WriteByte(TagEmpty)
+	case length < 0:
+		writer.WriteBytes(*(*[]byte)(unsafe.Pointer(&str)))
+	case length == 1:
+		writer.Stream.WriteByte(TagUTF8Char)
+		writer.Stream.WriteString(str)
+	default:
+		if !writer.WriteRef(addr) {
+			writer.SetRef(addr)
+			writer.writeString(str, length)
+		}
+	}
+}
+
+func structPtrEncoder(writer *Writer, v reflect.Value, addr uintptr) {
+	if v.Type().PkgPath() == "big" {
+		v.Interface().(Marshaler).MarshalHprose(writer)
+		return
+	}
+	if !writer.WriteRef(addr) {
+		writer.SetRef(addr)
+		//writer.writeStruct(v)
+	}
+}
 func ptrEncoder(writer *Writer, v reflect.Value) {
 	if v.IsNil() {
 		writer.WriteNil()
@@ -88,54 +138,18 @@ func ptrEncoder(writer *Writer, v reflect.Value) {
 		writer.WriteComplex64(complex64(v.Complex()))
 	case reflect.Complex128:
 		writer.WriteComplex128(v.Complex())
-	case reflect.Array:
-		addr := v.Pointer()
-		if !writer.WriteRef(addr) {
-			writer.SetRef(addr)
-			writer.writeArray(e)
-		}
 	case reflect.Ptr, reflect.Interface:
 		ptrEncoder(writer, e)
+	case reflect.Array:
+		arrayPtrEncoder(writer, e, v.Pointer())
 	case reflect.Map:
-		addr := v.Pointer()
-		if !writer.WriteRef(addr) {
-			writer.SetRef(addr)
-			//writer.writeMap(e)
-		}
+		mapPtrEncoder(writer, e, v.Pointer())
 	case reflect.Slice:
-		addr := v.Pointer()
-		if !writer.WriteRef(addr) {
-			writer.SetRef(addr)
-			writer.writeSlice(e)
-		}
+		slicePtrEncoder(writer, e, v.Pointer())
 	case reflect.String:
-		str := e.String()
-		length := util.UTF16Length(str)
-		switch {
-		case length == 0:
-			writer.Stream.WriteByte(TagEmpty)
-		case length < 0:
-			writer.WriteBytes(*(*[]byte)(unsafe.Pointer(&str)))
-		case length == 1:
-			writer.Stream.WriteByte(TagUTF8Char)
-			writer.Stream.WriteString(str)
-		default:
-			addr := v.Pointer()
-			if !writer.WriteRef(addr) {
-				writer.SetRef(addr)
-				writer.writeString(str, length)
-			}
-		}
+		stringPtrEncoder(writer, e, v.Pointer())
 	case reflect.Struct:
-		if e.Type().PkgPath() == "big" {
-			e.Interface().(Marshaler).MarshalHprose(writer)
-			return
-		}
-		addr := v.Pointer()
-		if !writer.WriteRef(addr) {
-			writer.SetRef(addr)
-			//writer.writeStruct(e)
-		}
+		structPtrEncoder(writer, e, v.Pointer())
 	default:
 		writer.WriteNil()
 	}
