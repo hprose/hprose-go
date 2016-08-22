@@ -670,6 +670,22 @@ func TestWriteUint64Slice(t *testing.T) {
 	}
 }
 
+func TestWriteUintptrSlice(t *testing.T) {
+	b := new(bytes.Buffer)
+	writer := NewWriter(b, false)
+	testdata := map[*[]uintptr]string{
+		&[]uintptr{1, 2, 3}: "a3{123}",
+		&[]uintptr{}:        "a{}",
+	}
+	for k, v := range testdata {
+		writer.WriteUintptrSlice(*k)
+		if b.String() != v {
+			t.Error(b.String())
+		}
+		b.Truncate(0)
+	}
+}
+
 func TestWriteFloat32Slice(t *testing.T) {
 	b := new(bytes.Buffer)
 	writer := NewWriter(b, false)
