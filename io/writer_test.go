@@ -663,30 +663,12 @@ func BenchmarkSerializeArray(b *testing.B) {
 	}
 }
 
-func BenchmarkWriteArray(b *testing.B) {
-	buf := new(bytes.Buffer)
-	writer := NewWriter(buf, false)
-	array := [...]int{0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 1, 2, 3, 4, 0, 1, 2, 3, 4}
-	for i := 0; i < b.N; i++ {
-		writer.WriteArray(array)
-	}
-}
-
 func BenchmarkSerializeSlice(b *testing.B) {
 	buf := new(bytes.Buffer)
 	writer := NewWriter(buf, false)
 	slice := []int{0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 1, 2, 3, 4, 0, 1, 2, 3, 4}
 	for i := 0; i < b.N; i++ {
 		writer.Serialize(slice)
-	}
-}
-
-func BenchmarkWriteSlice(b *testing.B) {
-	buf := new(bytes.Buffer)
-	writer := NewWriter(buf, false)
-	slice := []int{0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 1, 2, 3, 4, 0, 1, 2, 3, 4}
-	for i := 0; i < b.N; i++ {
-		writer.WriteSlice(slice)
 	}
 }
 

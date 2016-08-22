@@ -208,7 +208,6 @@ func (writer *Writer) writeListBody(list reflect.Value, count int) {
 	}
 }
 
-// WriteArray to stream
 func (writer *Writer) writeArray(v reflect.Value) {
 	writer.SetRef(nil)
 	count := v.Len()
@@ -232,12 +231,6 @@ func (writer *Writer) writeArray(v reflect.Value) {
 	writer.writeListFooter()
 }
 
-// WriteArray to stream
-func (writer *Writer) WriteArray(v interface{}) {
-	array := reflect.ValueOf(v)
-	writer.writeArray(array)
-}
-
 func (writer *Writer) writeSlice(v reflect.Value) {
 	kind := v.Type().Elem().Kind()
 	ptr := (*emptyInterface)(unsafe.Pointer(&v)).ptr
@@ -258,12 +251,6 @@ func (writer *Writer) writeSlice(v reflect.Value) {
 		writer.writeListBody(v, count)
 	}
 	writer.writeListFooter()
-}
-
-// WriteSlice to stream
-func (writer *Writer) WriteSlice(v interface{}) {
-	slice := reflect.ValueOf(v)
-	writer.writeSlice(slice)
 }
 
 // WriteBoolSlice to stream
