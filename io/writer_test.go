@@ -478,6 +478,22 @@ func TestSerializeSlice(t *testing.T) {
 	}
 }
 
+func TestWriteBoolSlice(t *testing.T) {
+	b := new(bytes.Buffer)
+	writer := NewWriter(b, false)
+	testdata := map[*[]bool]string{
+		&[]bool{true, false, true}: "a3{tft}",
+		&[]bool{}:                  "a{}",
+	}
+	for k, v := range testdata {
+		writer.WriteBoolSlice(*k)
+		if b.String() != v {
+			t.Error(b.String())
+		}
+		b.Truncate(0)
+	}
+}
+
 func BenchmarkSerializeArray(b *testing.B) {
 	buf := new(bytes.Buffer)
 	writer := NewWriter(buf, false)
