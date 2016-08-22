@@ -85,6 +85,10 @@ func stringEncoder(writer *Writer, v reflect.Value) {
 	writer.WriteString(v.String())
 }
 
+func structEncoder(writer *Writer, v reflect.Value) {
+	structPtrEncoder(writer, v.Addr())
+}
+
 func arrayPtrEncoder(writer *Writer, v reflect.Value, addr uintptr) {
 	if !writer.WriteRef(addr) {
 		writer.SetRef(addr)
@@ -126,11 +130,12 @@ func stringPtrEncoder(writer *Writer, v reflect.Value, addr uintptr) {
 	}
 }
 
-func structPtrEncoder(writer *Writer, v reflect.Value, addr uintptr) {
+func structPtrEncoder(writer *Writer, v reflect.Value) {
 	if v.Type().PkgPath() == "big" {
 		v.Interface().(Marshaler).MarshalHprose(writer)
 		return
 	}
+	addr := v.Pointer()
 	if !writer.WriteRef(addr) {
 		writer.SetRef(addr)
 		//writeStruct(writer, v)
@@ -154,7 +159,7 @@ func ptrEncoder(writer *Writer, v reflect.Value) {
 	case reflect.String:
 		stringPtrEncoder(writer, e, v.Pointer())
 	case reflect.Struct:
-		structPtrEncoder(writer, e, v.Pointer())
+		structPtrEncoder(writer, v)
 	default:
 		valueEncoders[kind](writer, e)
 	}
@@ -187,7 +192,7 @@ func init() {
 		reflect.Ptr:           ptrEncoder,
 		reflect.Slice:         sliceEncoder,
 		reflect.String:        stringEncoder,
-		reflect.Struct:        nilEncoder,
+		reflect.Struct:        structEncoder,
 		reflect.UnsafePointer: nilEncoder,
 	}
 }
