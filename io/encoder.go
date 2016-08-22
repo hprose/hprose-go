@@ -72,12 +72,12 @@ func interfaceEncoder(writer *Writer, v reflect.Value) {
 }
 
 func arrayEncoder(writer *Writer, v reflect.Value) {
-	writer.SetRef(nil)
+	writer.SetRef(0)
 	writeArray(writer, v)
 }
 
 func sliceEncoder(writer *Writer, v reflect.Value) {
-	writer.SetRef(nil)
+	writer.SetRef(0)
 	writeSlice(writer, v)
 }
 
