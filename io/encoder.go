@@ -113,19 +113,18 @@ func slicePtrEncoder(writer *Writer, v reflect.Value, addr uintptr) {
 func stringPtrEncoder(writer *Writer, v reflect.Value, addr uintptr) {
 	str := v.String()
 	length := util.UTF16Length(str)
-	s := writer.Stream
 	switch {
 	case length == 0:
-		s.WriteByte(TagEmpty)
+		writer.Stream.WriteByte(TagEmpty)
 	case length < 0:
 		writer.WriteBytes(*(*[]byte)(unsafe.Pointer(&str)))
 	case length == 1:
-		s.WriteByte(TagUTF8Char)
-		s.WriteString(str)
+		writer.Stream.WriteByte(TagUTF8Char)
+		writer.Stream.WriteString(str)
 	default:
 		if !writer.WriteRef(addr) {
 			writer.SetRef(addr)
-			writeString(s, str, length)
+			writeString(writer, str, length)
 		}
 	}
 }

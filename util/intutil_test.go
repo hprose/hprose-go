@@ -27,24 +27,26 @@ import (
 )
 
 func BenchmarkGetIntBytes(b *testing.B) {
+	buf := make([]byte, 20)
 	for i := 0; i < b.N; i++ {
-		GetIntBytes(int64(i))
-		GetIntBytes(int64(-i))
-		GetIntBytes(math.MaxInt32 - int64(i))
-		GetIntBytes(math.MinInt32 + int64(i))
-		GetIntBytes(math.MaxInt64 - int64(i))
-		GetIntBytes(math.MinInt64 + int64(i))
+		GetIntBytes(buf, int64(i))
+		GetIntBytes(buf, int64(-i))
+		GetIntBytes(buf, math.MaxInt32-int64(i))
+		GetIntBytes(buf, math.MinInt32+int64(i))
+		GetIntBytes(buf, math.MaxInt64-int64(i))
+		GetIntBytes(buf, math.MinInt64+int64(i))
 	}
 }
 
 func BenchmarkGetUintBytes(b *testing.B) {
+	buf := make([]byte, 20)
 	for i := 0; i < b.N; i++ {
-		GetUintBytes(uint64(i))
-		GetUintBytes(uint64(-i))
-		GetUintBytes(math.MaxUint32 - uint64(i))
-		GetUintBytes(math.MaxUint32 + uint64(i))
-		GetUintBytes(math.MaxUint64 - uint64(i))
-		GetUintBytes(math.MaxUint64 + uint64(i))
+		GetUintBytes(buf, uint64(i))
+		GetUintBytes(buf, uint64(-i))
+		GetUintBytes(buf, math.MaxUint32-uint64(i))
+		GetUintBytes(buf, math.MaxUint32+uint64(i))
+		GetUintBytes(buf, math.MaxUint64-uint64(i))
+		GetUintBytes(buf, math.MaxUint64+uint64(i))
 	}
 }
 
@@ -73,13 +75,14 @@ func BenchmarkFormatUint(b *testing.B) {
 func BenchmarkGetIntBytesParallel(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		var i int64
+		buf := make([]byte, 20)
 		for pb.Next() {
-			GetIntBytes(i)
-			GetIntBytes(-i)
-			GetIntBytes(math.MaxInt32 - i)
-			GetIntBytes(math.MinInt32 + i)
-			GetIntBytes(math.MaxInt64 - i)
-			GetIntBytes(math.MinInt64 + i)
+			GetIntBytes(buf, i)
+			GetIntBytes(buf, -i)
+			GetIntBytes(buf, math.MaxInt32-i)
+			GetIntBytes(buf, math.MinInt32+i)
+			GetIntBytes(buf, math.MaxInt64-i)
+			GetIntBytes(buf, math.MinInt64+i)
 			i++
 		}
 	})
@@ -88,13 +91,14 @@ func BenchmarkGetIntBytesParallel(b *testing.B) {
 func BenchmarkGetUintBytesParallel(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		var i uint64
+		buf := make([]byte, 20)
 		for pb.Next() {
-			GetUintBytes(i)
-			GetUintBytes(-i)
-			GetUintBytes(math.MaxUint32 - i)
-			GetUintBytes(math.MaxUint32 + i)
-			GetUintBytes(math.MaxUint64 - i)
-			GetUintBytes(math.MaxUint64 + i)
+			GetUintBytes(buf, i)
+			GetUintBytes(buf, -i)
+			GetUintBytes(buf, math.MaxUint32-i)
+			GetUintBytes(buf, math.MaxUint32+i)
+			GetUintBytes(buf, math.MaxUint64-i)
+			GetUintBytes(buf, math.MaxUint64+i)
 			i++
 		}
 	})
@@ -135,8 +139,9 @@ func TestGetIntBytes(t *testing.T) {
 		0, 9, 10, 99, 100, 999, 1000, -1000, 10000, -10000,
 		123456789, -123456789, math.MaxInt32, math.MinInt32,
 		math.MaxInt64, math.MinInt64}
+	buf := make([]byte, 20)
 	for _, i := range data {
-		b := GetIntBytes(i)
+		b := GetIntBytes(buf, i)
 		if !reflect.DeepEqual(b, []byte(strconv.FormatInt(i, 10))) {
 			t.Error("b must be []byte(\"" + strconv.FormatInt(i, 10) + "\")")
 		}
@@ -147,8 +152,9 @@ func TestGetUintBytes(t *testing.T) {
 	data := []uint64{
 		0, 9, 10, 99, 100, 999, 1000, 10000, 123456789,
 		math.MaxInt32, math.MaxUint32, math.MaxInt64, math.MaxUint64}
+	buf := make([]byte, 20)
 	for _, i := range data {
-		b := GetUintBytes(i)
+		b := GetUintBytes(buf, i)
 		if !reflect.DeepEqual(b, []byte(strconv.FormatUint(i, 10))) {
 			t.Error("b must be []byte(\"" + strconv.FormatUint(i, 10) + "\")")
 		}

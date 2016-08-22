@@ -87,20 +87,20 @@ var minInt64Buf = [...]byte{
 	'6', '8', '5', '4', '7', '7', '5', '8', '0', '8'}
 
 // GetIntBytes returns the []byte representation of i in base 10.
-func GetIntBytes(i int64) []byte {
+// buf length must be greater than or equal to 20
+func GetIntBytes(buf []byte, i int64) []byte {
 	if i == 0 {
 		return []byte{'0'}
 	}
 	if i == math.MinInt64 {
 		return minInt64Buf[:]
 	}
-	var buf [20]byte
 	var sign byte
 	if i < 0 {
 		sign = '-'
 		i = -i
 	}
-	off := 20
+	off := len(buf)
 	var q, p int64
 	for i >= 100 {
 		q = i / 1000
@@ -131,12 +131,12 @@ func GetIntBytes(i int64) []byte {
 }
 
 // GetUintBytes returns the []byte representation of i in base 10.
-func GetUintBytes(i uint64) []byte {
+// buf length must be greater than or equal to 20
+func GetUintBytes(buf []byte, i uint64) []byte {
 	if i == 0 {
 		return []byte{'0'}
 	}
-	var buf [20]byte
-	off := 20
+	off := len(buf)
 	var q, p uint64
 	for i >= 100 {
 		q = i / 1000
