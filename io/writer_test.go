@@ -448,6 +448,64 @@ func TestWriteTuple(t *testing.T) {
 	}
 }
 
+func TestWriteBytes(t *testing.T) {
+	b := new(bytes.Buffer)
+	writer := NewWriter(b, false)
+	testdata := map[*[]byte]string{
+		&[]byte{'h', 'e', 'l', 'l', 'o'}: "b5\"hello\"",
+		&[]byte{}:                        "b\"\"",
+	}
+	for k, v := range testdata {
+		writer.WriteBytes(*k)
+		if b.String() != v {
+			t.Error(b.String())
+		}
+		b.Truncate(0)
+	}
+}
+
+func TestSerializeString(t *testing.T) {
+	b := new(bytes.Buffer)
+	writer := NewWriter(b, false)
+	testdata := map[string]string{
+		"":                            "e",
+		"π":                           "uπ",
+		"你":                           "u你",
+		"你好":                          "s2\"你好\"",
+		"你好啊,hello!":                  "s10\"你好啊,hello!\"",
+		"🇨🇳":                          "s4\"🇨🇳\"",
+		string([]byte{128, 129, 130}): string([]byte{'b', '3', '"', 128, 129, 130, '"'}),
+	}
+	for k, v := range testdata {
+		writer.Serialize(k)
+		if b.String() != v {
+			t.Error(b.String())
+		}
+		b.Truncate(0)
+	}
+}
+
+func TestWriteString(t *testing.T) {
+	b := new(bytes.Buffer)
+	writer := NewWriter(b, false)
+	testdata := map[string]string{
+		"":                            "e",
+		"π":                           "uπ",
+		"你":                           "u你",
+		"你好":                          "s2\"你好\"",
+		"你好啊,hello!":                  "s10\"你好啊,hello!\"",
+		"🇨🇳":                          "s4\"🇨🇳\"",
+		string([]byte{128, 129, 130}): string([]byte{'b', '3', '"', 128, 129, 130, '"'}),
+	}
+	for k, v := range testdata {
+		writer.WriteString(k)
+		if b.String() != v {
+			t.Error(b.String())
+		}
+		b.Truncate(0)
+	}
+}
+
 func TestSerializeArray(t *testing.T) {
 	b := new(bytes.Buffer)
 	writer := NewWriter(b, false)
@@ -750,15 +808,15 @@ func TestWriteComplex128Slice(t *testing.T) {
 	}
 }
 
-func TestWriteBytes(t *testing.T) {
+func TestWriteStringSlice(t *testing.T) {
 	b := new(bytes.Buffer)
 	writer := NewWriter(b, false)
-	testdata := map[*[]byte]string{
-		&[]byte{'h', 'e', 'l', 'l', 'o'}: "b5\"hello\"",
-		&[]byte{}:                        "b\"\"",
+	testdata := map[*[]string]string{
+		&[]string{"", "π", "hello"}: "a3{euπs5\"hello\"}",
+		&[]string{}:                 "a{}",
 	}
 	for k, v := range testdata {
-		writer.WriteBytes(*k)
+		writer.WriteStringSlice(*k)
 		if b.String() != v {
 			t.Error(b.String())
 		}
@@ -766,37 +824,15 @@ func TestWriteBytes(t *testing.T) {
 	}
 }
 
-func TestSerializeString(t *testing.T) {
+func TestWriteBytesSlice(t *testing.T) {
 	b := new(bytes.Buffer)
 	writer := NewWriter(b, false)
-	testdata := map[string]string{
-		"":           "e",
-		"你":          "u你",
-		"你好":         "s2\"你好\"",
-		"你好啊,hello!": "s10\"你好啊,hello!\"",
-		"🇨🇳":         "s4\"🇨🇳\"",
+	testdata := map[*[][]byte]string{
+		&[][]byte{[]byte(""), []byte("π"), []byte("hello")}: "a3{b\"\"b2\"π\"b5\"hello\"}",
+		&[][]byte{}: "a{}",
 	}
 	for k, v := range testdata {
-		writer.Serialize(k)
-		if b.String() != v {
-			t.Error(b.String())
-		}
-		b.Truncate(0)
-	}
-}
-
-func TestWriteString(t *testing.T) {
-	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
-	testdata := map[string]string{
-		"":           "e",
-		"你":          "u你",
-		"你好":         "s2\"你好\"",
-		"你好啊,hello!": "s10\"你好啊,hello!\"",
-		"🇨🇳":         "s4\"🇨🇳\"",
-	}
-	for k, v := range testdata {
-		writer.WriteString(k)
+		writer.WriteBytesSlice(*k)
 		if b.String() != v {
 			t.Error(b.String())
 		}

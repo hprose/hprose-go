@@ -146,21 +146,6 @@ func (writer *Writer) WriteFloat(f float64, bitSize int) {
 	s.WriteByte(TagSemicolon)
 }
 
-func (writer *Writer) writeListHeader(count int) {
-	s := writer.Stream
-	s.WriteByte(TagList)
-	s.Write(util.GetIntBytes(int64(count)))
-	s.WriteByte(TagOpenbrace)
-}
-
-func (writer *Writer) writeListFooter() {
-	writer.Stream.WriteByte(TagClosebrace)
-}
-
-func (writer *Writer) writeEmptyList() {
-	writer.Stream.Write([]byte{TagList, TagOpenbrace, TagClosebrace})
-}
-
 // WriteComplex64 to stream
 func (writer *Writer) WriteComplex64(c complex64) {
 	if imag(c) == 0 {
@@ -187,6 +172,52 @@ func (writer *Writer) WriteComplex128(c complex128) {
 	writer.writeListFooter()
 }
 
+func (writer *Writer) writeString(str string, length int) {
+	s := writer.Stream
+	s.WriteByte(TagString)
+	s.Write(util.GetIntBytes(int64(length)))
+	s.WriteByte(TagQuote)
+	s.WriteString(str)
+	s.WriteByte(TagQuote)
+}
+
+// WriteString to stream
+func (writer *Writer) WriteString(str string) {
+	length := util.UTF16Length(str)
+	switch {
+	case length == 0:
+		writer.Stream.WriteByte(TagEmpty)
+	case length < 0:
+		writer.WriteBytes(*(*[]byte)(unsafe.Pointer(&str)))
+	case length == 1:
+		writer.Stream.WriteByte(TagUTF8Char)
+		writer.Stream.WriteString(str)
+	default:
+		writer.SetRef(nil)
+		writer.writeString(str, length)
+	}
+}
+
+func (writer *Writer) writeBytes(bytes []byte) {
+	s := writer.Stream
+	count := len(bytes)
+	if count == 0 {
+		s.Write([]byte{TagBytes, TagQuote, TagQuote})
+		return
+	}
+	s.WriteByte(TagBytes)
+	s.Write(util.GetIntBytes(int64(count)))
+	s.WriteByte(TagQuote)
+	s.Write(bytes)
+	s.WriteByte(TagQuote)
+}
+
+// WriteBytes to stream
+func (writer *Writer) WriteBytes(bytes []byte) {
+	writer.SetRef(nil)
+	writer.writeBytes(bytes)
+}
+
 // WriteTuple to stream
 func (writer *Writer) WriteTuple(tuple ...interface{}) {
 	writer.SetRef(nil)
@@ -202,10 +233,25 @@ func (writer *Writer) WriteTuple(tuple ...interface{}) {
 	writer.writeListFooter()
 }
 
+func (writer *Writer) writeListHeader(count int) {
+	s := writer.Stream
+	s.WriteByte(TagList)
+	s.Write(util.GetIntBytes(int64(count)))
+	s.WriteByte(TagOpenbrace)
+}
+
 func (writer *Writer) writeListBody(list reflect.Value, count int) {
 	for i := 0; i < count; i++ {
 		writer.WriteValue(list.Index(i))
 	}
+}
+
+func (writer *Writer) writeListFooter() {
+	writer.Stream.WriteByte(TagClosebrace)
+}
+
+func (writer *Writer) writeEmptyList() {
+	writer.Stream.Write([]byte{TagList, TagOpenbrace, TagClosebrace})
 }
 
 func (writer *Writer) writeArray(v reflect.Value) {
@@ -259,26 +305,6 @@ func (writer *Writer) writeSlice(v reflect.Value) {
 		writer.writeListBody(v, count)
 	}
 	writer.writeListFooter()
-}
-
-func (writer *Writer) writeBytes(bytes []byte) {
-	s := writer.Stream
-	count := len(bytes)
-	if count == 0 {
-		s.Write([]byte{TagBytes, TagQuote, TagQuote})
-		return
-	}
-	s.WriteByte(TagBytes)
-	s.Write(util.GetIntBytes(int64(count)))
-	s.WriteByte(TagQuote)
-	s.Write(bytes)
-	s.WriteByte(TagQuote)
-}
-
-// WriteBytes to stream
-func (writer *Writer) WriteBytes(bytes []byte) {
-	writer.SetRef(nil)
-	writer.writeBytes(bytes)
 }
 
 // WriteBoolSlice to stream
@@ -489,30 +515,30 @@ func (writer *Writer) WriteComplex128Slice(slice []complex128) {
 	writer.writeListFooter()
 }
 
-func (writer *Writer) writeString(str string, length int) {
-	s := writer.Stream
-	s.WriteByte(TagString)
-	s.Write(util.GetIntBytes(int64(length)))
-	s.WriteByte(TagQuote)
-	s.WriteString(str)
-	s.WriteByte(TagQuote)
+// WriteStringSlice to stream
+func (writer *Writer) WriteStringSlice(slice []string) {
+	writer.SetRef(nil)
+	count := len(slice)
+	if count == 0 {
+		writer.writeEmptyList()
+		return
+	}
+	writer.writeListHeader(count)
+	stringSliceEncoder(writer, unsafe.Pointer(&slice))
+	writer.writeListFooter()
 }
 
-// WriteString to stream
-func (writer *Writer) WriteString(str string) {
-	length := util.UTF16Length(str)
-	switch {
-	case length == 0:
-		writer.Stream.WriteByte(TagEmpty)
-	case length < 0:
-		writer.WriteBytes(*(*[]byte)(unsafe.Pointer(&str)))
-	case length == 1:
-		writer.Stream.WriteByte(TagUTF8Char)
-		writer.Stream.WriteString(str)
-	default:
-		writer.SetRef(nil)
-		writer.writeString(str, length)
+// WriteBytesSlice to stream
+func (writer *Writer) WriteBytesSlice(slice [][]byte) {
+	writer.SetRef(nil)
+	count := len(slice)
+	if count == 0 {
+		writer.writeEmptyList()
+		return
 	}
+	writer.writeListHeader(count)
+	bytesSliceEncoder(writer, unsafe.Pointer(&slice))
+	writer.writeListFooter()
 }
 
 // WriteRef writes reference of an object to stream

@@ -147,6 +147,13 @@ func stringSliceEncoder(writer *Writer, ptr unsafe.Pointer) {
 	}
 }
 
+func bytesSliceEncoder(writer *Writer, ptr unsafe.Pointer) {
+	slice := *(*[][]byte)(ptr)
+	for _, e := range slice {
+		writer.WriteBytes(e)
+	}
+}
+
 func init() {
 	sliceBodyEncoders = []sliceBodyEncoder{
 		reflect.Invalid:       nil,
