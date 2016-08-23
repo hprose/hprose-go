@@ -22,6 +22,7 @@ package io
 import (
 	"bytes"
 	"math"
+	"math/big"
 	"math/rand"
 	"strconv"
 	"testing"
@@ -874,5 +875,19 @@ func BenchmarkWriteString(b *testing.B) {
 	str := "你好,hello!"
 	for i := 0; i < b.N; i++ {
 		writer.WriteString(str)
+	}
+}
+
+func TestSerializeBigInt(t *testing.T) {
+	b := new(bytes.Buffer)
+	writer := NewWriter(b, false)
+	writer.Serialize(big.NewInt(123))
+	if b.String() != "l123;" {
+		t.Error(b.String())
+	}
+	b.Truncate(0)
+	writer.Serialize(*big.NewInt(123))
+	if b.String() != "l123;" {
+		t.Error(b.String())
 	}
 }

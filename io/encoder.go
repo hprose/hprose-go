@@ -20,6 +20,7 @@
 package io
 
 import (
+	"math/big"
 	"reflect"
 	"unsafe"
 
@@ -72,12 +73,12 @@ func interfaceEncoder(writer *Writer, v reflect.Value) {
 }
 
 func arrayEncoder(writer *Writer, v reflect.Value) {
-	writer.SetRef(0)
+	writer.SetRef(nil)
 	writeArray(writer, v)
 }
 
 func sliceEncoder(writer *Writer, v reflect.Value) {
-	writer.SetRef(0)
+	writer.SetRef(nil)
 	writeSlice(writer, v)
 }
 
@@ -86,31 +87,33 @@ func stringEncoder(writer *Writer, v reflect.Value) {
 }
 
 func structEncoder(writer *Writer, v reflect.Value) {
-	structPtrEncoder(writer, v.Addr())
+	ptr := ((*emptyInterface)(unsafe.Pointer(&v)).ptr)
+	pv := reflect.NewAt(v.Type(), ptr)
+	structPtrEncoder(writer, pv, ptr)
 }
 
-func arrayPtrEncoder(writer *Writer, v reflect.Value, addr uintptr) {
-	if !writer.WriteRef(addr) {
-		writer.SetRef(addr)
+func arrayPtrEncoder(writer *Writer, v reflect.Value, ptr unsafe.Pointer) {
+	if !writer.WriteRef(ptr) {
+		writer.SetRef(ptr)
 		writeArray(writer, v)
 	}
 }
 
-func mapPtrEncoder(writer *Writer, v reflect.Value, addr uintptr) {
-	if !writer.WriteRef(addr) {
-		writer.SetRef(addr)
+func mapPtrEncoder(writer *Writer, v reflect.Value, ptr unsafe.Pointer) {
+	if !writer.WriteRef(ptr) {
+		writer.SetRef(ptr)
 		//writeMap(writer, v)
 	}
 }
 
-func slicePtrEncoder(writer *Writer, v reflect.Value, addr uintptr) {
-	if !writer.WriteRef(addr) {
-		writer.SetRef(addr)
+func slicePtrEncoder(writer *Writer, v reflect.Value, ptr unsafe.Pointer) {
+	if !writer.WriteRef(ptr) {
+		writer.SetRef(ptr)
 		writeSlice(writer, v)
 	}
 }
 
-func stringPtrEncoder(writer *Writer, v reflect.Value, addr uintptr) {
+func stringPtrEncoder(writer *Writer, v reflect.Value, ptr unsafe.Pointer) {
 	str := v.String()
 	length := util.UTF16Length(str)
 	switch {
@@ -122,22 +125,22 @@ func stringPtrEncoder(writer *Writer, v reflect.Value, addr uintptr) {
 		writer.Stream.WriteByte(TagUTF8Char)
 		writer.Stream.WriteString(str)
 	default:
-		if !writer.WriteRef(addr) {
-			writer.SetRef(addr)
+		if !writer.WriteRef(ptr) {
+			writer.SetRef(ptr)
 			writeString(writer, str, length)
 		}
 	}
 }
 
-func structPtrEncoder(writer *Writer, v reflect.Value) {
-	if v.Type().PkgPath() == "big" {
-		v.Interface().(Marshaler).MarshalHprose(writer)
-		return
-	}
-	addr := v.Pointer()
-	if !writer.WriteRef(addr) {
-		writer.SetRef(addr)
-		//writeStruct(writer, v)
+func structPtrEncoder(writer *Writer, v reflect.Value, ptr unsafe.Pointer) {
+	switch v.Type() {
+	case bigIntType:
+		writer.WriteBigInt((*big.Int)(ptr))
+	default:
+		if !writer.WriteRef(ptr) {
+			writer.SetRef(ptr)
+			//writeStruct(writer, v)
+		}
 	}
 }
 
@@ -148,17 +151,18 @@ func ptrEncoder(writer *Writer, v reflect.Value) {
 	}
 	e := v.Elem()
 	kind := e.Kind()
+	ptr := ((*emptyInterface)(unsafe.Pointer(&v)).ptr)
 	switch kind {
 	case reflect.Array:
-		arrayPtrEncoder(writer, e, v.Pointer())
+		arrayPtrEncoder(writer, e, ptr)
 	case reflect.Map:
-		mapPtrEncoder(writer, e, v.Pointer())
+		mapPtrEncoder(writer, e, ptr)
 	case reflect.Slice:
-		slicePtrEncoder(writer, e, v.Pointer())
+		slicePtrEncoder(writer, e, ptr)
 	case reflect.String:
-		stringPtrEncoder(writer, e, v.Pointer())
+		stringPtrEncoder(writer, e, ptr)
 	case reflect.Struct:
-		structPtrEncoder(writer, v)
+		structPtrEncoder(writer, v, ptr)
 	default:
 		valueEncoders[kind](writer, e)
 	}

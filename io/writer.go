@@ -22,6 +22,7 @@ package io
 import (
 	"bytes"
 	"math"
+	"math/big"
 	"reflect"
 	"strconv"
 	"unsafe"
@@ -135,7 +136,7 @@ func (writer *Writer) WriteComplex64(c complex64) {
 		writer.WriteFloat(float64(real(c)), 32)
 		return
 	}
-	writer.SetRef(0)
+	writer.SetRef(nil)
 	writeListHeader(writer, 2)
 	writer.WriteFloat(float64(real(c)), 32)
 	writer.WriteFloat(float64(imag(c)), 32)
@@ -148,7 +149,7 @@ func (writer *Writer) WriteComplex128(c complex128) {
 		writer.WriteFloat(real(c), 64)
 		return
 	}
-	writer.SetRef(0)
+	writer.SetRef(nil)
 	writeListHeader(writer, 2)
 	writer.WriteFloat(real(c), 64)
 	writer.WriteFloat(imag(c), 64)
@@ -167,20 +168,28 @@ func (writer *Writer) WriteString(str string) {
 		writer.Stream.WriteByte(TagUTF8Char)
 		writer.Stream.WriteString(str)
 	default:
-		writer.SetRef(0)
+		writer.SetRef(nil)
 		writeString(writer, str, length)
 	}
 }
 
 // WriteBytes to stream
 func (writer *Writer) WriteBytes(bytes []byte) {
-	writer.SetRef(0)
+	writer.SetRef(nil)
 	writeBytes(writer, bytes)
+}
+
+// WriteBigInt to stream
+func (writer *Writer) WriteBigInt(bi *big.Int) {
+	s := writer.Stream
+	s.WriteByte(TagLong)
+	s.WriteString(bi.String())
+	s.WriteByte(TagSemicolon)
 }
 
 // WriteTuple to stream
 func (writer *Writer) WriteTuple(tuple ...interface{}) {
-	writer.SetRef(0)
+	writer.SetRef(nil)
 	count := len(tuple)
 	if count == 0 {
 		writeEmptyList(writer)
@@ -195,7 +204,7 @@ func (writer *Writer) WriteTuple(tuple ...interface{}) {
 
 // WriteBoolSlice to stream
 func (writer *Writer) WriteBoolSlice(slice []bool) {
-	writer.SetRef(0)
+	writer.SetRef(nil)
 	count := len(slice)
 	if count == 0 {
 		writeEmptyList(writer)
@@ -208,7 +217,7 @@ func (writer *Writer) WriteBoolSlice(slice []bool) {
 
 // WriteIntSlice to stream
 func (writer *Writer) WriteIntSlice(slice []int) {
-	writer.SetRef(0)
+	writer.SetRef(nil)
 	count := len(slice)
 	if count == 0 {
 		writeEmptyList(writer)
@@ -221,7 +230,7 @@ func (writer *Writer) WriteIntSlice(slice []int) {
 
 // WriteInt8Slice to stream
 func (writer *Writer) WriteInt8Slice(slice []int8) {
-	writer.SetRef(0)
+	writer.SetRef(nil)
 	count := len(slice)
 	if count == 0 {
 		writeEmptyList(writer)
@@ -234,7 +243,7 @@ func (writer *Writer) WriteInt8Slice(slice []int8) {
 
 // WriteInt16Slice to stream
 func (writer *Writer) WriteInt16Slice(slice []int16) {
-	writer.SetRef(0)
+	writer.SetRef(nil)
 	count := len(slice)
 	if count == 0 {
 		writeEmptyList(writer)
@@ -247,7 +256,7 @@ func (writer *Writer) WriteInt16Slice(slice []int16) {
 
 // WriteInt32Slice to stream
 func (writer *Writer) WriteInt32Slice(slice []int32) {
-	writer.SetRef(0)
+	writer.SetRef(nil)
 	count := len(slice)
 	if count == 0 {
 		writeEmptyList(writer)
@@ -260,7 +269,7 @@ func (writer *Writer) WriteInt32Slice(slice []int32) {
 
 // WriteInt64Slice to stream
 func (writer *Writer) WriteInt64Slice(slice []int64) {
-	writer.SetRef(0)
+	writer.SetRef(nil)
 	count := len(slice)
 	if count == 0 {
 		writeEmptyList(writer)
@@ -273,7 +282,7 @@ func (writer *Writer) WriteInt64Slice(slice []int64) {
 
 // WriteUintSlice to stream
 func (writer *Writer) WriteUintSlice(slice []uint) {
-	writer.SetRef(0)
+	writer.SetRef(nil)
 	count := len(slice)
 	if count == 0 {
 		writeEmptyList(writer)
@@ -286,7 +295,7 @@ func (writer *Writer) WriteUintSlice(slice []uint) {
 
 // WriteUint8Slice to stream
 func (writer *Writer) WriteUint8Slice(slice []uint8) {
-	writer.SetRef(0)
+	writer.SetRef(nil)
 	count := len(slice)
 	if count == 0 {
 		writeEmptyList(writer)
@@ -299,7 +308,7 @@ func (writer *Writer) WriteUint8Slice(slice []uint8) {
 
 // WriteUint16Slice to stream
 func (writer *Writer) WriteUint16Slice(slice []uint16) {
-	writer.SetRef(0)
+	writer.SetRef(nil)
 	count := len(slice)
 	if count == 0 {
 		writeEmptyList(writer)
@@ -312,7 +321,7 @@ func (writer *Writer) WriteUint16Slice(slice []uint16) {
 
 // WriteUint32Slice to stream
 func (writer *Writer) WriteUint32Slice(slice []uint32) {
-	writer.SetRef(0)
+	writer.SetRef(nil)
 	count := len(slice)
 	if count == 0 {
 		writeEmptyList(writer)
@@ -325,7 +334,7 @@ func (writer *Writer) WriteUint32Slice(slice []uint32) {
 
 // WriteUint64Slice to stream
 func (writer *Writer) WriteUint64Slice(slice []uint64) {
-	writer.SetRef(0)
+	writer.SetRef(nil)
 	count := len(slice)
 	if count == 0 {
 		writeEmptyList(writer)
@@ -338,7 +347,7 @@ func (writer *Writer) WriteUint64Slice(slice []uint64) {
 
 // WriteUintptrSlice to stream
 func (writer *Writer) WriteUintptrSlice(slice []uintptr) {
-	writer.SetRef(0)
+	writer.SetRef(nil)
 	count := len(slice)
 	if count == 0 {
 		writeEmptyList(writer)
@@ -351,7 +360,7 @@ func (writer *Writer) WriteUintptrSlice(slice []uintptr) {
 
 // WriteFloat32Slice to stream
 func (writer *Writer) WriteFloat32Slice(slice []float32) {
-	writer.SetRef(0)
+	writer.SetRef(nil)
 	count := len(slice)
 	if count == 0 {
 		writeEmptyList(writer)
@@ -364,7 +373,7 @@ func (writer *Writer) WriteFloat32Slice(slice []float32) {
 
 // WriteFloat64Slice to stream
 func (writer *Writer) WriteFloat64Slice(slice []float64) {
-	writer.SetRef(0)
+	writer.SetRef(nil)
 	count := len(slice)
 	if count == 0 {
 		writeEmptyList(writer)
@@ -377,7 +386,7 @@ func (writer *Writer) WriteFloat64Slice(slice []float64) {
 
 // WriteComplex64Slice to stream
 func (writer *Writer) WriteComplex64Slice(slice []complex64) {
-	writer.SetRef(0)
+	writer.SetRef(nil)
 	count := len(slice)
 	if count == 0 {
 		writeEmptyList(writer)
@@ -390,7 +399,7 @@ func (writer *Writer) WriteComplex64Slice(slice []complex64) {
 
 // WriteComplex128Slice to stream
 func (writer *Writer) WriteComplex128Slice(slice []complex128) {
-	writer.SetRef(0)
+	writer.SetRef(nil)
 	count := len(slice)
 	if count == 0 {
 		writeEmptyList(writer)
@@ -403,7 +412,7 @@ func (writer *Writer) WriteComplex128Slice(slice []complex128) {
 
 // WriteStringSlice to stream
 func (writer *Writer) WriteStringSlice(slice []string) {
-	writer.SetRef(0)
+	writer.SetRef(nil)
 	count := len(slice)
 	if count == 0 {
 		writeEmptyList(writer)
@@ -416,7 +425,7 @@ func (writer *Writer) WriteStringSlice(slice []string) {
 
 // WriteBytesSlice to stream
 func (writer *Writer) WriteBytesSlice(slice [][]byte) {
-	writer.SetRef(0)
+	writer.SetRef(nil)
 	count := len(slice)
 	if count == 0 {
 		writeEmptyList(writer)
@@ -428,13 +437,13 @@ func (writer *Writer) WriteBytesSlice(slice [][]byte) {
 }
 
 // WriteRef writes reference of an object to stream
-func (writer *Writer) WriteRef(ref uintptr) bool {
+func (writer *Writer) WriteRef(ref unsafe.Pointer) bool {
 	return false
 }
 
 // SetRef add v to reference list, if WriteRef is call with the same v, it will
 // write the reference index instead of v.
-func (writer *Writer) SetRef(ref uintptr) {
+func (writer *Writer) SetRef(ref unsafe.Pointer) {
 
 }
 
