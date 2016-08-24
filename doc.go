@@ -1,3 +1,23 @@
+/**********************************************************\
+|                                                          |
+|                          hprose                          |
+|                                                          |
+| Official WebSite: http://www.hprose.com/                 |
+|                   http://www.hprose.org/                 |
+|                                                          |
+\**********************************************************/
+/**********************************************************\
+ *                                                        *
+ * doc.go                                                 *
+ *                                                        *
+ * hprose doc for Go.                                     *
+ *                                                        *
+ * LastModified: Aug 24, 2016                             *
+ * Author: Ma Bingyao <andot@hprose.com>                  *
+ *                                                        *
+\**********************************************************/
+
+
 /*
 Package hprose is a High Performance Remote Object Service Engine.
 

@@ -12,7 +12,7 @@
  *                                                        *
  * hprose writer for Go.                                  *
  *                                                        *
- * LastModified: Aug 23, 2016                             *
+ * LastModified: Aug 24, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -27,8 +27,6 @@ import (
 	"strconv"
 	"time"
 	"unsafe"
-
-	"github.com/hprose/hprose-golang/util"
 )
 
 // Writer is a fine-grained operation struct for Hprose serialization
@@ -89,7 +87,7 @@ func (writer *Writer) WriteInt(i int64) {
 		s.WriteByte(TagLong)
 	}
 	var buf [20]byte
-	s.Write(util.GetIntBytes(buf[:], i))
+	s.Write(getIntBytes(buf[:], i))
 	s.WriteByte(TagSemicolon)
 }
 
@@ -106,7 +104,7 @@ func (writer *Writer) WriteUint(i uint64) {
 		s.WriteByte(TagLong)
 	}
 	var buf [20]byte
-	s.Write(util.GetUintBytes(buf[:], i))
+	s.Write(getUintBytes(buf[:], i))
 	s.WriteByte(TagSemicolon)
 }
 
@@ -159,7 +157,7 @@ func (writer *Writer) WriteComplex128(c complex128) {
 
 // WriteString to stream
 func (writer *Writer) WriteString(str string) {
-	length := util.UTF16Length(str)
+	length := utf16Length(str)
 	switch {
 	case length == 0:
 		writer.Stream.WriteByte(TagEmpty)
@@ -507,7 +505,7 @@ func writeString(writer *Writer, str string, length int) {
 	s := writer.Stream
 	s.WriteByte(TagString)
 	var buf [20]byte
-	s.Write(util.GetIntBytes(buf[:], int64(length)))
+	s.Write(getIntBytes(buf[:], int64(length)))
 	s.WriteByte(TagQuote)
 	s.WriteString(str)
 	s.WriteByte(TagQuote)
@@ -522,7 +520,7 @@ func writeBytes(writer *Writer, bytes []byte) {
 	}
 	s.WriteByte(TagBytes)
 	var buf [20]byte
-	s.Write(util.GetIntBytes(buf[:], int64(count)))
+	s.Write(getIntBytes(buf[:], int64(count)))
 	s.WriteByte(TagQuote)
 	s.Write(bytes)
 	s.WriteByte(TagQuote)
@@ -532,7 +530,7 @@ func writeListHeader(writer *Writer, count int) {
 	s := writer.Stream
 	s.WriteByte(TagList)
 	var buf [20]byte
-	s.Write(util.GetIntBytes(buf[:], int64(count)))
+	s.Write(getIntBytes(buf[:], int64(count)))
 	s.WriteByte(TagOpenbrace)
 }
 

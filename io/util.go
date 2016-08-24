@@ -8,16 +8,16 @@
 \**********************************************************/
 /**********************************************************\
  *                                                        *
- * util/intutil.go                                        *
+ * io/util.go                                             *
  *                                                        *
- * int to bytes util for Go.                              *
+ * io util for Go.                                        *
  *                                                        *
- * LastModified: Aug 17, 2016                             *
+ * LastModified: Aug 24, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 
-package util
+package io
 
 import "math"
 
@@ -86,9 +86,9 @@ var minInt64Buf = [...]byte{
 	'-', '9', '2', '2', '3', '3', '7', '2', '0', '3',
 	'6', '8', '5', '4', '7', '7', '5', '8', '0', '8'}
 
-// GetIntBytes returns the []byte representation of i in base 10.
+// getIntBytes returns the []byte representation of i in base 10.
 // buf length must be greater than or equal to 20
-func GetIntBytes(buf []byte, i int64) []byte {
+func getIntBytes(buf []byte, i int64) []byte {
 	if i == 0 {
 		return []byte{'0'}
 	}
@@ -130,9 +130,9 @@ func GetIntBytes(buf []byte, i int64) []byte {
 	return buf[off:]
 }
 
-// GetUintBytes returns the []byte representation of i in base 10.
+// getUintBytes returns the []byte representation of i in base 10.
 // buf length must be greater than or equal to 20
-func GetUintBytes(buf []byte, i uint64) []byte {
+func getUintBytes(buf []byte, i uint64) []byte {
 	if i == 0 {
 		return []byte{'0'}
 	}
@@ -160,4 +160,32 @@ func GetUintBytes(buf []byte, i uint64) []byte {
 		buf[off] = digits[i]
 	}
 	return buf[off:]
+}
+
+
+// utf16Length return the UTF16 length of str.
+// str must be an UTF8 encode string, otherwise return -1.
+func utf16Length(str string) (n int) {
+	length := len(str)
+	n = length
+	p := 0
+	for p < length {
+		a := str[p]
+		switch {
+		case a < 0x80:
+			p++
+		case (a & 0xE0) == 0xC0:
+			p += 2
+			n--
+		case (a & 0xF0) == 0xE0:
+			p += 3
+			n -= 2
+		case (a & 0xF8) == 0xF0:
+			p += 4
+			n -= 2
+		default:
+			return -1
+		}
+	}
+	return n
 }
