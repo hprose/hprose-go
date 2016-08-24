@@ -136,6 +136,8 @@ func structPtrEncoder(writer *Writer, v reflect.Value, ptr unsafe.Pointer) {
 	switch v.Type() {
 	case bigIntType:
 		writer.WriteBigInt((*big.Int)(ptr))
+	case bigRatType:
+		writer.WriteBigRat((*big.Rat)(ptr))
 	default:
 		if !writer.WriteRef(ptr) {
 			writer.SetRef(ptr)

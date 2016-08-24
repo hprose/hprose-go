@@ -34,7 +34,6 @@ import (
 type Writer struct {
 	Stream   *bytes.Buffer
 	Simple   bool
-	buf      []byte
 	classref map[string]int
 }
 
@@ -43,7 +42,6 @@ func NewWriter(stream *bytes.Buffer, simple bool) (writer *Writer) {
 	writer = new(Writer)
 	writer.Stream = stream
 	writer.Simple = simple
-	writer.buf = make([]byte, 20)
 	return writer
 }
 
@@ -89,7 +87,8 @@ func (writer *Writer) WriteInt(i int64) {
 	} else {
 		s.WriteByte(TagLong)
 	}
-	s.Write(util.GetIntBytes(writer.buf, i))
+	var buf [20]byte
+	s.Write(util.GetIntBytes(buf[:], i))
 	s.WriteByte(TagSemicolon)
 }
 
@@ -105,7 +104,8 @@ func (writer *Writer) WriteUint(i uint64) {
 	} else {
 		s.WriteByte(TagLong)
 	}
-	s.Write(util.GetUintBytes(writer.buf, i))
+	var buf [20]byte
+	s.Write(util.GetUintBytes(buf[:], i))
 	s.WriteByte(TagSemicolon)
 }
 
@@ -124,8 +124,8 @@ func (writer *Writer) WriteFloat(f float64, bitSize int) {
 		s.Write([]byte{TagInfinity, TagNeg})
 		return
 	}
-	var buf [64]byte
 	s.WriteByte(TagDouble)
+	var buf [64]byte
 	s.Write(strconv.AppendFloat(buf[:0], f, 'g', -1, bitSize))
 	s.WriteByte(TagSemicolon)
 }
@@ -185,6 +185,17 @@ func (writer *Writer) WriteBigInt(bi *big.Int) {
 	s.WriteByte(TagLong)
 	s.WriteString(bi.String())
 	s.WriteByte(TagSemicolon)
+}
+
+// WriteBigRat to stream
+func (writer *Writer) WriteBigRat(br *big.Rat) {
+	if br.IsInt() {
+		writer.WriteBigInt(br.Num())
+	} else {
+		str := br.String()
+		writer.SetRef(nil)
+		writeString(writer, str, len(str))
+	}
 }
 
 // WriteTuple to stream
@@ -457,7 +468,8 @@ type emptyInterface struct {
 func writeString(writer *Writer, str string, length int) {
 	s := writer.Stream
 	s.WriteByte(TagString)
-	s.Write(util.GetIntBytes(writer.buf, int64(length)))
+	var buf [20]byte
+	s.Write(util.GetIntBytes(buf[:], int64(length)))
 	s.WriteByte(TagQuote)
 	s.WriteString(str)
 	s.WriteByte(TagQuote)
@@ -471,7 +483,8 @@ func writeBytes(writer *Writer, bytes []byte) {
 		return
 	}
 	s.WriteByte(TagBytes)
-	s.Write(util.GetIntBytes(writer.buf, int64(count)))
+	var buf [20]byte
+	s.Write(util.GetIntBytes(buf[:], int64(count)))
 	s.WriteByte(TagQuote)
 	s.Write(bytes)
 	s.WriteByte(TagQuote)
@@ -480,7 +493,8 @@ func writeBytes(writer *Writer, bytes []byte) {
 func writeListHeader(writer *Writer, count int) {
 	s := writer.Stream
 	s.WriteByte(TagList)
-	s.Write(util.GetIntBytes(writer.buf, int64(count)))
+	var buf [20]byte
+	s.Write(util.GetIntBytes(buf[:], int64(count)))
 	s.WriteByte(TagOpenbrace)
 }
 

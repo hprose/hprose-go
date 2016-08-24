@@ -860,12 +860,30 @@ func BenchmarkWriteIntSlice(b *testing.B) {
 	}
 }
 
+func BenchmarkSerializeBytes(b *testing.B) {
+	buf := new(bytes.Buffer)
+	writer := NewWriter(buf, false)
+	slice := ([]byte)("你好,hello!")
+	for i := 0; i < b.N; i++ {
+		writer.Serialize(slice)
+	}
+}
+
 func BenchmarkWriteBytes(b *testing.B) {
 	buf := new(bytes.Buffer)
 	writer := NewWriter(buf, false)
 	slice := ([]byte)("你好,hello!")
 	for i := 0; i < b.N; i++ {
 		writer.WriteBytes(slice)
+	}
+}
+
+func BenchmarkSerializeString(b *testing.B) {
+	buf := new(bytes.Buffer)
+	writer := NewWriter(buf, false)
+	str := "你好,hello!"
+	for i := 0; i < b.N; i++ {
+		writer.Serialize(str)
 	}
 }
 
@@ -889,5 +907,55 @@ func TestSerializeBigInt(t *testing.T) {
 	writer.Serialize(*big.NewInt(123))
 	if b.String() != "l123;" {
 		t.Error(b.String())
+	}
+}
+
+func BenchmarkWriteBigInt(b *testing.B) {
+	buf := new(bytes.Buffer)
+	writer := NewWriter(buf, false)
+	x := big.NewInt(123)
+	for i := 0; i < b.N; i++ {
+		writer.WriteBigInt(x)
+	}
+}
+
+func BenchmarkSerializeBigInt(b *testing.B) {
+	buf := new(bytes.Buffer)
+	writer := NewWriter(buf, false)
+	x := big.NewInt(123)
+	for i := 0; i < b.N; i++ {
+		writer.Serialize(x)
+	}
+}
+
+func TestSerializeBigRat(t *testing.T) {
+	b := new(bytes.Buffer)
+	writer := NewWriter(b, false)
+	writer.Serialize(big.NewRat(123, 1))
+	if b.String() != "l123;" {
+		t.Error(b.String())
+	}
+	b.Truncate(0)
+	writer.Serialize(*big.NewRat(123, 2))
+	if b.String() != "s5\"123/2\"" {
+		t.Error(b.String())
+	}
+}
+
+func BenchmarkWriteBigRat(b *testing.B) {
+	buf := new(bytes.Buffer)
+	writer := NewWriter(buf, false)
+	x := big.NewRat(123, 2)
+	for i := 0; i < b.N; i++ {
+		writer.WriteBigRat(x)
+	}
+}
+
+func BenchmarkSerializeBigRat(b *testing.B) {
+	buf := new(bytes.Buffer)
+	writer := NewWriter(buf, false)
+	x := big.NewRat(123, 2)
+	for i := 0; i < b.N; i++ {
+		writer.Serialize(x)
 	}
 }
