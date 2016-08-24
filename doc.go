@@ -17,7 +17,6 @@
  *                                                        *
 \**********************************************************/
 
-
 /*
 Package hprose is a High Performance Remote Object Service Engine.
 
