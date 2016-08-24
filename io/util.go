@@ -162,7 +162,6 @@ func getUintBytes(buf []byte, i uint64) []byte {
 	return buf[off:]
 }
 
-
 // utf16Length return the UTF16 length of str.
 // str must be an UTF8 encode string, otherwise return -1.
 func utf16Length(str string) (n int) {
@@ -188,4 +187,62 @@ func utf16Length(str string) (n int) {
 		}
 	}
 	return n
+}
+
+func formatDate(date []byte, year int, month int, day int) int {
+	date[0] = TagDate
+	q := year / 100
+	p := q << 1
+	date[1] = digit2[p]
+	date[2] = digit2[p+1]
+	p = (year - q*100) << 1
+	date[3] = digit2[p]
+	date[4] = digit2[p+1]
+	p = month << 1
+	date[5] = digit2[p]
+	date[6] = digit2[p+1]
+	p = day << 1
+	date[7] = digit2[p]
+	date[8] = digit2[p+1]
+	return 9
+}
+
+func formatTime(time []byte, hour int, min int, sec int, nsec int) int {
+	time[0] = TagTime
+	p := hour << 1
+	time[1] = digit2[p]
+	time[2] = digit2[p+1]
+	p = min << 1
+	time[3] = digit2[p]
+	time[4] = digit2[p+1]
+	p = sec << 1
+	time[5] = digit2[p]
+	time[6] = digit2[p+1]
+	if nsec > 0 {
+		time[7] = TagPoint
+		q := nsec / 1000000
+		p = q * 3
+		nsec = nsec - q*1000000
+		time[8] = digit3[p]
+		time[9] = digit3[p+1]
+		time[10] = digit3[p+2]
+		if nsec == 0 {
+			return 11
+		}
+		q = nsec / 1000
+		p = q * 3
+		nsec = nsec - q*1000
+		time[11] = digit3[p]
+		time[12] = digit3[p+1]
+		time[13] = digit3[p+2]
+		if nsec == 0 {
+			return 14
+		}
+		p = nsec * 3
+		time[14] = digit3[p]
+		time[15] = digit3[p+1]
+		time[16] = digit3[p+2]
+		return 17
+	}
+	return 7
 }
