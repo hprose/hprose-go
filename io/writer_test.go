@@ -21,6 +21,7 @@ package io
 
 import (
 	"bytes"
+	"container/list"
 	"math"
 	"math/big"
 	"math/rand"
@@ -31,7 +32,7 @@ import (
 
 func TestSerializeNil(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	writer.Serialize(nil)
 	if b.String() != "n" {
 		t.Error(b.String())
@@ -40,7 +41,7 @@ func TestSerializeNil(t *testing.T) {
 
 func BenchmarkSerializeNil(b *testing.B) {
 	buf := new(bytes.Buffer)
-	writer := NewWriter(buf, false)
+	writer := NewWriter(buf, true)
 	for i := 0; i < b.N; i++ {
 		writer.Serialize(nil)
 	}
@@ -48,7 +49,7 @@ func BenchmarkSerializeNil(b *testing.B) {
 
 func BenchmarkWriteNil(b *testing.B) {
 	buf := new(bytes.Buffer)
-	writer := NewWriter(buf, false)
+	writer := NewWriter(buf, true)
 	for i := 0; i < b.N; i++ {
 		writer.WriteNil()
 	}
@@ -56,7 +57,7 @@ func BenchmarkWriteNil(b *testing.B) {
 
 func TestSerializeTrue(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	writer.Serialize(true)
 	if b.String() != "t" {
 		t.Error(b.String())
@@ -65,7 +66,7 @@ func TestSerializeTrue(t *testing.T) {
 
 func BenchmarkSerializeTrue(b *testing.B) {
 	buf := new(bytes.Buffer)
-	writer := NewWriter(buf, false)
+	writer := NewWriter(buf, true)
 	for i := 0; i < b.N; i++ {
 		writer.Serialize(true)
 	}
@@ -73,7 +74,7 @@ func BenchmarkSerializeTrue(b *testing.B) {
 
 func BenchmarkWriteTrue(b *testing.B) {
 	buf := new(bytes.Buffer)
-	writer := NewWriter(buf, false)
+	writer := NewWriter(buf, true)
 	for i := 0; i < b.N; i++ {
 		writer.WriteBool(true)
 	}
@@ -81,7 +82,7 @@ func BenchmarkWriteTrue(b *testing.B) {
 
 func TestSerializeFalse(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	writer.Serialize(false)
 	if b.String() != "f" {
 		t.Error(b.String())
@@ -90,7 +91,7 @@ func TestSerializeFalse(t *testing.T) {
 
 func BenchmarkSerializeFalse(b *testing.B) {
 	buf := new(bytes.Buffer)
-	writer := NewWriter(buf, false)
+	writer := NewWriter(buf, true)
 	for i := 0; i < b.N; i++ {
 		writer.Serialize(false)
 	}
@@ -98,7 +99,7 @@ func BenchmarkSerializeFalse(b *testing.B) {
 
 func BenchmarkWriteFalse(b *testing.B) {
 	buf := new(bytes.Buffer)
-	writer := NewWriter(buf, false)
+	writer := NewWriter(buf, true)
 	for i := 0; i < b.N; i++ {
 		writer.WriteBool(false)
 	}
@@ -106,7 +107,7 @@ func BenchmarkWriteFalse(b *testing.B) {
 
 func TestSerializeDigit(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	for i := 0; i <= 9; i++ {
 		b.Truncate(0)
 		writer.Serialize(i)
@@ -118,7 +119,7 @@ func TestSerializeDigit(t *testing.T) {
 
 func TestSerializeInt(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	for i := 0; i <= 100; i++ {
 		b.Truncate(0)
 		x := rand.Intn(math.MaxInt32-10) + 10
@@ -139,7 +140,7 @@ func TestSerializeInt(t *testing.T) {
 
 func BenchmarkSerializeInt(b *testing.B) {
 	buf := new(bytes.Buffer)
-	writer := NewWriter(buf, false)
+	writer := NewWriter(buf, true)
 	for i := 0; i < b.N; i++ {
 		writer.Serialize(i)
 	}
@@ -147,7 +148,7 @@ func BenchmarkSerializeInt(b *testing.B) {
 
 func BenchmarkWriteInt(b *testing.B) {
 	buf := new(bytes.Buffer)
-	writer := NewWriter(buf, false)
+	writer := NewWriter(buf, true)
 	for i := 0; i < b.N; i++ {
 		writer.WriteInt(int64(i))
 	}
@@ -155,7 +156,7 @@ func BenchmarkWriteInt(b *testing.B) {
 
 func TestSerializeInt8(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	for i := 0; i <= 9; i++ {
 		b.Truncate(0)
 		writer.Serialize(int8(i))
@@ -181,7 +182,7 @@ func TestSerializeInt8(t *testing.T) {
 
 func TestSerializeInt16(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	writer.Serialize(int16(math.MaxInt16))
 	if b.String() != "i"+strconv.Itoa(math.MaxInt16)+";" {
 		t.Error(b.String())
@@ -190,7 +191,7 @@ func TestSerializeInt16(t *testing.T) {
 
 func TestSerializeInt32(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	writer.Serialize(int32(math.MaxInt32))
 	if b.String() != "i"+strconv.Itoa(math.MaxInt32)+";" {
 		t.Error(b.String())
@@ -199,7 +200,7 @@ func TestSerializeInt32(t *testing.T) {
 
 func BenchmarkSerializeInt32(b *testing.B) {
 	buf := new(bytes.Buffer)
-	writer := NewWriter(buf, false)
+	writer := NewWriter(buf, true)
 	for i := 0; i < b.N; i++ {
 		writer.Serialize(int32(i))
 	}
@@ -207,7 +208,7 @@ func BenchmarkSerializeInt32(b *testing.B) {
 
 func TestSerializeInt64(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	writer.Serialize(int64(math.MaxInt32))
 	if b.String() != "i"+strconv.Itoa(math.MaxInt32)+";" {
 		t.Error(b.String())
@@ -221,7 +222,7 @@ func TestSerializeInt64(t *testing.T) {
 
 func TestSerializeUint(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	for i := 0; i <= 100; i++ {
 		b.Truncate(0)
 		x := rand.Intn(math.MaxInt32-10) + 10
@@ -242,7 +243,7 @@ func TestSerializeUint(t *testing.T) {
 
 func TestSerializeUint8(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	for i := 0; i <= 9; i++ {
 		b.Truncate(0)
 		writer.Serialize(uint8(i))
@@ -261,7 +262,7 @@ func TestSerializeUint8(t *testing.T) {
 
 func TestSerializeUint16(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	writer.Serialize(uint16(math.MaxUint16))
 	if b.String() != "i"+strconv.Itoa(math.MaxUint16)+";" {
 		t.Error(b.String())
@@ -270,7 +271,7 @@ func TestSerializeUint16(t *testing.T) {
 
 func TestSerializeUint32(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	writer.Serialize(uint32(math.MaxUint32))
 	if b.String() != "l"+strconv.Itoa(math.MaxUint32)+";" {
 		t.Error(b.String())
@@ -279,7 +280,7 @@ func TestSerializeUint32(t *testing.T) {
 
 func TestSerializeUint64(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	writer.Serialize(uint64(math.MaxUint32))
 	if b.String() != "l"+strconv.Itoa(math.MaxUint32)+";" {
 		t.Error(b.String())
@@ -293,7 +294,7 @@ func TestSerializeUint64(t *testing.T) {
 
 func BenchmarkSerializeUint64(b *testing.B) {
 	buf := new(bytes.Buffer)
-	writer := NewWriter(buf, false)
+	writer := NewWriter(buf, true)
 	for i := 0; i < b.N; i++ {
 		writer.Serialize(uint64(i))
 	}
@@ -301,7 +302,7 @@ func BenchmarkSerializeUint64(b *testing.B) {
 
 func BenchmarkWriteUint64(b *testing.B) {
 	buf := new(bytes.Buffer)
-	writer := NewWriter(buf, false)
+	writer := NewWriter(buf, true)
 	for i := 0; i < b.N; i++ {
 		writer.WriteUint(uint64(i))
 	}
@@ -309,7 +310,7 @@ func BenchmarkWriteUint64(b *testing.B) {
 
 func TestSerializeUintptr(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	writer.Serialize(uintptr(123))
 	if b.String() != "i123;" {
 		t.Error(b.String())
@@ -318,7 +319,7 @@ func TestSerializeUintptr(t *testing.T) {
 
 func TestSerializeFloat32(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	testdata := map[float32]string{
 		float32(math.NaN()):   "N",
 		float32(math.Inf(1)):  "I+",
@@ -336,7 +337,7 @@ func TestSerializeFloat32(t *testing.T) {
 
 func BenchmarkSerializeFloat32(b *testing.B) {
 	buf := new(bytes.Buffer)
-	writer := NewWriter(buf, false)
+	writer := NewWriter(buf, true)
 	for i := 0; i < b.N; i++ {
 		writer.Serialize(float32(i))
 	}
@@ -344,7 +345,7 @@ func BenchmarkSerializeFloat32(b *testing.B) {
 
 func BenchmarkWriteFloat32(b *testing.B) {
 	buf := new(bytes.Buffer)
-	writer := NewWriter(buf, false)
+	writer := NewWriter(buf, true)
 	for i := 0; i < b.N; i++ {
 		writer.WriteFloat(float64(i), 32)
 	}
@@ -352,7 +353,7 @@ func BenchmarkWriteFloat32(b *testing.B) {
 
 func TestSerializeFloat64(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	testdata := map[float64]string{
 		math.NaN():       "N",
 		math.Inf(1):      "I+",
@@ -370,7 +371,7 @@ func TestSerializeFloat64(t *testing.T) {
 
 func BenchmarkSerializeFloat64(b *testing.B) {
 	buf := new(bytes.Buffer)
-	writer := NewWriter(buf, false)
+	writer := NewWriter(buf, true)
 	for i := 0; i < b.N; i++ {
 		writer.Serialize(float64(i))
 	}
@@ -378,7 +379,7 @@ func BenchmarkSerializeFloat64(b *testing.B) {
 
 func BenchmarkWriteFloat64(b *testing.B) {
 	buf := new(bytes.Buffer)
-	writer := NewWriter(buf, false)
+	writer := NewWriter(buf, true)
 	for i := 0; i < b.N; i++ {
 		writer.WriteFloat(float64(i), 64)
 	}
@@ -386,7 +387,7 @@ func BenchmarkWriteFloat64(b *testing.B) {
 
 func TestSerializeComplex64(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	writer.Serialize(complex(float32(100), 0))
 	if b.String() != "d100;" {
 		t.Error(b.String())
@@ -400,7 +401,7 @@ func TestSerializeComplex64(t *testing.T) {
 
 func TestSerializeComplex128(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	writer.Serialize(complex(100, 0))
 	if b.String() != "d100;" {
 		t.Error(b.String())
@@ -414,7 +415,7 @@ func TestSerializeComplex128(t *testing.T) {
 
 func BenchmarkSerializeComplex128(b *testing.B) {
 	buf := new(bytes.Buffer)
-	writer := NewWriter(buf, false)
+	writer := NewWriter(buf, true)
 	for i := 0; i < b.N; i++ {
 		writer.Serialize(complex(float64(i), float64(i)))
 	}
@@ -422,7 +423,7 @@ func BenchmarkSerializeComplex128(b *testing.B) {
 
 func BenchmarkWriteComplex128(b *testing.B) {
 	buf := new(bytes.Buffer)
-	writer := NewWriter(buf, false)
+	writer := NewWriter(buf, true)
 	for i := 0; i < b.N; i++ {
 		writer.WriteComplex128(complex(float64(i), float64(i)))
 	}
@@ -430,7 +431,7 @@ func BenchmarkWriteComplex128(b *testing.B) {
 
 func TestWriteTuple(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	writer.WriteTuple()
 	if b.String() != "a{}" {
 		t.Error(b.String())
@@ -444,7 +445,7 @@ func TestWriteTuple(t *testing.T) {
 
 func TestWriteBytes(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	testdata := map[*[]byte]string{
 		&[]byte{'h', 'e', 'l', 'l', 'o'}: "b5\"hello\"",
 		&[]byte{}:                        "b\"\"",
@@ -460,7 +461,7 @@ func TestWriteBytes(t *testing.T) {
 
 func TestSerializeString(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	testdata := map[string]string{
 		"":                            "e",
 		"π":                           "uπ",
@@ -481,7 +482,7 @@ func TestSerializeString(t *testing.T) {
 
 func TestWriteString(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	testdata := map[string]string{
 		"":                            "e",
 		"π":                           "uπ",
@@ -502,7 +503,7 @@ func TestWriteString(t *testing.T) {
 
 func TestSerializeArray(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	testdata := map[interface{}]string{
 		&[...]int{1, 2, 3}:                  "a3{123}",
 		&[...]float64{1, 2, 3}:              "a3{d1;d2;d3;}",
@@ -525,7 +526,7 @@ func TestSerializeArray(t *testing.T) {
 
 func TestSerializeSlice(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	testdata := map[interface{}]string{
 		&[]int{1, 2, 3}:                  "a3{123}",
 		&[]float64{1, 2, 3}:              "a3{d1;d2;d3;}",
@@ -548,7 +549,7 @@ func TestSerializeSlice(t *testing.T) {
 
 func TestWriteBoolSlice(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	testdata := map[*[]bool]string{
 		&[]bool{true, false, true}: "a3{tft}",
 		&[]bool{}:                  "a{}",
@@ -564,7 +565,7 @@ func TestWriteBoolSlice(t *testing.T) {
 
 func TestWriteIntSlice(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	testdata := map[*[]int]string{
 		&[]int{1, 2, 3}: "a3{123}",
 		&[]int{}:        "a{}",
@@ -580,7 +581,7 @@ func TestWriteIntSlice(t *testing.T) {
 
 func TestWriteInt8Slice(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	testdata := map[*[]int8]string{
 		&[]int8{1, 2, 3}: "a3{123}",
 		&[]int8{}:        "a{}",
@@ -596,7 +597,7 @@ func TestWriteInt8Slice(t *testing.T) {
 
 func TestWriteInt16Slice(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	testdata := map[*[]int16]string{
 		&[]int16{1, 2, 3}: "a3{123}",
 		&[]int16{}:        "a{}",
@@ -612,7 +613,7 @@ func TestWriteInt16Slice(t *testing.T) {
 
 func TestWriteInt32Slice(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	testdata := map[*[]int32]string{
 		&[]int32{1, 2, 3}: "a3{123}",
 		&[]int32{}:        "a{}",
@@ -628,7 +629,7 @@ func TestWriteInt32Slice(t *testing.T) {
 
 func TestWriteInt64Slice(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	testdata := map[*[]int64]string{
 		&[]int64{1, 2, 3}: "a3{123}",
 		&[]int64{}:        "a{}",
@@ -644,7 +645,7 @@ func TestWriteInt64Slice(t *testing.T) {
 
 func TestWriteUintSlice(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	testdata := map[*[]uint]string{
 		&[]uint{1, 2, 3}: "a3{123}",
 		&[]uint{}:        "a{}",
@@ -660,7 +661,7 @@ func TestWriteUintSlice(t *testing.T) {
 
 func TestWriteUint8Slice(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	testdata := map[*[]uint8]string{
 		&[]uint8{1, 2, 3}: "a3{123}",
 		&[]uint8{}:        "a{}",
@@ -676,7 +677,7 @@ func TestWriteUint8Slice(t *testing.T) {
 
 func TestWriteUint16Slice(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	testdata := map[*[]uint16]string{
 		&[]uint16{1, 2, 3}: "a3{123}",
 		&[]uint16{}:        "a{}",
@@ -692,7 +693,7 @@ func TestWriteUint16Slice(t *testing.T) {
 
 func TestWriteUint32Slice(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	testdata := map[*[]uint32]string{
 		&[]uint32{1, 2, 3}: "a3{123}",
 		&[]uint32{}:        "a{}",
@@ -708,7 +709,7 @@ func TestWriteUint32Slice(t *testing.T) {
 
 func TestWriteUint64Slice(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	testdata := map[*[]uint64]string{
 		&[]uint64{1, 2, 3}: "a3{123}",
 		&[]uint64{}:        "a{}",
@@ -724,7 +725,7 @@ func TestWriteUint64Slice(t *testing.T) {
 
 func TestWriteUintptrSlice(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	testdata := map[*[]uintptr]string{
 		&[]uintptr{1, 2, 3}: "a3{123}",
 		&[]uintptr{}:        "a{}",
@@ -740,7 +741,7 @@ func TestWriteUintptrSlice(t *testing.T) {
 
 func TestWriteFloat32Slice(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	testdata := map[*[]float32]string{
 		&[]float32{1, 2, 3}: "a3{d1;d2;d3;}",
 		&[]float32{}:        "a{}",
@@ -756,7 +757,7 @@ func TestWriteFloat32Slice(t *testing.T) {
 
 func TestWriteFloat64Slice(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	testdata := map[*[]float64]string{
 		&[]float64{1, 2, 3}: "a3{d1;d2;d3;}",
 		&[]float64{}:        "a{}",
@@ -772,7 +773,7 @@ func TestWriteFloat64Slice(t *testing.T) {
 
 func TestWriteComplex64Slice(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	testdata := map[*[]complex64]string{
 		&[]complex64{complex(0, 0), complex(1, 0), complex(0, 1)}: "a3{d0;d1;a2{d0;d1;}}",
 		&[]complex64{}: "a{}",
@@ -788,7 +789,7 @@ func TestWriteComplex64Slice(t *testing.T) {
 
 func TestWriteComplex128Slice(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	testdata := map[*[]complex128]string{
 		&[]complex128{complex(0, 0), complex(1, 0), complex(0, 1)}: "a3{d0;d1;a2{d0;d1;}}",
 		&[]complex128{}:                                            "a{}",
@@ -804,7 +805,7 @@ func TestWriteComplex128Slice(t *testing.T) {
 
 func TestWriteStringSlice(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	testdata := map[*[]string]string{
 		&[]string{"", "π", "hello"}: "a3{euπs5\"hello\"}",
 		&[]string{}:                 "a{}",
@@ -820,7 +821,7 @@ func TestWriteStringSlice(t *testing.T) {
 
 func TestWriteBytesSlice(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	testdata := map[*[][]byte]string{
 		&[][]byte{[]byte(""), []byte("π"), []byte("hello")}: "a3{b\"\"b2\"π\"b5\"hello\"}",
 		&[][]byte{}: "a{}",
@@ -836,7 +837,7 @@ func TestWriteBytesSlice(t *testing.T) {
 
 func BenchmarkSerializeArray(b *testing.B) {
 	buf := new(bytes.Buffer)
-	writer := NewWriter(buf, false)
+	writer := NewWriter(buf, true)
 	array := [...]int{0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 1, 2, 3, 4, 0, 1, 2, 3, 4}
 	for i := 0; i < b.N; i++ {
 		writer.Serialize(array)
@@ -845,7 +846,7 @@ func BenchmarkSerializeArray(b *testing.B) {
 
 func BenchmarkSerializeSlice(b *testing.B) {
 	buf := new(bytes.Buffer)
-	writer := NewWriter(buf, false)
+	writer := NewWriter(buf, true)
 	slice := []int{0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 1, 2, 3, 4, 0, 1, 2, 3, 4}
 	for i := 0; i < b.N; i++ {
 		writer.Serialize(slice)
@@ -854,7 +855,7 @@ func BenchmarkSerializeSlice(b *testing.B) {
 
 func BenchmarkWriteIntSlice(b *testing.B) {
 	buf := new(bytes.Buffer)
-	writer := NewWriter(buf, false)
+	writer := NewWriter(buf, true)
 	slice := []int{0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 1, 2, 3, 4, 0, 1, 2, 3, 4}
 	for i := 0; i < b.N; i++ {
 		writer.WriteIntSlice(slice)
@@ -863,7 +864,7 @@ func BenchmarkWriteIntSlice(b *testing.B) {
 
 func BenchmarkSerializeBytes(b *testing.B) {
 	buf := new(bytes.Buffer)
-	writer := NewWriter(buf, false)
+	writer := NewWriter(buf, true)
 	slice := ([]byte)("你好,hello!")
 	for i := 0; i < b.N; i++ {
 		writer.Serialize(slice)
@@ -872,7 +873,7 @@ func BenchmarkSerializeBytes(b *testing.B) {
 
 func BenchmarkWriteBytes(b *testing.B) {
 	buf := new(bytes.Buffer)
-	writer := NewWriter(buf, false)
+	writer := NewWriter(buf, true)
 	slice := ([]byte)("你好,hello!")
 	for i := 0; i < b.N; i++ {
 		writer.WriteBytes(slice)
@@ -881,7 +882,7 @@ func BenchmarkWriteBytes(b *testing.B) {
 
 func BenchmarkSerializeString(b *testing.B) {
 	buf := new(bytes.Buffer)
-	writer := NewWriter(buf, false)
+	writer := NewWriter(buf, true)
 	str := "你好,hello!"
 	for i := 0; i < b.N; i++ {
 		writer.Serialize(str)
@@ -890,7 +891,7 @@ func BenchmarkSerializeString(b *testing.B) {
 
 func BenchmarkWriteString(b *testing.B) {
 	buf := new(bytes.Buffer)
-	writer := NewWriter(buf, false)
+	writer := NewWriter(buf, true)
 	str := "你好,hello!"
 	for i := 0; i < b.N; i++ {
 		writer.WriteString(str)
@@ -899,7 +900,7 @@ func BenchmarkWriteString(b *testing.B) {
 
 func TestSerializeBigInt(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	writer.Serialize(big.NewInt(123))
 	if b.String() != "l123;" {
 		t.Error(b.String())
@@ -913,7 +914,7 @@ func TestSerializeBigInt(t *testing.T) {
 
 func BenchmarkWriteBigInt(b *testing.B) {
 	buf := new(bytes.Buffer)
-	writer := NewWriter(buf, false)
+	writer := NewWriter(buf, true)
 	x := big.NewInt(123)
 	for i := 0; i < b.N; i++ {
 		writer.WriteBigInt(x)
@@ -922,7 +923,7 @@ func BenchmarkWriteBigInt(b *testing.B) {
 
 func BenchmarkSerializeBigInt(b *testing.B) {
 	buf := new(bytes.Buffer)
-	writer := NewWriter(buf, false)
+	writer := NewWriter(buf, true)
 	x := big.NewInt(123)
 	for i := 0; i < b.N; i++ {
 		writer.Serialize(x)
@@ -931,7 +932,7 @@ func BenchmarkSerializeBigInt(b *testing.B) {
 
 func TestSerializeBigRat(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	writer.Serialize(big.NewRat(123, 1))
 	if b.String() != "l123;" {
 		t.Error(b.String())
@@ -945,7 +946,7 @@ func TestSerializeBigRat(t *testing.T) {
 
 func BenchmarkWriteBigRat(b *testing.B) {
 	buf := new(bytes.Buffer)
-	writer := NewWriter(buf, false)
+	writer := NewWriter(buf, true)
 	x := big.NewRat(123, 2)
 	for i := 0; i < b.N; i++ {
 		writer.WriteBigRat(x)
@@ -954,7 +955,7 @@ func BenchmarkWriteBigRat(b *testing.B) {
 
 func BenchmarkSerializeBigRat(b *testing.B) {
 	buf := new(bytes.Buffer)
-	writer := NewWriter(buf, false)
+	writer := NewWriter(buf, true)
 	x := big.NewRat(123, 2)
 	for i := 0; i < b.N; i++ {
 		writer.Serialize(x)
@@ -963,7 +964,7 @@ func BenchmarkSerializeBigRat(b *testing.B) {
 
 func TestSerializeBigFloat(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	writer.Serialize(big.NewFloat(3.14159265358979))
 	if b.String() != "d3.14159265358979;" {
 		t.Error(b.String())
@@ -977,7 +978,7 @@ func TestSerializeBigFloat(t *testing.T) {
 
 func BenchmarkWriteBigFloat(b *testing.B) {
 	buf := new(bytes.Buffer)
-	writer := NewWriter(buf, false)
+	writer := NewWriter(buf, true)
 	x := big.NewFloat(3.14159265358979)
 	for i := 0; i < b.N; i++ {
 		writer.WriteBigFloat(x)
@@ -986,7 +987,7 @@ func BenchmarkWriteBigFloat(b *testing.B) {
 
 func BenchmarkSerializeBigFloat(b *testing.B) {
 	buf := new(bytes.Buffer)
-	writer := NewWriter(buf, false)
+	writer := NewWriter(buf, true)
 	x := big.NewFloat(3.14159265358979)
 	for i := 0; i < b.N; i++ {
 		writer.Serialize(x)
@@ -995,7 +996,7 @@ func BenchmarkSerializeBigFloat(b *testing.B) {
 
 func TestSerializeTime(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	testdata := map[time.Time]string{
 		time.Date(1980, 12, 1, 0, 0, 0, 0, time.UTC):              "D19801201Z",
 		time.Date(1970, 1, 1, 12, 34, 56, 0, time.UTC):            "T123456Z",
@@ -1022,7 +1023,7 @@ func TestSerializeTime(t *testing.T) {
 
 func TestWriteTime(t *testing.T) {
 	b := new(bytes.Buffer)
-	writer := NewWriter(b, false)
+	writer := NewWriter(b, true)
 	testdata := map[time.Time]string{
 		time.Date(1980, 12, 1, 0, 0, 0, 0, time.UTC):              "D19801201Z",
 		time.Date(1970, 1, 1, 12, 34, 56, 0, time.UTC):            "T123456Z",
@@ -1049,7 +1050,7 @@ func TestWriteTime(t *testing.T) {
 
 func BenchmarkWriteTime(b *testing.B) {
 	buf := new(bytes.Buffer)
-	writer := NewWriter(buf, false)
+	writer := NewWriter(buf, true)
 	x := time.Date(1980, 12, 1, 12, 34, 56, 789456123, time.UTC)
 	for i := 0; i < b.N; i++ {
 		writer.WriteTime(&x)
@@ -1058,9 +1059,101 @@ func BenchmarkWriteTime(b *testing.B) {
 
 func BenchmarkSerializeTime(b *testing.B) {
 	buf := new(bytes.Buffer)
-	writer := NewWriter(buf, false)
+	writer := NewWriter(buf, true)
 	x := time.Date(1980, 12, 1, 12, 34, 56, 789456123, time.UTC)
 	for i := 0; i < b.N; i++ {
 		writer.Serialize(x)
+	}
+}
+
+func TestSerializeList(t *testing.T) {
+	b := new(bytes.Buffer)
+	writer := NewWriter(b, true)
+	lst := list.New()
+	writer.Serialize(lst)
+	if b.String() != "a{}" {
+		t.Error(b.String())
+	}
+	b.Truncate(0)
+	lst.PushBack(1)
+	lst.PushBack("hello")
+	lst.PushBack(3.14159)
+	writer.Serialize(lst)
+	if b.String() != "a3{1s5\"hello\"d3.14159;}" {
+		t.Error(b.String())
+	}
+}
+
+func TestWriteList(t *testing.T) {
+	b := new(bytes.Buffer)
+	writer := NewWriter(b, true)
+	lst := list.New()
+	writer.WriteList(lst)
+	if b.String() != "a{}" {
+		t.Error(b.String())
+	}
+	b.Truncate(0)
+	lst.PushBack(1)
+	lst.PushBack("hello")
+	lst.PushBack(3.14159)
+	writer.WriteList(lst)
+	if b.String() != "a3{1s5\"hello\"d3.14159;}" {
+		t.Error(b.String())
+	}
+}
+
+func BenchmarkSerializeList(b *testing.B) {
+	buf := new(bytes.Buffer)
+	writer := NewWriter(buf, true)
+	lst := list.New()
+	lst.PushBack(1)
+	lst.PushBack("hello")
+	lst.PushBack(3.14159)
+	for i := 0; i < b.N; i++ {
+		writer.Serialize(lst)
+	}
+}
+
+func BenchmarkWriteList(b *testing.B) {
+	buf := new(bytes.Buffer)
+	writer := NewWriter(buf, true)
+	lst := list.New()
+	lst.PushBack(1)
+	lst.PushBack("hello")
+	lst.PushBack(3.14159)
+	for i := 0; i < b.N; i++ {
+		writer.WriteList(lst)
+	}
+}
+
+func TestWriterMap(t *testing.T) {
+	b := new(bytes.Buffer)
+	writer := NewWriter(b, true)
+	m := make(map[string]interface{})
+	m["name"] = "Tom"
+	m["age"] = 36
+	m["male"] = true
+	writer.Serialize(m)
+	s := b.String()
+	s1 := `m3{s4"name"s3"Tom"s3"age"i36;s4"male"t}`
+	s2 := `m3{s3"age"i36;s4"male"ts4"name"s3"Tom"}`
+	s3 := `m3{s3"age"i36;s4"name"s3"Tom"s4"male"t}`
+	s4 := `m3{s4"name"s3"Tom"s4"male"ts3"age"i36;}`
+	s5 := `m3{s4"male"ts3"age"i36;s4"name"s3"Tom"}`
+	s6 := `m3{s4"male"ts4"name"s3"Tom"s3"age"i36;}`
+	if s != s1 && s != s2 && s != s3 && s != s4 && s != s5 && s != s6 {
+		t.Error(b.String())
+	}
+}
+
+func BenchmarkSerializeMap(b *testing.B) {
+	buf := new(bytes.Buffer)
+	writer := NewWriter(buf, true)
+	m := make(map[string]interface{})
+	m["name"] = "Tom"
+	m["age"] = 36
+	m["male"] = true
+	for i := 0; i < b.N; i++ {
+		writer.Serialize(m)
 	}
 }

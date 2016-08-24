@@ -20,6 +20,7 @@
 package io
 
 import (
+	"container/list"
 	"math/big"
 	"time"
 	"unsafe"
@@ -33,3 +34,4 @@ var bigIntType = getType((*big.Int)(nil))
 var bigRatType = getType((*big.Rat)(nil))
 var bigFloatType = getType((*big.Float)(nil))
 var timeType = getType((*time.Time)(nil))
+var listType = getType((*list.List)(nil))

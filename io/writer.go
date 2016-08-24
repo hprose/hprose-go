@@ -21,6 +21,7 @@ package io
 
 import (
 	"bytes"
+	"container/list"
 	"math"
 	"math/big"
 	"reflect"
@@ -49,8 +50,7 @@ func (writer *Writer) Serialize(v interface{}) {
 	if v == nil {
 		writer.WriteNil()
 	} else {
-		v := reflect.ValueOf(v)
-		valueEncoders[v.Kind()](writer, v)
+		writer.WriteValue(reflect.ValueOf(v))
 	}
 }
 
@@ -461,6 +461,12 @@ func (writer *Writer) WriteBytesSlice(slice [][]byte) {
 	writeListFooter(writer)
 }
 
+// WriteList to stream
+func (writer *Writer) WriteList(lst *list.List) {
+	writer.SetRef(nil)
+	writeList(writer, lst)
+}
+
 // WriteRef writes reference of an object to stream
 func (writer *Writer) WriteRef(ref unsafe.Pointer) bool {
 	return false
@@ -529,6 +535,19 @@ func writeBytes(writer *Writer, bytes []byte) {
 	s.WriteByte(TagQuote)
 	s.Write(bytes)
 	s.WriteByte(TagQuote)
+}
+
+func writeList(writer *Writer, lst *list.List) {
+	count := lst.Len()
+	if count == 0 {
+		writeEmptyList(writer)
+		return
+	}
+	writeListHeader(writer, count)
+	for e := lst.Front(); e != nil; e = e.Next() {
+		writer.Serialize(e.Value)
+	}
+	writeListFooter(writer)
 }
 
 func writeListHeader(writer *Writer, count int) {
@@ -605,4 +624,38 @@ func writeSlice(writer *Writer, v reflect.Value) {
 		writeListBody(writer, v, count)
 	}
 	writeListFooter(writer)
+}
+
+func writeEmptyMap(writer *Writer) {
+	writer.Stream.Write([]byte{TagMap, TagOpenbrace, TagClosebrace})
+}
+
+func writeMapHeader(writer *Writer, count int) {
+	s := writer.Stream
+	s.WriteByte(TagMap)
+	var buf [20]byte
+	s.Write(getIntBytes(buf[:], int64(count)))
+	s.WriteByte(TagOpenbrace)
+}
+
+func writeMapFooter(writer *Writer) {
+	writer.Stream.WriteByte(TagClosebrace)
+}
+
+func writeMap(writer *Writer, v reflect.Value) {
+	count := v.Len()
+	if count == 0 {
+		writeEmptyMap(writer)
+		return
+	}
+	writeMapHeader(writer, count)
+	mapType := v.Type()
+	keyEncoder := valueEncoders[mapType.Key().Kind()]
+	valueEncoder := valueEncoders[mapType.Elem().Kind()]
+	keys := v.MapKeys()
+	for _, key := range keys {
+		keyEncoder(writer, key)
+		valueEncoder(writer, v.MapIndex(key))
+	}
+	writeMapFooter(writer)
 }

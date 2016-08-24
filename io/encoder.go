@@ -12,7 +12,7 @@
  *                                                        *
  * hprose encoder for Go.                                 *
  *                                                        *
- * LastModified: Aug 24, 2016                             *
+ * LastModified: Aug 25, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -20,6 +20,7 @@
 package io
 
 import (
+	"container/list"
 	"math/big"
 	"reflect"
 	"time"
@@ -81,6 +82,14 @@ func sliceEncoder(writer *Writer, v reflect.Value) {
 	writeSlice(writer, v)
 }
 
+func mapEncoder(writer *Writer, v reflect.Value) {
+	ptr := ((*emptyInterface)(unsafe.Pointer(&v)).ptr)
+	if !writer.WriteRef(ptr) {
+		writer.SetRef(ptr)
+		writeMap(writer, v)
+	}
+}
+
 func stringEncoder(writer *Writer, v reflect.Value) {
 	writer.WriteString(v.String())
 }
@@ -101,7 +110,7 @@ func arrayPtrEncoder(writer *Writer, v reflect.Value, ptr unsafe.Pointer) {
 func mapPtrEncoder(writer *Writer, v reflect.Value, ptr unsafe.Pointer) {
 	if !writer.WriteRef(ptr) {
 		writer.SetRef(ptr)
-		//writeMap(writer, v)
+		writeMap(writer, v)
 	}
 }
 
@@ -143,6 +152,11 @@ func structPtrEncoder(writer *Writer, v reflect.Value, ptr unsafe.Pointer) {
 		if !writer.WriteRef(ptr) {
 			writer.SetRef(ptr)
 			writeTime(writer, (*time.Time)(ptr))
+		}
+	case listType:
+		if !writer.WriteRef(ptr) {
+			writer.SetRef(ptr)
+			writeList(writer, (*list.List)(ptr))
 		}
 	default:
 		if !writer.WriteRef(ptr) {
@@ -199,7 +213,7 @@ func init() {
 		reflect.Chan:          nilEncoder,
 		reflect.Func:          nilEncoder,
 		reflect.Interface:     interfaceEncoder,
-		reflect.Map:           nilEncoder,
+		reflect.Map:           mapEncoder,
 		reflect.Ptr:           ptrEncoder,
 		reflect.Slice:         sliceEncoder,
 		reflect.String:        stringEncoder,
