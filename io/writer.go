@@ -198,6 +198,15 @@ func (writer *Writer) WriteBigRat(br *big.Rat) {
 	}
 }
 
+// WriteBigFloat to stream
+func (writer *Writer) WriteBigFloat(bf *big.Float) {
+	s := writer.Stream
+	s.WriteByte(TagDouble)
+	var buf [64]byte
+	s.Write(bf.Append(buf[:0], 'g', -1))
+	s.WriteByte(TagSemicolon)
+}
+
 // WriteTuple to stream
 func (writer *Writer) WriteTuple(tuple ...interface{}) {
 	writer.SetRef(nil)

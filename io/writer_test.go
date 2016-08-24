@@ -959,3 +959,35 @@ func BenchmarkSerializeBigRat(b *testing.B) {
 		writer.Serialize(x)
 	}
 }
+
+func TestSerializeBigFloat(t *testing.T) {
+	b := new(bytes.Buffer)
+	writer := NewWriter(b, false)
+	writer.Serialize(big.NewFloat(3.14159265358979))
+	if b.String() != "d3.14159265358979;" {
+		t.Error(b.String())
+	}
+	b.Truncate(0)
+	writer.Serialize(*big.NewFloat(3.14159265358979))
+	if b.String() != "d3.14159265358979;" {
+		t.Error(b.String())
+	}
+}
+
+func BenchmarkWriteBigFloat(b *testing.B) {
+	buf := new(bytes.Buffer)
+	writer := NewWriter(buf, false)
+	x := big.NewFloat(3.14159265358979)
+	for i := 0; i < b.N; i++ {
+		writer.WriteBigFloat(x)
+	}
+}
+
+func BenchmarkSerializeBigFloat(b *testing.B) {
+	buf := new(bytes.Buffer)
+	writer := NewWriter(buf, false)
+	x := big.NewFloat(3.14159265358979)
+	for i := 0; i < b.N; i++ {
+		writer.Serialize(x)
+	}
+}

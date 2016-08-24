@@ -138,6 +138,8 @@ func structPtrEncoder(writer *Writer, v reflect.Value, ptr unsafe.Pointer) {
 		writer.WriteBigInt((*big.Int)(ptr))
 	case bigRatType:
 		writer.WriteBigRat((*big.Rat)(ptr))
+	case bigFloatType:
+		writer.WriteBigFloat((*big.Float)(ptr))
 	default:
 		if !writer.WriteRef(ptr) {
 			writer.SetRef(ptr)
