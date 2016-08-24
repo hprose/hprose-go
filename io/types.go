@@ -21,11 +21,15 @@ package io
 
 import (
 	"math/big"
-	"reflect"
 	"time"
+	"unsafe"
 )
 
-var bigIntType = reflect.TypeOf((*big.Int)(nil))
-var bigRatType = reflect.TypeOf((*big.Rat)(nil))
-var bigFloatType = reflect.TypeOf((*big.Float)(nil))
-var timeType = reflect.TypeOf((*time.Time)(nil))
+func getType(v interface{}) uintptr {
+	return *(*uintptr)(unsafe.Pointer(&v))
+}
+
+var bigIntType = getType((*big.Int)(nil))
+var bigRatType = getType((*big.Rat)(nil))
+var bigFloatType = getType((*big.Float)(nil))
+var timeType = getType((*time.Time)(nil))
