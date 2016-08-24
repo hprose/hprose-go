@@ -22,8 +22,10 @@ package io
 import (
 	"math/big"
 	"reflect"
+	"time"
 )
 
 var bigIntType = reflect.TypeOf((*big.Int)(nil))
 var bigRatType = reflect.TypeOf((*big.Rat)(nil))
 var bigFloatType = reflect.TypeOf((*big.Float)(nil))
+var timeType = reflect.TypeOf((*time.Time)(nil))

@@ -22,6 +22,7 @@ package io
 import (
 	"math/big"
 	"reflect"
+	"time"
 	"unsafe"
 
 	"github.com/hprose/hprose-golang/util"
@@ -140,6 +141,8 @@ func structPtrEncoder(writer *Writer, v reflect.Value, ptr unsafe.Pointer) {
 		writer.WriteBigRat((*big.Rat)(ptr))
 	case bigFloatType:
 		writer.WriteBigFloat((*big.Float)(ptr))
+	case timeType:
+		writer.WriteTime((*time.Time)(ptr))
 	default:
 		if !writer.WriteRef(ptr) {
 			writer.SetRef(ptr)

@@ -25,6 +25,7 @@ import (
 	"math/big"
 	"reflect"
 	"strconv"
+	"time"
 	"unsafe"
 
 	"github.com/hprose/hprose-golang/util"
@@ -205,6 +206,34 @@ func (writer *Writer) WriteBigFloat(bf *big.Float) {
 	var buf [64]byte
 	s.Write(bf.Append(buf[:0], 'g', -1))
 	s.WriteByte(TagSemicolon)
+}
+
+// WriteTime to stream
+func (writer *Writer) WriteTime(t *time.Time) {
+	s := writer.Stream
+	year, month, day := t.Date()
+	hour, min, sec := t.Clock()
+	nsec := t.Nanosecond()
+	tag := TagSemicolon
+	if t.Location() == time.UTC {
+		tag = TagUTC
+	}
+	var buf [27]byte
+	if hour == 0 && min == 0 && sec == 0 && nsec == 0 {
+		datelen := formatDate(buf[:], year, int(month), day)
+		buf[datelen] = tag
+		s.Write(buf[:datelen+1])
+	} else if year == 1970 && month == 1 && day == 1 {
+		timelen := formatTime(buf[:], hour, min, sec, nsec)
+		buf[timelen] = tag
+		s.Write(buf[:timelen+1])
+	} else {
+		datelen := formatDate(buf[:], year, int(month), day)
+		timelen := formatTime(buf[datelen:], hour, min, sec, nsec)
+		datetimelen := datelen + timelen
+		buf[datetimelen] = tag
+		s.Write(buf[:datetimelen+1])
+	}
 }
 
 // WriteTuple to stream
@@ -573,4 +602,47 @@ func writeSlice(writer *Writer, v reflect.Value) {
 		writeListBody(writer, v, count)
 	}
 	writeListFooter(writer)
+}
+
+func formatDate(date []byte, year int, month int, day int) int {
+	date[0] = TagDate
+	date[1] = byte('0' + (year / 1000 % 10))
+	date[2] = byte('0' + (year / 100 % 10))
+	date[3] = byte('0' + (year / 10 % 10))
+	date[4] = byte('0' + (year % 10))
+	date[5] = byte('0' + (month / 10 % 10))
+	date[6] = byte('0' + (month % 10))
+	date[7] = byte('0' + (day / 10 % 10))
+	date[8] = byte('0' + (day % 10))
+	return 9
+}
+
+func formatTime(time []byte, hour int, min int, sec int, nsec int) int {
+	time[0] = TagTime
+	time[1] = byte('0' + (hour / 10 % 10))
+	time[2] = byte('0' + (hour % 10))
+	time[3] = byte('0' + (min / 10 % 10))
+	time[4] = byte('0' + (min % 10))
+	time[5] = byte('0' + (sec / 10 % 10))
+	time[6] = byte('0' + (sec % 10))
+	if nsec > 0 {
+		time[7] = TagPoint
+		time[8] = (byte)('0' + (nsec / 100000000 % 10))
+		time[9] = (byte)('0' + (nsec / 10000000 % 10))
+		time[10] = (byte)('0' + (nsec / 1000000 % 10))
+		if nsec%1000000 == 0 {
+			return 11
+		}
+		time[11] = (byte)('0' + (nsec / 100000 % 10))
+		time[12] = (byte)('0' + (nsec / 10000 % 10))
+		time[13] = (byte)('0' + (nsec / 1000 % 10))
+		if nsec%1000 == 0 {
+			return 14
+		}
+		time[14] = (byte)('0' + (nsec / 100 % 10))
+		time[15] = (byte)('0' + (nsec / 10 % 10))
+		time[16] = (byte)('0' + (nsec % 10))
+		return 17
+	}
+	return 7
 }
