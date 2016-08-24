@@ -208,30 +208,8 @@ func (writer *Writer) WriteBigFloat(bf *big.Float) {
 
 // WriteTime to stream
 func (writer *Writer) WriteTime(t *time.Time) {
-	s := writer.Stream
-	year, month, day := t.Date()
-	hour, min, sec := t.Clock()
-	nsec := t.Nanosecond()
-	tag := TagSemicolon
-	if t.Location() == time.UTC {
-		tag = TagUTC
-	}
-	var buf [27]byte
-	if hour == 0 && min == 0 && sec == 0 && nsec == 0 {
-		datelen := formatDate(buf[:], year, int(month), day)
-		buf[datelen] = tag
-		s.Write(buf[:datelen+1])
-	} else if year == 1970 && month == 1 && day == 1 {
-		timelen := formatTime(buf[:], hour, min, sec, nsec)
-		buf[timelen] = tag
-		s.Write(buf[:timelen+1])
-	} else {
-		datelen := formatDate(buf[:], year, int(month), day)
-		timelen := formatTime(buf[datelen:], hour, min, sec, nsec)
-		datetimelen := datelen + timelen
-		buf[datetimelen] = tag
-		s.Write(buf[:datetimelen+1])
-	}
+	writer.SetRef(nil)
+	writeTime(writer, t)
 }
 
 // WriteTuple to stream
@@ -499,6 +477,33 @@ func (writer *Writer) SetRef(ref unsafe.Pointer) {
 type emptyInterface struct {
 	typ uintptr
 	ptr unsafe.Pointer
+}
+
+func writeTime(writer *Writer, t *time.Time) {
+	s := writer.Stream
+	year, month, day := t.Date()
+	hour, min, sec := t.Clock()
+	nsec := t.Nanosecond()
+	tag := TagSemicolon
+	if t.Location() == time.UTC {
+		tag = TagUTC
+	}
+	var buf [27]byte
+	if hour == 0 && min == 0 && sec == 0 && nsec == 0 {
+		datelen := formatDate(buf[:], year, int(month), day)
+		buf[datelen] = tag
+		s.Write(buf[:datelen+1])
+	} else if year == 1970 && month == 1 && day == 1 {
+		timelen := formatTime(buf[:], hour, min, sec, nsec)
+		buf[timelen] = tag
+		s.Write(buf[:timelen+1])
+	} else {
+		datelen := formatDate(buf[:], year, int(month), day)
+		timelen := formatTime(buf[datelen:], hour, min, sec, nsec)
+		datetimelen := datelen + timelen
+		buf[datetimelen] = tag
+		s.Write(buf[:datetimelen+1])
+	}
 }
 
 func writeString(writer *Writer, str string, length int) {

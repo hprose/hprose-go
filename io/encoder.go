@@ -140,7 +140,10 @@ func structPtrEncoder(writer *Writer, v reflect.Value, ptr unsafe.Pointer) {
 	case bigFloatType:
 		writer.WriteBigFloat((*big.Float)(ptr))
 	case timeType:
-		writer.WriteTime((*time.Time)(ptr))
+		if !writer.WriteRef(ptr) {
+			writer.SetRef(ptr)
+			writeTime(writer, (*time.Time)(ptr))
+		}
 	default:
 		if !writer.WriteRef(ptr) {
 			writer.SetRef(ptr)
