@@ -218,31 +218,31 @@ func formatTime(time []byte, hour int, min int, sec int, nsec int) int {
 	p = sec << 1
 	time[5] = digit2[p]
 	time[6] = digit2[p+1]
-	if nsec > 0 {
-		time[7] = TagPoint
-		q := nsec / 1000000
-		p = q * 3
-		nsec = nsec - q*1000000
-		time[8] = digit3[p]
-		time[9] = digit3[p+1]
-		time[10] = digit3[p+2]
-		if nsec == 0 {
-			return 11
-		}
-		q = nsec / 1000
-		p = q * 3
-		nsec = nsec - q*1000
-		time[11] = digit3[p]
-		time[12] = digit3[p+1]
-		time[13] = digit3[p+2]
-		if nsec == 0 {
-			return 14
-		}
-		p = nsec * 3
-		time[14] = digit3[p]
-		time[15] = digit3[p+1]
-		time[16] = digit3[p+2]
-		return 17
+	if nsec == 0 {
+		return 7
 	}
-	return 7
+	time[7] = TagPoint
+	q := nsec / 1000000
+	p = q * 3
+	nsec = nsec - q*1000000
+	time[8] = digit3[p]
+	time[9] = digit3[p+1]
+	time[10] = digit3[p+2]
+	if nsec == 0 {
+		return 11
+	}
+	q = nsec / 1000
+	p = q * 3
+	nsec = nsec - q*1000
+	time[11] = digit3[p]
+	time[12] = digit3[p+1]
+	time[13] = digit3[p+2]
+	if nsec == 0 {
+		return 14
+	}
+	p = nsec * 3
+	time[14] = digit3[p]
+	time[15] = digit3[p+1]
+	time[16] = digit3[p+2]
+	return 17
 }
