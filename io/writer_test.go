@@ -994,33 +994,6 @@ func BenchmarkSerializeBigFloat(b *testing.B) {
 	}
 }
 
-func TestSerializeTime(t *testing.T) {
-	b := new(bytes.Buffer)
-	writer := NewWriter(b, true)
-	testdata := map[time.Time]string{
-		time.Date(1980, 12, 1, 0, 0, 0, 0, time.UTC):              "D19801201Z",
-		time.Date(1970, 1, 1, 12, 34, 56, 0, time.UTC):            "T123456Z",
-		time.Date(1970, 1, 1, 12, 34, 56, 789000000, time.UTC):    "T123456.789Z",
-		time.Date(1970, 1, 1, 12, 34, 56, 789456000, time.UTC):    "T123456.789456Z",
-		time.Date(1970, 1, 1, 12, 34, 56, 789456123, time.UTC):    "T123456.789456123Z",
-		time.Date(1980, 12, 1, 12, 34, 56, 0, time.UTC):           "D19801201T123456Z",
-		time.Date(1980, 12, 1, 12, 34, 56, 789000000, time.UTC):   "D19801201T123456.789Z",
-		time.Date(1980, 12, 1, 12, 34, 56, 789456000, time.UTC):   "D19801201T123456.789456Z",
-		time.Date(1980, 12, 1, 12, 34, 56, 789456123, time.UTC):   "D19801201T123456.789456123Z",
-		time.Date(1980, 12, 1, 0, 0, 0, 0, time.Local):            "D19801201;",
-		time.Date(1970, 1, 1, 12, 34, 56, 0, time.Local):          "T123456;",
-		time.Date(1980, 12, 1, 12, 34, 56, 0, time.Local):         "D19801201T123456;",
-		time.Date(1980, 12, 1, 12, 34, 56, 789456123, time.Local): "D19801201T123456.789456123;",
-	}
-	for k, v := range testdata {
-		writer.Serialize(k)
-		if b.String() != v {
-			t.Error(b.String())
-		}
-		b.Truncate(0)
-	}
-}
-
 func TestWriteTime(t *testing.T) {
 	b := new(bytes.Buffer)
 	writer := NewWriter(b, true)
@@ -1041,6 +1014,33 @@ func TestWriteTime(t *testing.T) {
 	}
 	for k, v := range testdata {
 		writer.WriteTime(&k)
+		if b.String() != v {
+			t.Error(b.String())
+		}
+		b.Truncate(0)
+	}
+}
+
+func TestSerializeTime(t *testing.T) {
+	b := new(bytes.Buffer)
+	writer := NewWriter(b, true)
+	testdata := map[time.Time]string{
+		time.Date(1980, 12, 1, 0, 0, 0, 0, time.UTC):              "D19801201Z",
+		time.Date(1970, 1, 1, 12, 34, 56, 0, time.UTC):            "T123456Z",
+		time.Date(1970, 1, 1, 12, 34, 56, 789000000, time.UTC):    "T123456.789Z",
+		time.Date(1970, 1, 1, 12, 34, 56, 789456000, time.UTC):    "T123456.789456Z",
+		time.Date(1970, 1, 1, 12, 34, 56, 789456123, time.UTC):    "T123456.789456123Z",
+		time.Date(1980, 12, 1, 12, 34, 56, 0, time.UTC):           "D19801201T123456Z",
+		time.Date(1980, 12, 1, 12, 34, 56, 789000000, time.UTC):   "D19801201T123456.789Z",
+		time.Date(1980, 12, 1, 12, 34, 56, 789456000, time.UTC):   "D19801201T123456.789456Z",
+		time.Date(1980, 12, 1, 12, 34, 56, 789456123, time.UTC):   "D19801201T123456.789456123Z",
+		time.Date(1980, 12, 1, 0, 0, 0, 0, time.Local):            "D19801201;",
+		time.Date(1970, 1, 1, 12, 34, 56, 0, time.Local):          "T123456;",
+		time.Date(1980, 12, 1, 12, 34, 56, 0, time.Local):         "D19801201T123456;",
+		time.Date(1980, 12, 1, 12, 34, 56, 789456123, time.Local): "D19801201T123456.789456123;",
+	}
+	for k, v := range testdata {
+		writer.Serialize(&k)
 		if b.String() != v {
 			t.Error(b.String())
 		}
@@ -1171,6 +1171,18 @@ func BenchmarkSerializeEmptyMap(b *testing.B) {
 	buf := new(bytes.Buffer)
 	writer := NewWriter(buf, true)
 	m := make(map[string]interface{})
+	for i := 0; i < b.N; i++ {
+		writer.Serialize(m)
+	}
+}
+
+func BenchmarkSerializeSlowMap(b *testing.B) {
+	buf := new(bytes.Buffer)
+	writer := NewWriter(buf, true)
+	m := make(map[interface{}]interface{})
+	m["name"] = "Tom"
+	m["age"] = 36
+	m["male"] = true
 	for i := 0; i < b.N; i++ {
 		writer.Serialize(m)
 	}

@@ -83,7 +83,7 @@ func sliceEncoder(writer *Writer, v reflect.Value) {
 }
 
 func mapEncoder(writer *Writer, v reflect.Value) {
-	ptr := (*emptyInterface)(unsafe.Pointer(&v)).ptr
+	ptr := (*reflectValue)(unsafe.Pointer(&v)).ptr
 	if !writer.WriteRef(ptr) {
 		writer.SetRef(ptr)
 		writeMap(writer, v)
@@ -95,7 +95,7 @@ func stringEncoder(writer *Writer, v reflect.Value) {
 }
 
 func structEncoder(writer *Writer, v reflect.Value) {
-	ptr := ((*emptyInterface)(unsafe.Pointer(&v)).ptr)
+	ptr := (*reflectValue)(unsafe.Pointer(&v)).ptr
 	pv := reflect.NewAt(v.Type(), ptr)
 	structPtrEncoder(writer, pv, ptr)
 }
@@ -173,7 +173,7 @@ func ptrEncoder(writer *Writer, v reflect.Value) {
 	}
 	e := v.Elem()
 	kind := e.Kind()
-	ptr := ((*emptyInterface)(unsafe.Pointer(&v)).ptr)
+	ptr := (*reflectValue)(unsafe.Pointer(&v)).ptr
 	switch kind {
 	case reflect.Array:
 		arrayPtrEncoder(writer, e, ptr)

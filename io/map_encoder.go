@@ -12,7 +12,7 @@
  *                                                        *
  * hprose map encoder for Go.                             *
  *                                                        *
- * LastModified: Aug 22, 2016                             *
+ * LastModified: Aug 25, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -23,23 +23,21 @@ import "unsafe"
 
 type mapBodyEncoder func(*Writer, unsafe.Pointer)
 
-func getMapEncoder(mapType uintptr) mapBodyEncoder {
-	switch mapType {
-	case stringStringMapType:
-		return stringStringMapEncoder
-	case stringInterfaceMapType:
-		return stringInterfaceMapEncoder
-	case stringIntMapType:
-		return stringIntMapEncoder
-	case intIntMapType:
-		return intIntMapEncoder
-	case intStringMapType:
-		return intStringMapEncoder
-	case intInterfaceMapType:
-		return intInterfaceMapEncoder
-	default:
-		return nil
-	}
+var mapBodyEncoders = map[uintptr]mapBodyEncoder{
+	stringStringMapType:       stringStringMapEncoder,
+	stringInterfaceMapType:    stringInterfaceMapEncoder,
+	stringIntMapType:          stringIntMapEncoder,
+	intIntMapType:             intIntMapEncoder,
+	intStringMapType:          intStringMapEncoder,
+	intInterfaceMapType:       intInterfaceMapEncoder,
+	interfaceInterfaceMapType: interfaceInterfaceMapEncoder,
+}
+
+// RegisterMapEncoder for fast serialize custom map type.
+// This function is usually used for code generators.
+// This function should be called in package init function.
+func RegisterMapEncoder(m interface{}, encoder func(*Writer, unsafe.Pointer)) {
+	mapBodyEncoders[getType(m)] = encoder
 }
 
 func stringStringMapEncoder(writer *Writer, ptr unsafe.Pointer) {
@@ -86,6 +84,14 @@ func intInterfaceMapEncoder(writer *Writer, ptr unsafe.Pointer) {
 	m := *(*map[int]interface{})(ptr)
 	for k, v := range m {
 		writer.WriteInt(int64(k))
+		writer.Serialize(v)
+	}
+}
+
+func interfaceInterfaceMapEncoder(writer *Writer, ptr unsafe.Pointer) {
+	m := *(*map[interface{}]interface{})(ptr)
+	for k, v := range m {
+		writer.Serialize(k)
 		writer.Serialize(v)
 	}
 }

@@ -36,9 +36,12 @@ var bigFloatType = getType((*big.Float)(nil))
 var timeType = getType((*time.Time)(nil))
 var listType = getType((*list.List)(nil))
 
+var bytesType = getType(([]byte)(nil))
+
 var stringStringMapType = getType((map[string]string)(nil))
 var stringInterfaceMapType = getType((map[string]interface{})(nil))
 var stringIntMapType = getType((map[string]int)(nil))
 var intIntMapType = getType((map[int]int)(nil))
 var intStringMapType = getType((map[int]string)(nil))
 var intInterfaceMapType = getType((map[int]interface{})(nil))
+var interfaceInterfaceMapType = getType((map[interface{}]interface{})(nil))

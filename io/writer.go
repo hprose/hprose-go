@@ -482,7 +482,13 @@ func (writer *Writer) SetRef(ref unsafe.Pointer) {
 
 type emptyInterface struct {
 	typ uintptr
-	ptr unsafe.Pointer
+	ptr uintptr
+}
+
+type reflectValue struct {
+	typ  uintptr
+	ptr  unsafe.Pointer
+	flag uintptr
 }
 
 func writeTime(writer *Writer, t *time.Time) {
@@ -574,12 +580,12 @@ func writeEmptyList(writer *Writer) {
 }
 
 func writeArray(writer *Writer, v reflect.Value) {
-	kind := v.Type().Elem().Kind()
+	st := reflect.SliceOf(v.Type().Elem())
+	sliceType := (*emptyInterface)(unsafe.Pointer(&st)).ptr
 	count := v.Len()
-	if kind == reflect.Uint8 {
-		ptr := (*emptyInterface)(unsafe.Pointer(&v)).ptr
+	if sliceType == bytesType {
 		sliceHeader := reflect.SliceHeader{
-			Data: uintptr(ptr),
+			Data: (*emptyInterface)(unsafe.Pointer(&v)).ptr,
 			Len:  count,
 			Cap:  count,
 		}
@@ -591,10 +597,10 @@ func writeArray(writer *Writer, v reflect.Value) {
 		return
 	}
 	writeListHeader(writer, count)
-	if encoder := sliceBodyEncoders[kind]; encoder != nil {
-		ptr := (*emptyInterface)(unsafe.Pointer(&v)).ptr
+	encoder := sliceBodyEncoders[sliceType]
+	if encoder != nil {
 		sliceHeader := reflect.SliceHeader{
-			Data: uintptr(ptr),
+			Data: (*emptyInterface)(unsafe.Pointer(&v)).ptr,
 			Len:  count,
 			Cap:  count,
 		}
@@ -606,8 +612,8 @@ func writeArray(writer *Writer, v reflect.Value) {
 }
 
 func writeSlice(writer *Writer, v reflect.Value) {
-	kind := v.Type().Elem().Kind()
-	if kind == reflect.Uint8 {
+	val := (*reflectValue)(unsafe.Pointer(&v))
+	if val.typ == bytesType {
 		writeBytes(writer, v.Bytes())
 		return
 	}
@@ -617,9 +623,9 @@ func writeSlice(writer *Writer, v reflect.Value) {
 		return
 	}
 	writeListHeader(writer, count)
-	if encoder := sliceBodyEncoders[kind]; encoder != nil {
-		ptr := (*emptyInterface)(unsafe.Pointer(&v)).ptr
-		encoder(writer, ptr)
+	encoder := sliceBodyEncoders[val.typ]
+	if encoder != nil {
+		encoder(writer, val.ptr)
 	} else {
 		writeListBody(writer, v, count)
 	}
@@ -660,8 +666,8 @@ func writeMap(writer *Writer, v reflect.Value) {
 		return
 	}
 	writeMapHeader(writer, count)
-	val := (*emptyInterface)(unsafe.Pointer(&v))
-	mapEncoder := getMapEncoder(val.typ)
+	val := (*reflectValue)(unsafe.Pointer(&v))
+	mapEncoder := mapBodyEncoders[val.typ]
 	if mapEncoder != nil {
 		mapEncoder(writer, unsafe.Pointer(&val.ptr))
 	} else {

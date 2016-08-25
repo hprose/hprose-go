@@ -12,21 +12,45 @@
  *                                                        *
  * hprose slice encoder for Go.                           *
  *                                                        *
- * LastModified: Aug 22, 2016                             *
+ * LastModified: Aug 25, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 
 package io
 
-import (
-	"reflect"
-	"unsafe"
-)
+import "unsafe"
 
 type sliceBodyEncoder func(*Writer, unsafe.Pointer)
 
-var sliceBodyEncoders []sliceBodyEncoder
+var sliceBodyEncoders = map[uintptr]sliceBodyEncoder{
+	getType(([]bool)(nil)):        boolSliceEncoder,
+	getType(([]int)(nil)):         intSliceEncoder,
+	getType(([]int8)(nil)):        int8SliceEncoder,
+	getType(([]int16)(nil)):       int16SliceEncoder,
+	getType(([]int32)(nil)):       int32SliceEncoder,
+	getType(([]int64)(nil)):       int64SliceEncoder,
+	getType(([]uint)(nil)):        uintSliceEncoder,
+	getType(([]uint8)(nil)):       uint8SliceEncoder,
+	getType(([]uint16)(nil)):      uint16SliceEncoder,
+	getType(([]uint32)(nil)):      uint32SliceEncoder,
+	getType(([]uint64)(nil)):      uint64SliceEncoder,
+	getType(([]uintptr)(nil)):     uintptrSliceEncoder,
+	getType(([]float32)(nil)):     float32SliceEncoder,
+	getType(([]float64)(nil)):     float64SliceEncoder,
+	getType(([]complex64)(nil)):   complex64SliceEncoder,
+	getType(([]complex128)(nil)):  complex128SliceEncoder,
+	getType(([]string)(nil)):      stringSliceEncoder,
+	getType(([][]byte)(nil)):      bytesSliceEncoder,
+	getType(([]interface{})(nil)): interfaceSliceEncoder,
+}
+
+// RegisterSliceEncoder for fast serialize custom slice type.
+// This function is usually used for code generators.
+// This function should be called in package init function.
+func RegisterSliceEncoder(m interface{}, encoder func(*Writer, unsafe.Pointer)) {
+	sliceBodyEncoders[getType(m)] = encoder
+}
 
 func boolSliceEncoder(writer *Writer, ptr unsafe.Pointer) {
 	slice := *(*[]bool)(ptr)
@@ -154,34 +178,9 @@ func bytesSliceEncoder(writer *Writer, ptr unsafe.Pointer) {
 	}
 }
 
-func init() {
-	sliceBodyEncoders = []sliceBodyEncoder{
-		reflect.Invalid:       nil,
-		reflect.Bool:          boolSliceEncoder,
-		reflect.Int:           intSliceEncoder,
-		reflect.Int8:          int8SliceEncoder,
-		reflect.Int16:         int16SliceEncoder,
-		reflect.Int32:         int32SliceEncoder,
-		reflect.Int64:         int64SliceEncoder,
-		reflect.Uint:          uintSliceEncoder,
-		reflect.Uint8:         uint8SliceEncoder,
-		reflect.Uint16:        uint16SliceEncoder,
-		reflect.Uint32:        uint32SliceEncoder,
-		reflect.Uint64:        uint64SliceEncoder,
-		reflect.Uintptr:       uintptrSliceEncoder,
-		reflect.Float32:       float32SliceEncoder,
-		reflect.Float64:       float64SliceEncoder,
-		reflect.Complex64:     complex64SliceEncoder,
-		reflect.Complex128:    complex128SliceEncoder,
-		reflect.Array:         nil,
-		reflect.Chan:          nil,
-		reflect.Func:          nil,
-		reflect.Interface:     nil,
-		reflect.Map:           nil,
-		reflect.Ptr:           nil,
-		reflect.Slice:         nil,
-		reflect.String:        stringSliceEncoder,
-		reflect.Struct:        nil,
-		reflect.UnsafePointer: nil,
+func interfaceSliceEncoder(writer *Writer, ptr unsafe.Pointer) {
+	slice := *(*[]interface{})(ptr)
+	for _, e := range slice {
+		writer.Serialize(e)
 	}
 }
