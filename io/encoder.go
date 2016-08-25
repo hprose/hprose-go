@@ -83,7 +83,7 @@ func sliceEncoder(writer *Writer, v reflect.Value) {
 }
 
 func mapEncoder(writer *Writer, v reflect.Value) {
-	ptr := ((*emptyInterface)(unsafe.Pointer(&v)).ptr)
+	ptr := (*emptyInterface)(unsafe.Pointer(&v)).ptr
 	if !writer.WriteRef(ptr) {
 		writer.SetRef(ptr)
 		writeMap(writer, v)

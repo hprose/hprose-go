@@ -505,15 +505,15 @@ func TestSerializeArray(t *testing.T) {
 	b := new(bytes.Buffer)
 	writer := NewWriter(b, true)
 	testdata := map[interface{}]string{
-		&[...]int{1, 2, 3}:                  "a3{123}",
-		&[...]float64{1, 2, 3}:              "a3{d1;d2;d3;}",
-		&[...]byte{'h', 'e', 'l', 'l', 'o'}: "b5\"hello\"",
-		&[...]byte{}:                        "b\"\"",
-		&[...]interface{}{1, 2.0, true}:     "a3{1d2;t}",
-		&[...]bool{true, false, true}:       "a3{tft}",
-		&[...]int{}:                         "a{}",
-		&[...]bool{}:                        "a{}",
-		&[...]interface{}{}:                 "a{}",
+		&[...]int{1, 2, 3}:                   "a3{123}",
+		&[...]float64{1, 2, 3}:               "a3{d1;d2;d3;}",
+		&[...]byte{'h', 'e', 'l', 'l', 'o'}:  "b5\"hello\"",
+		&[...]byte{}:                         "b\"\"",
+		&[...]interface{}{1, 2.0, nil, true}: "a4{1d2;nt}",
+		&[...]bool{true, false, true}:        "a3{tft}",
+		&[...]int{}:                          "a{}",
+		&[...]bool{}:                         "a{}",
+		&[...]interface{}{}:                  "a{}",
 	}
 	for k, v := range testdata {
 		writer.Serialize(k)
@@ -528,15 +528,15 @@ func TestSerializeSlice(t *testing.T) {
 	b := new(bytes.Buffer)
 	writer := NewWriter(b, true)
 	testdata := map[interface{}]string{
-		&[]int{1, 2, 3}:                  "a3{123}",
-		&[]float64{1, 2, 3}:              "a3{d1;d2;d3;}",
-		&[]byte{'h', 'e', 'l', 'l', 'o'}: "b5\"hello\"",
-		&[]byte{}:                        "b\"\"",
-		&[]interface{}{1, 2.0, true}:     "a3{1d2;t}",
-		&[]bool{true, false, true}:       "a3{tft}",
-		&[]int{}:                         "a{}",
-		&[]bool{}:                        "a{}",
-		&[]interface{}{}:                 "a{}",
+		&[]int{1, 2, 3}:                   "a3{123}",
+		&[]float64{1, 2, 3}:               "a3{d1;d2;d3;}",
+		&[]byte{'h', 'e', 'l', 'l', 'o'}:  "b5\"hello\"",
+		&[]byte{}:                         "b\"\"",
+		&[]interface{}{1, 2.0, nil, true}: "a4{1d2;nt}",
+		&[]bool{true, false, true}:        "a3{tft}",
+		&[]int{}:                          "a{}",
+		&[]bool{}:                         "a{}",
+		&[]interface{}{}:                  "a{}",
 	}
 	for k, v := range testdata {
 		writer.Serialize(k)
@@ -835,7 +835,7 @@ func TestWriteBytesSlice(t *testing.T) {
 	}
 }
 
-func BenchmarkSerializeArray(b *testing.B) {
+func BenchmarkSerializeIntArray(b *testing.B) {
 	buf := new(bytes.Buffer)
 	writer := NewWriter(buf, true)
 	array := [...]int{0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 1, 2, 3, 4, 0, 1, 2, 3, 4}
@@ -844,7 +844,7 @@ func BenchmarkSerializeArray(b *testing.B) {
 	}
 }
 
-func BenchmarkSerializeSlice(b *testing.B) {
+func BenchmarkSerializeIntSlice(b *testing.B) {
 	buf := new(bytes.Buffer)
 	writer := NewWriter(buf, true)
 	slice := []int{0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 1, 2, 3, 4, 0, 1, 2, 3, 4}
@@ -1077,9 +1077,10 @@ func TestSerializeList(t *testing.T) {
 	b.Truncate(0)
 	lst.PushBack(1)
 	lst.PushBack("hello")
+	lst.PushBack(nil)
 	lst.PushBack(3.14159)
 	writer.Serialize(lst)
-	if b.String() != "a3{1s5\"hello\"d3.14159;}" {
+	if b.String() != "a4{1s5\"hello\"nd3.14159;}" {
 		t.Error(b.String())
 	}
 }
@@ -1095,9 +1096,10 @@ func TestWriteList(t *testing.T) {
 	b.Truncate(0)
 	lst.PushBack(1)
 	lst.PushBack("hello")
+	lst.PushBack(nil)
 	lst.PushBack(3.14159)
 	writer.WriteList(lst)
-	if b.String() != "a3{1s5\"hello\"d3.14159;}" {
+	if b.String() != "a4{1s5\"hello\"nd3.14159;}" {
 		t.Error(b.String())
 	}
 }
@@ -1108,6 +1110,7 @@ func BenchmarkSerializeList(b *testing.B) {
 	lst := list.New()
 	lst.PushBack(1)
 	lst.PushBack("hello")
+	lst.PushBack(nil)
 	lst.PushBack(3.14159)
 	for i := 0; i < b.N; i++ {
 		writer.Serialize(lst)
@@ -1120,6 +1123,7 @@ func BenchmarkWriteList(b *testing.B) {
 	lst := list.New()
 	lst.PushBack(1)
 	lst.PushBack("hello")
+	lst.PushBack(nil)
 	lst.PushBack(3.14159)
 	for i := 0; i < b.N; i++ {
 		writer.WriteList(lst)
@@ -1130,6 +1134,11 @@ func TestWriterMap(t *testing.T) {
 	b := new(bytes.Buffer)
 	writer := NewWriter(b, true)
 	m := make(map[string]interface{})
+	writer.Serialize(m)
+	if b.String() != "m{}" {
+		t.Error(b.String())
+	}
+	b.Truncate(0)
 	m["name"] = "Tom"
 	m["age"] = 36
 	m["male"] = true
@@ -1153,6 +1162,15 @@ func BenchmarkSerializeMap(b *testing.B) {
 	m["name"] = "Tom"
 	m["age"] = 36
 	m["male"] = true
+	for i := 0; i < b.N; i++ {
+		writer.Serialize(m)
+	}
+}
+
+func BenchmarkSerializeEmptyMap(b *testing.B) {
+	buf := new(bytes.Buffer)
+	writer := NewWriter(buf, true)
+	m := make(map[string]interface{})
 	for i := 0; i < b.N; i++ {
 		writer.Serialize(m)
 	}

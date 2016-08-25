@@ -12,7 +12,7 @@
  *                                                        *
  * hprose writer for Go.                                  *
  *                                                        *
- * LastModified: Aug 24, 2016                             *
+ * LastModified: Aug 25, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -638,6 +638,17 @@ func writeMapHeader(writer *Writer, count int) {
 	s.WriteByte(TagOpenbrace)
 }
 
+func writeMapBody(writer *Writer, v reflect.Value) {
+	mapType := v.Type()
+	keyEncoder := valueEncoders[mapType.Key().Kind()]
+	valueEncoder := valueEncoders[mapType.Elem().Kind()]
+	keys := v.MapKeys()
+	for _, key := range keys {
+		keyEncoder(writer, key)
+		valueEncoder(writer, v.MapIndex(key))
+	}
+}
+
 func writeMapFooter(writer *Writer) {
 	writer.Stream.WriteByte(TagClosebrace)
 }
@@ -649,13 +660,12 @@ func writeMap(writer *Writer, v reflect.Value) {
 		return
 	}
 	writeMapHeader(writer, count)
-	mapType := v.Type()
-	keyEncoder := valueEncoders[mapType.Key().Kind()]
-	valueEncoder := valueEncoders[mapType.Elem().Kind()]
-	keys := v.MapKeys()
-	for _, key := range keys {
-		keyEncoder(writer, key)
-		valueEncoder(writer, v.MapIndex(key))
+	val := (*emptyInterface)(unsafe.Pointer(&v))
+	mapEncoder := getMapEncoder(val.typ)
+	if mapEncoder != nil {
+		mapEncoder(writer, unsafe.Pointer(&val.ptr))
+	} else {
+		writeMapBody(writer, v)
 	}
 	writeMapFooter(writer)
 }
