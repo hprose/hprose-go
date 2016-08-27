@@ -1155,7 +1155,7 @@ func TestWriterMap(t *testing.T) {
 	}
 }
 
-func BenchmarkSerializeMap(b *testing.B) {
+func BenchmarkSerializeStringKeyMap(b *testing.B) {
 	buf := new(bytes.Buffer)
 	writer := NewWriter(buf, true)
 	m := make(map[string]interface{})
@@ -1176,7 +1176,7 @@ func BenchmarkSerializeEmptyMap(b *testing.B) {
 	}
 }
 
-func BenchmarkSerializeSlowMap(b *testing.B) {
+func BenchmarkSerializeInterfaceKeyMap(b *testing.B) {
 	buf := new(bytes.Buffer)
 	writer := NewWriter(buf, true)
 	m := make(map[interface{}]interface{})
