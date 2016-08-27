@@ -21,9 +21,7 @@ package io
 
 import "unsafe"
 
-type mapBodyEncoder func(*Writer, unsafe.Pointer)
-
-var mapBodyEncoders = map[uintptr]mapBodyEncoder{
+var mapBodyEncoders = map[uintptr]func(*Writer, unsafe.Pointer){
 	getType((map[string]string)(nil)):           stringStringMapEncoder,
 	getType((map[string]interface{})(nil)):      stringInterfaceMapEncoder,
 	getType((map[string]int)(nil)):              stringIntMapEncoder,

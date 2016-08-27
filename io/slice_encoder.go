@@ -12,7 +12,7 @@
  *                                                        *
  * hprose slice encoder for Go.                           *
  *                                                        *
- * LastModified: Aug 25, 2016                             *
+ * LastModified: Aug 27, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -21,9 +21,7 @@ package io
 
 import "unsafe"
 
-type sliceBodyEncoder func(*Writer, unsafe.Pointer)
-
-var sliceBodyEncoders = map[uintptr]sliceBodyEncoder{
+var sliceBodyEncoders = map[uintptr]func(*Writer, unsafe.Pointer){
 	getType(([]bool)(nil)):        boolSliceEncoder,
 	getType(([]int)(nil)):         intSliceEncoder,
 	getType(([]int8)(nil)):        int8SliceEncoder,
