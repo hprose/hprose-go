@@ -12,7 +12,7 @@
  *                                                        *
  * hprose encoder for Go.                                 *
  *                                                        *
- * LastModified: Aug 25, 2016                             *
+ * LastModified: Aug 28, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -110,7 +110,7 @@ func arrayPtrEncoder(writer *Writer, v reflect.Value, ptr unsafe.Pointer) {
 func mapPtrEncoder(writer *Writer, v reflect.Value, ptr unsafe.Pointer) {
 	if !writer.WriteRef(ptr) {
 		writer.SetRef(ptr)
-		writeMap(writer, v)
+		writeMapPtr(writer, v)
 	}
 }
 

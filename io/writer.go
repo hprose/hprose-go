@@ -12,7 +12,7 @@
  *                                                        *
  * hprose writer for Go.                                  *
  *                                                        *
- * LastModified: Aug 25, 2016                             *
+ * LastModified: Aug 28, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -26,6 +26,7 @@ import (
 	"math/big"
 	"reflect"
 	"strconv"
+	"sync"
 	"time"
 	"unsafe"
 )
@@ -35,6 +36,8 @@ type Writer struct {
 	Stream   *bytes.Buffer
 	Simple   bool
 	classref map[string]int
+	ref      map[unsafe.Pointer]int
+	refcount int
 }
 
 // NewWriter is the constructor for Hprose Writer
@@ -42,6 +45,10 @@ func NewWriter(stream *bytes.Buffer, simple bool) (writer *Writer) {
 	writer = new(Writer)
 	writer.Stream = stream
 	writer.Simple = simple
+	writer.classref = map[string]int{}
+	if !simple {
+		writer.ref = map[unsafe.Pointer]int{}
+	}
 	return writer
 }
 
@@ -469,13 +476,32 @@ func (writer *Writer) WriteList(lst *list.List) {
 
 // WriteRef writes reference of an object to stream
 func (writer *Writer) WriteRef(ref unsafe.Pointer) bool {
-	return false
+	if writer.Simple {
+		return false
+	}
+	return writeRef(writer, ref)
 }
 
 // SetRef add v to reference list, if WriteRef is call with the same v, it will
 // write the reference index instead of v.
 func (writer *Writer) SetRef(ref unsafe.Pointer) {
+	if writer.Simple {
+		return
+	}
+	if ref != nil {
+		writer.ref[ref] = writer.refcount
+	}
+	writer.refcount++
+}
 
+// Reset the reference counter
+func (writer *Writer) Reset() {
+	writer.classref = map[string]int{}
+	if writer.Simple {
+		return
+	}
+	writer.refcount = 0
+	writer.ref = map[unsafe.Pointer]int{}
 }
 
 // private type & functions
@@ -489,6 +515,32 @@ type reflectValue struct {
 	typ  uintptr
 	ptr  unsafe.Pointer
 	flag uintptr
+}
+
+type field struct {
+	Name      string
+	Offset    uintptr
+	Type      uintptr
+	Anonymous bool
+}
+
+type fields []field
+
+type typeCache struct {
+	sync.RWMutex
+	cache map[uintptr]fields
+}
+
+func writeRef(writer *Writer, ref unsafe.Pointer) bool {
+	n, found := writer.ref[ref]
+	if found {
+		s := writer.Stream
+		s.WriteByte(TagRef)
+		var buf [20]byte
+		s.Write(getIntBytes(buf[:], int64(n)))
+		s.WriteByte(TagSemicolon)
+	}
+	return found
 }
 
 func writeTime(writer *Writer, t *time.Time) {
@@ -674,4 +726,25 @@ func writeMap(writer *Writer, v reflect.Value) {
 		writeMapBody(writer, v)
 	}
 	writeMapFooter(writer)
+}
+
+func writeMapPtr(writer *Writer, v reflect.Value) {
+	count := v.Len()
+	if count == 0 {
+		writeEmptyMap(writer)
+		return
+	}
+	writeMapHeader(writer, count)
+	val := (*reflectValue)(unsafe.Pointer(&v))
+	mapEncoder := mapBodyEncoders[val.typ]
+	if mapEncoder != nil {
+		mapEncoder(writer, unsafe.Pointer(val.ptr))
+	} else {
+		writeMapBody(writer, v)
+	}
+	writeMapFooter(writer)
+}
+
+func writeStruct(writer *Writer, v reflect.Value) {
+
 }
