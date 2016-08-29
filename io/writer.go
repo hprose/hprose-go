@@ -35,7 +35,7 @@ type Writer struct {
 	Stream   *bytes.Buffer
 	Simple   bool
 	classref map[uintptr]int
-	ref      map[unsafe.Pointer]int
+	ref      map[uintptr]int
 	refcount int
 }
 
@@ -46,7 +46,7 @@ func NewWriter(stream *bytes.Buffer, simple bool) (writer *Writer) {
 	writer.Simple = simple
 	writer.classref = map[uintptr]int{}
 	if !simple {
-		writer.ref = map[unsafe.Pointer]int{}
+		writer.ref = map[uintptr]int{}
 	}
 	return writer
 }
@@ -488,7 +488,7 @@ func (writer *Writer) SetRef(ref unsafe.Pointer) {
 		return
 	}
 	if ref != nil {
-		writer.ref[ref] = writer.refcount
+		writer.ref[uintptr(ref)] = writer.refcount
 	}
 	writer.refcount++
 }
@@ -500,13 +500,13 @@ func (writer *Writer) Reset() {
 		return
 	}
 	writer.refcount = 0
-	writer.ref = map[unsafe.Pointer]int{}
+	writer.ref = map[uintptr]int{}
 }
 
 // private functions
 
 func writeRef(writer *Writer, ref unsafe.Pointer) bool {
-	n, found := writer.ref[ref]
+	n, found := writer.ref[uintptr(ref)]
 	if found {
 		s := writer.Stream
 		s.WriteByte(TagRef)

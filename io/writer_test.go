@@ -1263,13 +1263,13 @@ func BenchmarkSerializeStruct(b *testing.B) {
 	}
 	type TestStruct2 struct {
 		OOXX bool `hprose:"ooxx"`
-		//*TestStruct2
+		*TestStruct2
 		TestStruct1
 		Test     TestStruct
 		birthday time.Time
 	}
 	st := TestStruct2{}
-	//st.TestStruct2 = &st
+	st.TestStruct2 = &st
 	st.ID = 100
 	st.Name = "Tom"
 	age := 18
@@ -1280,7 +1280,7 @@ func BenchmarkSerializeStruct(b *testing.B) {
 	Register(reflect.TypeOf((*TestStruct1)(nil)), "Test1", "hprose")
 	Register(reflect.TypeOf((*TestStruct2)(nil)), "Test2", "hprose")
 	buf := new(bytes.Buffer)
-	writer := NewWriter(buf, true)
+	writer := NewWriter(buf, false)
 	for i := 0; i < b.N; i++ {
 		writer.Serialize(st)
 	}
