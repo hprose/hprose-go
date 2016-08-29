@@ -149,15 +149,9 @@ func structPtrEncoder(writer *Writer, v reflect.Value, ptr unsafe.Pointer) {
 	case bigFloatType:
 		writer.WriteBigFloat((*big.Float)(ptr))
 	case timeType:
-		if !writer.WriteRef(ptr) {
-			writer.SetRef(ptr)
-			writeTime(writer, (*time.Time)(ptr))
-		}
+		writer.WriteTime((*time.Time)(ptr))
 	case listType:
-		if !writer.WriteRef(ptr) {
-			writer.SetRef(ptr)
-			writeList(writer, (*list.List)(ptr))
-		}
+		writer.WriteList((*list.List)(ptr))
 	default:
 		if !writer.WriteRef(ptr) {
 			writeStruct(writer, v)
