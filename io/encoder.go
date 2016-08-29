@@ -73,19 +73,19 @@ func interfaceEncoder(writer *Writer, v reflect.Value) {
 }
 
 func arrayEncoder(writer *Writer, v reflect.Value) {
-	writer.SetRef(nil)
+	setRef(writer, nil)
 	writeArray(writer, v)
 }
 
 func sliceEncoder(writer *Writer, v reflect.Value) {
-	writer.SetRef(nil)
+	setRef(writer, nil)
 	writeSlice(writer, v)
 }
 
 func mapEncoder(writer *Writer, v reflect.Value) {
 	ptr := (*reflectValue)(unsafe.Pointer(&v)).ptr
-	if !writer.WriteRef(ptr) {
-		writer.SetRef(ptr)
+	if !writeRef(writer, ptr) {
+		setRef(writer, ptr)
 		writeMap(writer, v)
 	}
 }
@@ -101,22 +101,22 @@ func structEncoder(writer *Writer, v reflect.Value) {
 }
 
 func arrayPtrEncoder(writer *Writer, v reflect.Value, ptr unsafe.Pointer) {
-	if !writer.WriteRef(ptr) {
-		writer.SetRef(ptr)
+	if !writeRef(writer, ptr) {
+		setRef(writer, ptr)
 		writeArray(writer, v)
 	}
 }
 
 func mapPtrEncoder(writer *Writer, v reflect.Value, ptr unsafe.Pointer) {
-	if !writer.WriteRef(ptr) {
-		writer.SetRef(ptr)
+	if !writeRef(writer, ptr) {
+		setRef(writer, ptr)
 		writeMapPtr(writer, v)
 	}
 }
 
 func slicePtrEncoder(writer *Writer, v reflect.Value, ptr unsafe.Pointer) {
-	if !writer.WriteRef(ptr) {
-		writer.SetRef(ptr)
+	if !writeRef(writer, ptr) {
+		setRef(writer, ptr)
 		writeSlice(writer, v)
 	}
 }
@@ -133,8 +133,8 @@ func stringPtrEncoder(writer *Writer, v reflect.Value, ptr unsafe.Pointer) {
 		writer.Stream.WriteByte(TagUTF8Char)
 		writer.Stream.WriteString(str)
 	default:
-		if !writer.WriteRef(ptr) {
-			writer.SetRef(ptr)
+		if !writeRef(writer, ptr) {
+			setRef(writer, ptr)
 			writeString(writer, str, length)
 		}
 	}
@@ -153,7 +153,7 @@ func structPtrEncoder(writer *Writer, v reflect.Value, ptr unsafe.Pointer) {
 	case listType:
 		writer.WriteList((*list.List)(ptr))
 	default:
-		if !writer.WriteRef(ptr) {
+		if !writeRef(writer, ptr) {
 			writeStruct(writer, v)
 		}
 	}
