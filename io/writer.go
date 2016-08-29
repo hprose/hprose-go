@@ -748,7 +748,7 @@ func writeStruct(writer *Writer, v reflect.Value) {
 		fp.typ = field.Type
 		fp.ptr = uintptr(val.ptr) + field.Offset
 		if field.Kind == reflect.Ptr {
-			fp.ptr = *(*uintptr)(unsafe.Pointer(fp.ptr))
+			fp.ptr = **(**uintptr)(unsafe.Pointer(&fp.ptr))
 		}
 		writer.Serialize(f)
 	}
