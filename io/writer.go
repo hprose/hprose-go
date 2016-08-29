@@ -12,7 +12,7 @@
  *                                                        *
  * hprose writer for Go.                                  *
  *                                                        *
- * LastModified: Aug 28, 2016                             *
+ * LastModified: Aug 29, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -26,7 +26,6 @@ import (
 	"math/big"
 	"reflect"
 	"strconv"
-	"sync"
 	"time"
 	"unsafe"
 )
@@ -35,7 +34,7 @@ import (
 type Writer struct {
 	Stream   *bytes.Buffer
 	Simple   bool
-	classref map[string]int
+	classref map[uintptr]int
 	ref      map[unsafe.Pointer]int
 	refcount int
 }
@@ -45,7 +44,7 @@ func NewWriter(stream *bytes.Buffer, simple bool) (writer *Writer) {
 	writer = new(Writer)
 	writer.Stream = stream
 	writer.Simple = simple
-	writer.classref = map[string]int{}
+	writer.classref = map[uintptr]int{}
 	if !simple {
 		writer.ref = map[unsafe.Pointer]int{}
 	}
@@ -496,7 +495,7 @@ func (writer *Writer) SetRef(ref unsafe.Pointer) {
 
 // Reset the reference counter
 func (writer *Writer) Reset() {
-	writer.classref = map[string]int{}
+	writer.classref = map[uintptr]int{}
 	if writer.Simple {
 		return
 	}
@@ -504,32 +503,7 @@ func (writer *Writer) Reset() {
 	writer.ref = map[unsafe.Pointer]int{}
 }
 
-// private type & functions
-
-type emptyInterface struct {
-	typ uintptr
-	ptr uintptr
-}
-
-type reflectValue struct {
-	typ  uintptr
-	ptr  unsafe.Pointer
-	flag uintptr
-}
-
-type field struct {
-	Name      string
-	Offset    uintptr
-	Type      uintptr
-	Anonymous bool
-}
-
-type fields []field
-
-type typeCache struct {
-	sync.RWMutex
-	cache map[uintptr]fields
-}
+// private functions
 
 func writeRef(writer *Writer, ref unsafe.Pointer) bool {
 	n, found := writer.ref[ref]
@@ -746,5 +720,33 @@ func writeMapPtr(writer *Writer, v reflect.Value) {
 }
 
 func writeStruct(writer *Writer, v reflect.Value) {
-
+	val := (*reflectValue)(unsafe.Pointer(&v))
+	cache := getStructCache(v.Type().Elem())
+	index, found := writer.classref[val.typ]
+	if !found {
+		writer.Stream.Write(cache.Data)
+		if !writer.Simple {
+			writer.refcount += len(cache.Fields)
+		}
+		index = len(writer.classref)
+		writer.classref[val.typ] = index
+	}
+	writer.SetRef(val.ptr)
+	s := writer.Stream
+	s.WriteByte(TagObject)
+	var buf [20]byte
+	s.Write(getIntBytes(buf[:], int64(index)))
+	s.WriteByte(TagOpenbrace)
+	fields := cache.Fields
+	for _, field := range fields {
+		var f interface{}
+		fp := (*emptyInterface)(unsafe.Pointer(&f))
+		fp.typ = field.Type
+		fp.ptr = uintptr(val.ptr) + field.Offset
+		if field.Kind == reflect.Ptr {
+			fp.ptr = *(*uintptr)(unsafe.Pointer(fp.ptr))
+		}
+		writer.Serialize(f)
+	}
+	s.WriteByte(TagClosebrace)
 }

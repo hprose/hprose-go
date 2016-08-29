@@ -12,7 +12,7 @@
  *                                                        *
  * hprose writer test for Go.                             *
  *                                                        *
- * LastModified: Aug 22, 2016                             *
+ * LastModified: Aug 29, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -25,6 +25,7 @@ import (
 	"math"
 	"math/big"
 	"math/rand"
+	"reflect"
 	"strconv"
 	"testing"
 	"time"
@@ -1212,5 +1213,75 @@ func BenchmarkSerializeInterfaceKeyMap(b *testing.B) {
 	m["male"] = true
 	for i := 0; i < b.N; i++ {
 		writer.Serialize(&m)
+	}
+}
+
+func TestSerializeStruct(t *testing.T) {
+	type TestStruct struct {
+		ID int `hprose:"id"`
+	}
+	type TestStruct1 struct {
+		TestStruct
+		Name string
+		Age  *int
+	}
+	type TestStruct2 struct {
+		OOXX bool `hprose:"ooxx"`
+		*TestStruct2
+		TestStruct1
+		Test     TestStruct
+		birthday time.Time
+	}
+	st := TestStruct2{}
+	st.TestStruct2 = &st
+	st.ID = 100
+	st.Name = "Tom"
+	age := 18
+	st.Age = &age
+	st.OOXX = false
+	st.Test.ID = 200
+	Register(reflect.TypeOf((*TestStruct)(nil)), "Test", "hprose")
+	Register(reflect.TypeOf((*TestStruct1)(nil)), "Test1", "hprose")
+	Register(reflect.TypeOf((*TestStruct2)(nil)), "Test2", "hprose")
+	buf := new(bytes.Buffer)
+	writer := NewWriter(buf, false)
+	writer.Serialize(st)
+	s := `c5"Test2"6{s4"ooxx"s11"testStruct2"s2"id"s4"name"s3"age"s4"test"}o0{fo0{fr7;i100;s3"Tom"i18;c4"Test"1{s2"id"}o1{i200;}}i100;s3"Tom"i18;o1{i200;}}`
+	if buf.String() != s {
+		t.Error(buf.String())
+	}
+}
+
+func BenchmarkSerializeStruct(b *testing.B) {
+	type TestStruct struct {
+		ID int `hprose:"id"`
+	}
+	type TestStruct1 struct {
+		TestStruct
+		Name string
+		Age  *int
+	}
+	type TestStruct2 struct {
+		OOXX bool `hprose:"ooxx"`
+		//*TestStruct2
+		TestStruct1
+		Test     TestStruct
+		birthday time.Time
+	}
+	st := TestStruct2{}
+	//st.TestStruct2 = &st
+	st.ID = 100
+	st.Name = "Tom"
+	age := 18
+	st.Age = &age
+	st.OOXX = false
+	st.Test.ID = 200
+	Register(reflect.TypeOf((*TestStruct)(nil)), "Test", "hprose")
+	Register(reflect.TypeOf((*TestStruct1)(nil)), "Test1", "hprose")
+	Register(reflect.TypeOf((*TestStruct2)(nil)), "Test2", "hprose")
+	buf := new(bytes.Buffer)
+	writer := NewWriter(buf, true)
+	for i := 0; i < b.N; i++ {
+		writer.Serialize(st)
 	}
 }

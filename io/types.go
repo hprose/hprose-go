@@ -26,6 +26,17 @@ import (
 	"unsafe"
 )
 
+type emptyInterface struct {
+	typ uintptr
+	ptr uintptr
+}
+
+type reflectValue struct {
+	typ  uintptr
+	ptr  unsafe.Pointer
+	flag uintptr
+}
+
 func getType(v interface{}) uintptr {
 	return *(*uintptr)(unsafe.Pointer(&v))
 }

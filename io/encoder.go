@@ -160,8 +160,7 @@ func structPtrEncoder(writer *Writer, v reflect.Value, ptr unsafe.Pointer) {
 		}
 	default:
 		if !writer.WriteRef(ptr) {
-			writer.SetRef(ptr)
-			//writeStruct(writer, v)
+			writeStruct(writer, v)
 		}
 	}
 }
