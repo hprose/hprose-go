@@ -49,6 +49,32 @@ var structTypeCacheLocker = sync.RWMutex{}
 var structTypes = map[string]reflect.Type{}
 var structTypesLocker = sync.RWMutex{}
 
+func getFieldAlias(f *reflect.StructField, tag string) (alias string) {
+	fname := f.Name
+	if fname != "" && 'A' <= fname[0] && fname[0] < 'Z' {
+		if tag != "" && f.Tag != "" {
+			alias = strings.SplitN(f.Tag.Get(tag), ",", 2)[0]
+			alias = strings.TrimSpace(strings.SplitN(alias, ">", 2)[0])
+			if alias == "-" {
+				return ""
+			}
+		}
+		if alias == "" {
+			alias = string(fname[0]-'A'+'a') + fname[1:]
+		}
+	}
+	return alias
+}
+
+func getSubFields(t reflect.Type, tag string, offset uintptr, index []int) []*fieldCache {
+	subFields := getFields(t, tag)
+	for _, subField := range subFields {
+		subField.Offset += offset
+		subField.Index = append(index, subField.Index...)
+	}
+	return subFields
+}
+
 func getFields(t reflect.Type, tag string) []*fieldCache {
 	n := t.NumField()
 	fields := make([]*fieldCache, 0, n)
@@ -61,42 +87,25 @@ func getFields(t reflect.Type, tag string) []*fieldCache {
 			fkind == reflect.UnsafePointer {
 			continue
 		}
-		fname := f.Name
 		if f.Anonymous {
 			if fkind == reflect.Struct {
-				subFields := getFields(ft, tag)
-				for _, subField := range subFields {
-					subField.Offset += f.Offset
-					subField.Index = append(f.Index, subField.Index...)
-				}
+				subFields := getSubFields(ft, tag, f.Offset, f.Index)
 				fields = append(fields, subFields...)
 				continue
 			}
 		}
-		if fname == "" {
+		alias := getFieldAlias(&f, tag)
+		if alias == "" {
 			continue
 		}
-		if 'A' <= fname[0] && fname[0] < 'Z' {
-			field := fieldCache{}
-			var name string
-			if tag != "" && f.Tag != "" {
-				name = strings.SplitN(f.Tag.Get(tag), ",", 2)[0]
-				name = strings.TrimSpace(strings.SplitN(name, ">", 2)[0])
-				if name == "-" {
-					continue
-				}
-			}
-			if name == "" {
-				name = string(fname[0]-'A'+'a') + fname[1:]
-			}
-			field.Name = fname
-			field.Alias = name
-			field.Type = (*emptyInterface)(unsafe.Pointer(&ft)).ptr
-			field.Kind = fkind
-			field.Offset = f.Offset
-			field.Index = f.Index
-			fields = append(fields, &field)
-		}
+		field := fieldCache{}
+		field.Name = f.Name
+		field.Alias = alias
+		field.Type = (*emptyInterface)(unsafe.Pointer(&ft)).ptr
+		field.Kind = fkind
+		field.Offset = f.Offset
+		field.Index = f.Index
+		fields = append(fields, &field)
 	}
 	return fields
 }
