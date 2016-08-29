@@ -12,7 +12,7 @@
  *                                                        *
  * hprose reader for Go.                                  *
  *                                                        *
- * LastModified: Aug 16, 2016                             *
+ * LastModified: Aug 29, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -25,9 +25,4 @@ type Reader struct {
 	classref       []interface{}
 	fieldsref      [][]string
 	JSONCompatible bool
-}
-
-// Unmarshaler is a interface for unserializing user custum type
-type Unmarshaler interface {
-	UnmarshalHprose(reader *Reader, tag byte) error
 }
