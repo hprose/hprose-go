@@ -495,12 +495,16 @@ func (writer *Writer) SetRef(ref unsafe.Pointer) {
 
 // Reset the reference counter
 func (writer *Writer) Reset() {
-	writer.classref = map[uintptr]int{}
+	for k := range writer.classref {
+		delete(writer.classref, k)
+	}
 	if writer.Simple {
 		return
 	}
 	writer.refcount = 0
-	writer.ref = map[uintptr]int{}
+	for k := range writer.ref {
+		delete(writer.ref, k)
+	}
 }
 
 // private functions
