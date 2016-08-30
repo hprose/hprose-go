@@ -33,8 +33,8 @@ type RawReader struct {
 // NewRawReader is a constructor for RawReader
 func NewRawReader(buf []byte) (reader *RawReader) {
 	reader = new(RawReader)
-	reader.buffer = buf
-	reader.length = len(buf)
+	reader.buf = buf
+	reader.len = len(buf)
 	return
 }
 
@@ -48,7 +48,7 @@ func (r *RawReader) ReadRaw() (raw []byte, err error) {
 
 // ReadRawTo buffer from stream
 func (r *RawReader) ReadRawTo(buffer *bytes.Buffer) error {
-	if r.offset >= r.length {
+	if r.off >= r.len {
 		return io.EOF
 	}
 	return r.readRaw(buffer, r.readByte())
@@ -60,7 +60,7 @@ func (r *RawReader) readRaw(buffer *bytes.Buffer, tag byte) (err error) {
 	case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
 		TagNull, TagEmpty, TagTrue, TagFalse, TagNaN:
 	case TagInfinity:
-		if r.offset >= r.length {
+		if r.off >= r.len {
 			return io.EOF
 		}
 		buffer.WriteByte(r.readByte())
@@ -91,7 +91,7 @@ func (r *RawReader) readRaw(buffer *bytes.Buffer, tag byte) (err error) {
 }
 
 func (r *RawReader) readNumberRaw(buffer *bytes.Buffer) error {
-	for r.offset < r.length {
+	for r.off < r.len {
 		tag := r.readByte()
 		buffer.WriteByte(tag)
 		if tag == TagSemicolon {
@@ -102,7 +102,7 @@ func (r *RawReader) readNumberRaw(buffer *bytes.Buffer) error {
 }
 
 func (r *RawReader) readDateTimeRaw(buffer *bytes.Buffer) error {
-	for r.offset < r.length {
+	for r.off < r.len {
 		tag := r.readByte()
 		buffer.WriteByte(tag)
 		if tag == TagSemicolon || tag == TagUTC {
@@ -123,7 +123,7 @@ func (r *RawReader) readUTF8CharRaw(buffer *bytes.Buffer) (err error) {
 func (r *RawReader) readBytesRaw(buffer *bytes.Buffer) (err error) {
 	count := 0
 	tag := byte('0')
-	for r.offset < r.length {
+	for r.off < r.len {
 		count *= 10
 		count += int(tag - '0')
 		tag = r.readByte()
@@ -144,7 +144,7 @@ func (r *RawReader) readBytesRaw(buffer *bytes.Buffer) (err error) {
 func (r *RawReader) readStringRaw(buffer *bytes.Buffer) (err error) {
 	count := 0
 	tag := byte('0')
-	for r.offset < r.length {
+	for r.off < r.len {
 		count *= 10
 		count += int(tag - '0')
 		tag = r.readByte()
@@ -171,11 +171,11 @@ func (r *RawReader) readGUIDRaw(buffer *bytes.Buffer) (err error) {
 
 func (r *RawReader) readComplexRaw(buffer *bytes.Buffer) (err error) {
 	var tag byte
-	for r.offset < r.length && tag != TagOpenbrace {
+	for r.off < r.len && tag != TagOpenbrace {
 		tag = r.readByte()
 		buffer.WriteByte(tag)
 	}
-	if r.offset >= r.length {
+	if r.off >= r.len {
 		return io.EOF
 	}
 	tag = r.readByte()
@@ -195,30 +195,30 @@ func (r *RawReader) readUTF8Slice(length int) ([]byte, error) {
 	if length == 0 {
 		return empty, nil
 	}
-	p := r.offset
+	p := r.off
 	for i := 0; i < length; i++ {
-		if r.offset >= r.length {
+		if r.off >= r.len {
 			return nil, io.EOF
 		}
-		b := r.buffer[r.offset]
+		b := r.buf[r.off]
 		switch b >> 4 {
 		case 0, 1, 2, 3, 4, 5, 6, 7:
-			r.offset++
+			r.off++
 		case 12, 13:
-			r.offset += 2
+			r.off += 2
 		case 14:
-			r.offset += 3
+			r.off += 3
 		case 15:
 			if b&8 == 8 {
 				return empty, errors.New("bad utf-8 encode")
 			}
-			r.offset += 4
+			r.off += 4
 			i++
 		default:
 			return empty, errors.New("bad utf-8 encode")
 		}
 	}
-	return r.buffer[p:r.offset], nil
+	return r.buf[p:r.off], nil
 }
 
 func (r *RawReader) readUTF8String(length int) (string, error) {

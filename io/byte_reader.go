@@ -24,31 +24,31 @@ import "io"
 // ByteReader implements the io.Reader and io.ByteReader interfaces by reading
 // from a byte slice
 type ByteReader struct {
-	buffer []byte
-	offset int
-	length int
+	buf []byte
+	off int
+	len int
 }
 
 // NewByteReader is a constructor for ByteReader
 func NewByteReader(buf []byte) (reader *ByteReader) {
 	reader = new(ByteReader)
-	reader.buffer = buf
-	reader.length = len(buf)
+	reader.buf = buf
+	reader.len = len(buf)
 	return
 }
 
 // ReadByte reads and returns a single byte. If no byte is available,
 // it returns error io.EOF.
 func (r *ByteReader) ReadByte() (byte, error) {
-	if r.offset >= r.length {
+	if r.off >= r.len {
 		return 0, io.EOF
 	}
 	return r.readByte(), nil
 }
 
 func (r *ByteReader) readByte() (b byte) {
-	b = r.buffer[r.offset]
-	r.offset++
+	b = r.buf[r.off]
+	r.off++
 	return
 }
 
@@ -59,11 +59,11 @@ func (r *ByteReader) Read(b []byte) (n int, err error) {
 	if len(b) == 0 {
 		return 0, nil
 	}
-	if r.offset >= r.length {
+	if r.off >= r.len {
 		return 0, io.EOF
 	}
-	n = copy(b, r.buffer[r.offset:])
-	r.offset += n
+	n = copy(b, r.buf[r.off:])
+	r.off += n
 	return
 }
 
@@ -72,11 +72,11 @@ func (r *ByteReader) Read(b []byte) (n int, err error) {
 // If there are fewer than n bytes, Next returns the entire buffer.
 // The slice is only valid until the next call to a read or write method.
 func (r *ByteReader) Next(n int) (data []byte) {
-	p := r.offset + n
-	if p > r.length {
-		p = r.length
+	p := r.off + n
+	if p > r.len {
+		p = r.len
 	}
-	data = r.buffer[r.offset:p]
-	r.offset = p
+	data = r.buf[r.off:p]
+	r.off = p
 	return
 }
