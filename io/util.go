@@ -170,16 +170,19 @@ func utf16Length(str string) (n int) {
 	p := 0
 	for p < length {
 		a := str[p]
-		switch {
-		case a < 0x80:
+		switch a >> 4 {
+		case 0, 1, 2, 3, 4, 5, 6, 7:
 			p++
-		case (a & 0xE0) == 0xC0:
+		case 12, 13:
 			p += 2
 			n--
-		case (a & 0xF0) == 0xE0:
+		case 14:
 			p += 3
 			n -= 2
-		case (a & 0xF8) == 0xF0:
+		case 15:
+			if a&8 == 8 {
+				return -1
+			}
 			p += 4
 			n -= 2
 		default:
