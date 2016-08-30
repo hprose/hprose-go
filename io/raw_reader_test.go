@@ -8,11 +8,11 @@
 \**********************************************************/
 /**********************************************************\
  *                                                        *
- * hprose/raw_reader_test.go                              *
+ * io/raw_reader_test.go                                  *
  *                                                        *
  * hprose RawReader Test for Go.                          *
  *                                                        *
- * LastModified: Jan 31, 2014                             *
+ * LastModified: Aug 30, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
