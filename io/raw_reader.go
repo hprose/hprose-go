@@ -34,66 +34,65 @@ type RawReader struct {
 func NewRawReader(buf []byte) (reader *RawReader) {
 	reader = new(RawReader)
 	reader.buf = buf
-	reader.len = len(buf)
 	return
 }
 
 // ReadRaw from stream
 func (r *RawReader) ReadRaw() (raw []byte, err error) {
-	buffer := new(bytes.Buffer)
-	err = r.ReadRawTo(buffer)
-	raw = buffer.Bytes()
+	writer := new(ByteWriter)
+	err = r.ReadRawTo(writer)
+	raw = writer.Bytes()
 	return
 }
 
 // ReadRawTo buffer from stream
-func (r *RawReader) ReadRawTo(buffer *bytes.Buffer) error {
-	if r.off >= r.len {
+func (r *RawReader) ReadRawTo(writer *ByteWriter) error {
+	if r.off >= len(r.buf) {
 		return io.EOF
 	}
-	return r.readRaw(buffer, r.readByte())
+	return r.readRaw(writer, r.readByte())
 }
 
-func (r *RawReader) readRaw(buffer *bytes.Buffer, tag byte) (err error) {
-	buffer.WriteByte(tag)
+func (r *RawReader) readRaw(writer *ByteWriter, tag byte) (err error) {
+	writer.writeByte(tag)
 	switch tag {
 	case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
 		TagNull, TagEmpty, TagTrue, TagFalse, TagNaN:
 	case TagInfinity:
-		if r.off >= r.len {
+		if r.off >= len(r.buf) {
 			return io.EOF
 		}
-		buffer.WriteByte(r.readByte())
+		writer.writeByte(r.readByte())
 	case TagInteger, TagLong, TagDouble, TagRef:
-		err = r.readNumberRaw(buffer)
+		err = r.readNumberRaw(writer)
 	case TagDate, TagTime:
-		err = r.readDateTimeRaw(buffer)
+		err = r.readDateTimeRaw(writer)
 	case TagUTF8Char:
-		err = r.readUTF8CharRaw(buffer)
+		err = r.readUTF8CharRaw(writer)
 	case TagBytes:
-		err = r.readBytesRaw(buffer)
+		err = r.readBytesRaw(writer)
 	case TagString:
-		err = r.readStringRaw(buffer)
+		err = r.readStringRaw(writer)
 	case TagGUID:
-		err = r.readGUIDRaw(buffer)
+		err = r.readGUIDRaw(writer)
 	case TagList, TagMap, TagObject:
-		err = r.readComplexRaw(buffer)
+		err = r.readComplexRaw(writer)
 	case TagClass:
-		if err = r.readComplexRaw(buffer); err == nil {
-			err = r.ReadRawTo(buffer)
+		if err = r.readComplexRaw(writer); err == nil {
+			err = r.ReadRawTo(writer)
 		}
 	case TagError:
-		err = r.ReadRawTo(buffer)
+		err = r.ReadRawTo(writer)
 	default:
 		err = unexpectedTag(tag, nil)
 	}
 	return
 }
 
-func (r *RawReader) readNumberRaw(buffer *bytes.Buffer) error {
-	for r.off < r.len {
+func (r *RawReader) readNumberRaw(writer *ByteWriter) error {
+	for r.off < len(r.buf) {
 		tag := r.readByte()
-		buffer.WriteByte(tag)
+		writer.writeByte(tag)
 		if tag == TagSemicolon {
 			return nil
 		}
@@ -101,10 +100,10 @@ func (r *RawReader) readNumberRaw(buffer *bytes.Buffer) error {
 	return io.EOF
 }
 
-func (r *RawReader) readDateTimeRaw(buffer *bytes.Buffer) error {
-	for r.off < r.len {
+func (r *RawReader) readDateTimeRaw(writer *ByteWriter) error {
+	for r.off < len(r.buf) {
 		tag := r.readByte()
-		buffer.WriteByte(tag)
+		writer.writeByte(tag)
 		if tag == TagSemicolon || tag == TagUTC {
 			return nil
 		}
@@ -112,47 +111,47 @@ func (r *RawReader) readDateTimeRaw(buffer *bytes.Buffer) error {
 	return io.EOF
 }
 
-func (r *RawReader) readUTF8CharRaw(buffer *bytes.Buffer) (err error) {
+func (r *RawReader) readUTF8CharRaw(writer *ByteWriter) (err error) {
 	var bytes []byte
 	if bytes, err = r.readUTF8Slice(1); err == nil {
-		buffer.Write(bytes)
+		writer.write(bytes)
 	}
 	return
 }
 
-func (r *RawReader) readBytesRaw(buffer *bytes.Buffer) (err error) {
+func (r *RawReader) readBytesRaw(writer *ByteWriter) (err error) {
 	count := 0
 	tag := byte('0')
-	for r.off < r.len {
+	for r.off < len(r.buf) {
 		count *= 10
 		count += int(tag - '0')
 		tag = r.readByte()
-		buffer.WriteByte(tag)
+		writer.writeByte(tag)
 		if tag == TagQuote {
 			count++
 			b := r.Next(count)
 			if len(b) < count {
 				err = io.EOF
 			}
-			buffer.Write(b)
+			writer.write(b)
 			return
 		}
 	}
 	return io.EOF
 }
 
-func (r *RawReader) readStringRaw(buffer *bytes.Buffer) (err error) {
+func (r *RawReader) readStringRaw(writer *ByteWriter) (err error) {
 	count := 0
 	tag := byte('0')
-	for r.off < r.len {
+	for r.off < len(r.buf) {
 		count *= 10
 		count += int(tag - '0')
 		tag = r.readByte()
-		buffer.WriteByte(tag)
+		writer.writeByte(tag)
 		if tag == TagQuote {
 			var bytes []byte
 			if bytes, err = r.readUTF8Slice(count + 1); err == nil {
-				buffer.Write(bytes)
+				writer.write(bytes)
 			}
 			return
 		}
@@ -160,32 +159,32 @@ func (r *RawReader) readStringRaw(buffer *bytes.Buffer) (err error) {
 	return io.EOF
 }
 
-func (r *RawReader) readGUIDRaw(buffer *bytes.Buffer) (err error) {
+func (r *RawReader) readGUIDRaw(writer *ByteWriter) (err error) {
 	guid := r.Next(38)
 	if len(guid) < 38 {
 		err = io.EOF
 	}
-	buffer.Write(guid)
+	writer.write(guid)
 	return err
 }
 
-func (r *RawReader) readComplexRaw(buffer *bytes.Buffer) (err error) {
+func (r *RawReader) readComplexRaw(writer *ByteWriter) (err error) {
 	var tag byte
-	for r.off < r.len && tag != TagOpenbrace {
+	for r.off < len(r.buf) && tag != TagOpenbrace {
 		tag = r.readByte()
-		buffer.WriteByte(tag)
+		writer.writeByte(tag)
 	}
-	if r.off >= r.len {
+	if r.off >= len(r.buf) {
 		return io.EOF
 	}
 	tag = r.readByte()
 	for err == nil && tag != TagClosebrace {
-		if err = r.readRaw(buffer, tag); err == nil {
+		if err = r.readRaw(writer, tag); err == nil {
 			tag, err = r.ReadByte()
 		}
 	}
 	if err == nil {
-		buffer.WriteByte(tag)
+		writer.writeByte(tag)
 	}
 	return err
 }
@@ -197,7 +196,7 @@ func (r *RawReader) readUTF8Slice(length int) ([]byte, error) {
 	}
 	p := r.off
 	for i := 0; i < length; i++ {
-		if r.off >= r.len {
+		if r.off >= len(r.buf) {
 			return nil, io.EOF
 		}
 		b := r.buf[r.off]

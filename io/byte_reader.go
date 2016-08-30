@@ -26,21 +26,19 @@ import "io"
 type ByteReader struct {
 	buf []byte
 	off int
-	len int
 }
 
 // NewByteReader is a constructor for ByteReader
 func NewByteReader(buf []byte) (reader *ByteReader) {
 	reader = new(ByteReader)
 	reader.buf = buf
-	reader.len = len(buf)
 	return
 }
 
 // ReadByte reads and returns a single byte. If no byte is available,
 // it returns error io.EOF.
 func (r *ByteReader) ReadByte() (byte, error) {
-	if r.off >= r.len {
+	if r.off >= len(r.buf) {
 		return 0, io.EOF
 	}
 	return r.readByte(), nil
@@ -59,7 +57,7 @@ func (r *ByteReader) Read(b []byte) (n int, err error) {
 	if len(b) == 0 {
 		return 0, nil
 	}
-	if r.off >= r.len {
+	if r.off >= len(r.buf) {
 		return 0, io.EOF
 	}
 	n = copy(b, r.buf[r.off:])
@@ -73,8 +71,8 @@ func (r *ByteReader) Read(b []byte) (n int, err error) {
 // The slice is only valid until the next call to a read or write method.
 func (r *ByteReader) Next(n int) (data []byte) {
 	p := r.off + n
-	if p > r.len {
-		p = r.len
+	if p > len(r.buf) {
+		p = len(r.buf)
 	}
 	data = r.buf[r.off:p]
 	r.off = p
