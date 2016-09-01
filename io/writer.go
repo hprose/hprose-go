@@ -31,7 +31,7 @@ import (
 
 // Writer is a fine-grained operation struct for Hprose serialization
 type Writer struct {
-	BytesWriter
+	ByteWriter
 	Simple   bool
 	classref map[uintptr]int
 	ref      map[uintptr]int

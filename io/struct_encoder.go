@@ -110,7 +110,7 @@ func getFields(t reflect.Type, tag string) []*fieldCache {
 }
 
 func initStructCacheData(cache *structCache) {
-	w := &BytesWriter{}
+	w := &ByteWriter{}
 	fields := cache.Fields
 	count := len(fields)
 	w.writeByte(TagClass)

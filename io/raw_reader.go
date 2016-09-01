@@ -27,7 +27,7 @@ import (
 
 // RawReader is the hprose raw reader
 type RawReader struct {
-	BytesReader
+	ByteReader
 }
 
 // NewRawReader is a constructor for RawReader
@@ -39,21 +39,21 @@ func NewRawReader(buf []byte) (reader *RawReader) {
 
 // ReadRaw from stream
 func (r *RawReader) ReadRaw() (raw []byte, err error) {
-	w := new(BytesWriter)
+	w := new(ByteWriter)
 	err = r.ReadRawTo(w)
 	raw = w.Bytes()
 	return
 }
 
 // ReadRawTo buffer from stream
-func (r *RawReader) ReadRawTo(w *BytesWriter) error {
+func (r *RawReader) ReadRawTo(w *ByteWriter) error {
 	if r.off >= len(r.buf) {
 		return io.EOF
 	}
 	return r.readRaw(w, r.readByte())
 }
 
-func (r *RawReader) readRaw(w *BytesWriter, tag byte) (err error) {
+func (r *RawReader) readRaw(w *ByteWriter, tag byte) (err error) {
 	w.writeByte(tag)
 	switch tag {
 	case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
@@ -89,7 +89,7 @@ func (r *RawReader) readRaw(w *BytesWriter, tag byte) (err error) {
 	return
 }
 
-func (r *RawReader) readNumberRaw(w *BytesWriter) error {
+func (r *RawReader) readNumberRaw(w *ByteWriter) error {
 	for r.off < len(r.buf) {
 		tag := r.readByte()
 		w.writeByte(tag)
@@ -100,7 +100,7 @@ func (r *RawReader) readNumberRaw(w *BytesWriter) error {
 	return io.EOF
 }
 
-func (r *RawReader) readDateTimeRaw(w *BytesWriter) error {
+func (r *RawReader) readDateTimeRaw(w *ByteWriter) error {
 	for r.off < len(r.buf) {
 		tag := r.readByte()
 		w.writeByte(tag)
@@ -111,7 +111,7 @@ func (r *RawReader) readDateTimeRaw(w *BytesWriter) error {
 	return io.EOF
 }
 
-func (r *RawReader) readUTF8CharRaw(w *BytesWriter) (err error) {
+func (r *RawReader) readUTF8CharRaw(w *ByteWriter) (err error) {
 	var bytes []byte
 	if bytes, err = r.readUTF8Slice(1); err == nil {
 		w.write(bytes)
@@ -119,7 +119,7 @@ func (r *RawReader) readUTF8CharRaw(w *BytesWriter) (err error) {
 	return
 }
 
-func (r *RawReader) readBytesRaw(w *BytesWriter) (err error) {
+func (r *RawReader) readBytesRaw(w *ByteWriter) (err error) {
 	count := 0
 	tag := byte('0')
 	for r.off < len(r.buf) {
@@ -140,7 +140,7 @@ func (r *RawReader) readBytesRaw(w *BytesWriter) (err error) {
 	return io.EOF
 }
 
-func (r *RawReader) readStringRaw(w *BytesWriter) (err error) {
+func (r *RawReader) readStringRaw(w *ByteWriter) (err error) {
 	count := 0
 	tag := byte('0')
 	for r.off < len(r.buf) {
@@ -159,7 +159,7 @@ func (r *RawReader) readStringRaw(w *BytesWriter) (err error) {
 	return io.EOF
 }
 
-func (r *RawReader) readGUIDRaw(w *BytesWriter) (err error) {
+func (r *RawReader) readGUIDRaw(w *ByteWriter) (err error) {
 	guid := r.Next(38)
 	if len(guid) < 38 {
 		err = io.EOF
@@ -168,7 +168,7 @@ func (r *RawReader) readGUIDRaw(w *BytesWriter) (err error) {
 	return err
 }
 
-func (r *RawReader) readComplexRaw(w *BytesWriter) (err error) {
+func (r *RawReader) readComplexRaw(w *ByteWriter) (err error) {
 	var tag byte
 	for r.off < len(r.buf) && tag != TagOpenbrace {
 		tag = r.readByte()

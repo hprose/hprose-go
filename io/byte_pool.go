@@ -8,9 +8,9 @@
 \**********************************************************/
 /**********************************************************\
  *                                                        *
- * io/bytes_pool.go                                       *
+ * io/byte_pool.go                                        *
  *                                                        *
- * bytes pool for Go.                                     *
+ * byte pool for Go.                                      *
  *                                                        *
  * LastModified: Sep 1, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
@@ -34,14 +34,14 @@ type pool struct {
 	locker sync.Mutex
 }
 
-type bytesPool struct {
+type bytePool struct {
 	pools [poolNum]pool
 	timer *time.Timer
 	d     time.Duration
 }
 
-func newBytesPool(d time.Duration) (bp *bytesPool) {
-	bp = new(bytesPool)
+func newBytePool(d time.Duration) (bp *bytePool) {
+	bp = new(bytePool)
 	bp.d = d
 	if d > 0 {
 		bp.timer = time.AfterFunc(d, func() {
@@ -52,11 +52,11 @@ func newBytesPool(d time.Duration) (bp *bytesPool) {
 	return bp
 }
 
-// BytesPool is a pool of []byte.
-var BytesPool = newBytesPool(time.Second * 2)
+// BytePool is a pool of []byte.
+var BytePool = newBytePool(time.Second * 10)
 
 // Get a []byte from pool.
-func (bp *bytesPool) Get(size int) []byte {
+func (bp *bytePool) Get(size int) []byte {
 	if size < 1 || size > maxSize {
 		return make([]byte, size)
 	}
@@ -83,7 +83,7 @@ func (bp *bytesPool) Get(size int) []byte {
 }
 
 // Put a []byte to pool.
-func (bp *bytesPool) Put(bytes []byte) {
+func (bp *bytePool) Put(bytes []byte) {
 	capacity := cap(bytes)
 	if capacity < 64 || capacity > maxSize || capacity != pow2roundup(capacity) {
 		return
@@ -95,8 +95,9 @@ func (bp *bytesPool) Put(bytes []byte) {
 
 }
 
-// Drain some items from the pool and make them availabe for garbage collection.
-func (bp *bytesPool) Drain() {
+// Drain some items from the pool and make them available for garbage collection.
+func (bp *bytePool) Drain() {
+	println("ooo")
 	n := len(bp.pools)
 	for i := 0; i < n; i++ {
 		p := &bp.pools[i]

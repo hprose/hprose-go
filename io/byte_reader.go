@@ -8,9 +8,9 @@
 \**********************************************************/
 /**********************************************************\
  *                                                        *
- * io/bytes_reader.go                                     *
+ * io/byte_reader.go                                      *
  *                                                        *
- * bytes reader for Go.                                   *
+ * byte reader for Go.                                    *
  *                                                        *
  * LastModified: Sep 1, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
@@ -21,30 +21,30 @@ package io
 
 import "io"
 
-// BytesReader implements the io.Reader and io.ByteReader interfaces by reading
+// ByteReader implements the io.Reader and io.ByteReader interfaces by reading
 // from a byte slice
-type BytesReader struct {
+type ByteReader struct {
 	buf []byte
 	off int
 }
 
 // NewBytesReader is a constructor for ByteReader
-func NewBytesReader(buf []byte) (reader *BytesReader) {
-	reader = new(BytesReader)
+func NewBytesReader(buf []byte) (reader *ByteReader) {
+	reader = new(ByteReader)
 	reader.buf = buf
 	return
 }
 
 // ReadByte reads and returns a single byte. If no byte is available,
 // it returns error io.EOF.
-func (r *BytesReader) ReadByte() (byte, error) {
+func (r *ByteReader) ReadByte() (byte, error) {
 	if r.off >= len(r.buf) {
 		return 0, io.EOF
 	}
 	return r.readByte(), nil
 }
 
-func (r *BytesReader) readByte() (b byte) {
+func (r *ByteReader) readByte() (b byte) {
 	b = r.buf[r.off]
 	r.off++
 	return
@@ -53,7 +53,7 @@ func (r *BytesReader) readByte() (b byte) {
 // Read reads the next len(b) bytes from the buffer or until the buffer is
 // drained. The return value n is the number of bytes read. If the buffer has
 // no data, err is io.EOF (unless len(b) is zero); otherwise it is nil.
-func (r *BytesReader) Read(b []byte) (n int, err error) {
+func (r *ByteReader) Read(b []byte) (n int, err error) {
 	if len(b) == 0 {
 		return 0, nil
 	}
@@ -69,7 +69,7 @@ func (r *BytesReader) Read(b []byte) (n int, err error) {
 // advancing the buffer as if the bytes had been returned by Read.
 // If there are fewer than n bytes, Next returns the entire buffer.
 // The slice is only valid until the next call to a read or write method.
-func (r *BytesReader) Next(n int) (data []byte) {
+func (r *ByteReader) Next(n int) (data []byte) {
 	p := r.off + n
 	if p > len(r.buf) {
 		p = len(r.buf)
