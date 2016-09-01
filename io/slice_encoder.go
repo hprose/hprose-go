@@ -12,7 +12,7 @@
  *                                                        *
  * hprose slice encoder for Go.                           *
  *                                                        *
- * LastModified: Aug 27, 2016                             *
+ * LastModified: Sep 1, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -50,135 +50,135 @@ func RegisterSliceEncoder(m interface{}, encoder func(*Writer, unsafe.Pointer)) 
 	sliceBodyEncoders[getType(m)] = encoder
 }
 
-func boolSliceEncoder(writer *Writer, ptr unsafe.Pointer) {
+func boolSliceEncoder(w *Writer, ptr unsafe.Pointer) {
 	slice := *(*[]bool)(ptr)
 	for _, e := range slice {
-		writer.WriteBool(e)
+		w.WriteBool(e)
 	}
 }
 
-func intSliceEncoder(writer *Writer, ptr unsafe.Pointer) {
+func intSliceEncoder(w *Writer, ptr unsafe.Pointer) {
 	slice := *(*[]int)(ptr)
 	for _, e := range slice {
-		writer.WriteInt(int64(e))
+		w.WriteInt(int64(e))
 	}
 }
 
-func int8SliceEncoder(writer *Writer, ptr unsafe.Pointer) {
+func int8SliceEncoder(w *Writer, ptr unsafe.Pointer) {
 	slice := *(*[]int8)(ptr)
 	for _, e := range slice {
-		writer.WriteInt(int64(e))
+		w.WriteInt(int64(e))
 	}
 }
 
-func int16SliceEncoder(writer *Writer, ptr unsafe.Pointer) {
+func int16SliceEncoder(w *Writer, ptr unsafe.Pointer) {
 	slice := *(*[]int16)(ptr)
 	for _, e := range slice {
-		writer.WriteInt(int64(e))
+		w.WriteInt(int64(e))
 	}
 }
 
-func int32SliceEncoder(writer *Writer, ptr unsafe.Pointer) {
+func int32SliceEncoder(w *Writer, ptr unsafe.Pointer) {
 	slice := *(*[]int32)(ptr)
 	for _, e := range slice {
-		writer.WriteInt(int64(e))
+		w.WriteInt(int64(e))
 	}
 }
 
-func int64SliceEncoder(writer *Writer, ptr unsafe.Pointer) {
+func int64SliceEncoder(w *Writer, ptr unsafe.Pointer) {
 	slice := *(*[]int64)(ptr)
 	for _, e := range slice {
-		writer.WriteInt(e)
+		w.WriteInt(e)
 	}
 }
 
-func uintSliceEncoder(writer *Writer, ptr unsafe.Pointer) {
+func uintSliceEncoder(w *Writer, ptr unsafe.Pointer) {
 	slice := *(*[]uint)(ptr)
 	for _, e := range slice {
-		writer.WriteUint(uint64(e))
+		w.WriteUint(uint64(e))
 	}
 }
 
-func uint8SliceEncoder(writer *Writer, ptr unsafe.Pointer) {
+func uint8SliceEncoder(w *Writer, ptr unsafe.Pointer) {
 	slice := *(*[]uint8)(ptr)
 	for _, e := range slice {
-		writer.WriteUint(uint64(e))
+		w.WriteUint(uint64(e))
 	}
 }
 
-func uint16SliceEncoder(writer *Writer, ptr unsafe.Pointer) {
+func uint16SliceEncoder(w *Writer, ptr unsafe.Pointer) {
 	slice := *(*[]uint16)(ptr)
 	for _, e := range slice {
-		writer.WriteUint(uint64(e))
+		w.WriteUint(uint64(e))
 	}
 }
 
-func uint32SliceEncoder(writer *Writer, ptr unsafe.Pointer) {
+func uint32SliceEncoder(w *Writer, ptr unsafe.Pointer) {
 	slice := *(*[]uint32)(ptr)
 	for _, e := range slice {
-		writer.WriteUint(uint64(e))
+		w.WriteUint(uint64(e))
 	}
 }
 
-func uint64SliceEncoder(writer *Writer, ptr unsafe.Pointer) {
+func uint64SliceEncoder(w *Writer, ptr unsafe.Pointer) {
 	slice := *(*[]uint64)(ptr)
 	for _, e := range slice {
-		writer.WriteUint(e)
+		w.WriteUint(e)
 	}
 }
 
-func uintptrSliceEncoder(writer *Writer, ptr unsafe.Pointer) {
+func uintptrSliceEncoder(w *Writer, ptr unsafe.Pointer) {
 	slice := *(*[]uintptr)(ptr)
 	for _, e := range slice {
-		writer.WriteUint(uint64(e))
+		w.WriteUint(uint64(e))
 	}
 }
 
-func float32SliceEncoder(writer *Writer, ptr unsafe.Pointer) {
+func float32SliceEncoder(w *Writer, ptr unsafe.Pointer) {
 	slice := *(*[]float32)(ptr)
 	for _, e := range slice {
-		writer.WriteFloat(float64(e), 32)
+		w.WriteFloat(float64(e), 32)
 	}
 }
 
-func float64SliceEncoder(writer *Writer, ptr unsafe.Pointer) {
+func float64SliceEncoder(w *Writer, ptr unsafe.Pointer) {
 	slice := *(*[]float64)(ptr)
 	for _, e := range slice {
-		writer.WriteFloat(e, 64)
+		w.WriteFloat(e, 64)
 	}
 }
 
-func complex64SliceEncoder(writer *Writer, ptr unsafe.Pointer) {
+func complex64SliceEncoder(w *Writer, ptr unsafe.Pointer) {
 	slice := *(*[]complex64)(ptr)
 	for _, e := range slice {
-		writer.WriteComplex64(e)
+		w.WriteComplex64(e)
 	}
 }
 
-func complex128SliceEncoder(writer *Writer, ptr unsafe.Pointer) {
+func complex128SliceEncoder(w *Writer, ptr unsafe.Pointer) {
 	slice := *(*[]complex128)(ptr)
 	for _, e := range slice {
-		writer.WriteComplex128(e)
+		w.WriteComplex128(e)
 	}
 }
 
-func stringSliceEncoder(writer *Writer, ptr unsafe.Pointer) {
+func stringSliceEncoder(w *Writer, ptr unsafe.Pointer) {
 	slice := *(*[]string)(ptr)
 	for _, e := range slice {
-		writer.WriteString(e)
+		w.WriteString(e)
 	}
 }
 
-func bytesSliceEncoder(writer *Writer, ptr unsafe.Pointer) {
+func bytesSliceEncoder(w *Writer, ptr unsafe.Pointer) {
 	slice := *(*[][]byte)(ptr)
 	for _, e := range slice {
-		writer.WriteBytes(e)
+		w.WriteBytes(e)
 	}
 }
 
-func interfaceSliceEncoder(writer *Writer, ptr unsafe.Pointer) {
+func interfaceSliceEncoder(w *Writer, ptr unsafe.Pointer) {
 	slice := *(*[]interface{})(ptr)
 	for _, e := range slice {
-		writer.Serialize(e)
+		w.Serialize(e)
 	}
 }

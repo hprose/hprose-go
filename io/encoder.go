@@ -12,7 +12,7 @@
  *                                                        *
  * hprose encoder for Go.                                 *
  *                                                        *
- * LastModified: Aug 28, 2016                             *
+ * LastModified: Sep 1, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -27,141 +27,141 @@ import (
 	"unsafe"
 )
 
-type valueEncoder func(writer *Writer, v reflect.Value)
+type valueEncoder func(w *Writer, v reflect.Value)
 
 var valueEncoders []valueEncoder
 
-func nilEncoder(writer *Writer, v reflect.Value) {
-	writer.WriteNil()
+func nilEncoder(w *Writer, v reflect.Value) {
+	w.WriteNil()
 }
 
-func boolEncoder(writer *Writer, v reflect.Value) {
-	writer.WriteBool(v.Bool())
+func boolEncoder(w *Writer, v reflect.Value) {
+	w.WriteBool(v.Bool())
 }
 
-func intEncoder(writer *Writer, v reflect.Value) {
-	writer.WriteInt(v.Int())
+func intEncoder(w *Writer, v reflect.Value) {
+	w.WriteInt(v.Int())
 }
 
-func uintEncoder(writer *Writer, v reflect.Value) {
-	writer.WriteUint(v.Uint())
+func uintEncoder(w *Writer, v reflect.Value) {
+	w.WriteUint(v.Uint())
 }
 
-func float32Encoder(writer *Writer, v reflect.Value) {
-	writer.WriteFloat(v.Float(), 32)
+func float32Encoder(w *Writer, v reflect.Value) {
+	w.WriteFloat(v.Float(), 32)
 }
 
-func float64Encoder(writer *Writer, v reflect.Value) {
-	writer.WriteFloat(v.Float(), 64)
+func float64Encoder(w *Writer, v reflect.Value) {
+	w.WriteFloat(v.Float(), 64)
 }
 
-func complex64Encoder(writer *Writer, v reflect.Value) {
-	writer.WriteComplex64(complex64(v.Complex()))
+func complex64Encoder(w *Writer, v reflect.Value) {
+	w.WriteComplex64(complex64(v.Complex()))
 }
 
-func complex128Encoder(writer *Writer, v reflect.Value) {
-	writer.WriteComplex128(v.Complex())
+func complex128Encoder(w *Writer, v reflect.Value) {
+	w.WriteComplex128(v.Complex())
 }
 
-func interfaceEncoder(writer *Writer, v reflect.Value) {
+func interfaceEncoder(w *Writer, v reflect.Value) {
 	if v.IsNil() {
-		writer.WriteNil()
+		w.WriteNil()
 		return
 	}
 	e := v.Elem()
-	valueEncoders[e.Kind()](writer, e)
+	valueEncoders[e.Kind()](w, e)
 }
 
-func arrayEncoder(writer *Writer, v reflect.Value) {
-	setRef(writer, nil)
-	writeArray(writer, v)
+func arrayEncoder(w *Writer, v reflect.Value) {
+	setRef(w, nil)
+	writeArray(w, v)
 }
 
-func sliceEncoder(writer *Writer, v reflect.Value) {
-	setRef(writer, nil)
-	writeSlice(writer, v)
+func sliceEncoder(w *Writer, v reflect.Value) {
+	setRef(w, nil)
+	writeSlice(w, v)
 }
 
-func mapEncoder(writer *Writer, v reflect.Value) {
+func mapEncoder(w *Writer, v reflect.Value) {
 	ptr := (*reflectValue)(unsafe.Pointer(&v)).ptr
-	if !writeRef(writer, ptr) {
-		setRef(writer, ptr)
-		writeMap(writer, v)
+	if !writeRef(w, ptr) {
+		setRef(w, ptr)
+		writeMap(w, v)
 	}
 }
 
-func stringEncoder(writer *Writer, v reflect.Value) {
-	writer.WriteString(v.String())
+func stringEncoder(w *Writer, v reflect.Value) {
+	w.WriteString(v.String())
 }
 
-func structEncoder(writer *Writer, v reflect.Value) {
+func structEncoder(w *Writer, v reflect.Value) {
 	ptr := (*reflectValue)(unsafe.Pointer(&v)).ptr
 	pv := reflect.NewAt(v.Type(), ptr)
-	structPtrEncoder(writer, pv, ptr)
+	structPtrEncoder(w, pv, ptr)
 }
 
-func arrayPtrEncoder(writer *Writer, v reflect.Value, ptr unsafe.Pointer) {
-	if !writeRef(writer, ptr) {
-		setRef(writer, ptr)
-		writeArray(writer, v)
+func arrayPtrEncoder(w *Writer, v reflect.Value, ptr unsafe.Pointer) {
+	if !writeRef(w, ptr) {
+		setRef(w, ptr)
+		writeArray(w, v)
 	}
 }
 
-func mapPtrEncoder(writer *Writer, v reflect.Value, ptr unsafe.Pointer) {
-	if !writeRef(writer, ptr) {
-		setRef(writer, ptr)
-		writeMapPtr(writer, v)
+func mapPtrEncoder(w *Writer, v reflect.Value, ptr unsafe.Pointer) {
+	if !writeRef(w, ptr) {
+		setRef(w, ptr)
+		writeMapPtr(w, v)
 	}
 }
 
-func slicePtrEncoder(writer *Writer, v reflect.Value, ptr unsafe.Pointer) {
-	if !writeRef(writer, ptr) {
-		setRef(writer, ptr)
-		writeSlice(writer, v)
+func slicePtrEncoder(w *Writer, v reflect.Value, ptr unsafe.Pointer) {
+	if !writeRef(w, ptr) {
+		setRef(w, ptr)
+		writeSlice(w, v)
 	}
 }
 
-func stringPtrEncoder(writer *Writer, v reflect.Value, ptr unsafe.Pointer) {
+func stringPtrEncoder(w *Writer, v reflect.Value, ptr unsafe.Pointer) {
 	str := v.String()
 	length := utf16Length(str)
 	switch {
 	case length == 0:
-		writer.Stream.WriteByte(TagEmpty)
+		w.writeByte(TagEmpty)
 	case length < 0:
-		writer.WriteBytes(*(*[]byte)(unsafe.Pointer(&str)))
+		w.WriteBytes(*(*[]byte)(unsafe.Pointer(&str)))
 	case length == 1:
-		writer.Stream.WriteByte(TagUTF8Char)
-		writer.Stream.WriteString(str)
+		w.writeByte(TagUTF8Char)
+		w.writeString(str)
 	default:
-		if !writeRef(writer, ptr) {
-			setRef(writer, ptr)
-			writeString(writer, str, length)
+		if !writeRef(w, ptr) {
+			setRef(w, ptr)
+			writeString(w, str, length)
 		}
 	}
 }
 
-func structPtrEncoder(writer *Writer, v reflect.Value, ptr unsafe.Pointer) {
+func structPtrEncoder(w *Writer, v reflect.Value, ptr unsafe.Pointer) {
 	switch *(*uintptr)(unsafe.Pointer(&v)) {
 	case bigIntType:
-		writer.WriteBigInt((*big.Int)(ptr))
+		w.WriteBigInt((*big.Int)(ptr))
 	case bigRatType:
-		writer.WriteBigRat((*big.Rat)(ptr))
+		w.WriteBigRat((*big.Rat)(ptr))
 	case bigFloatType:
-		writer.WriteBigFloat((*big.Float)(ptr))
+		w.WriteBigFloat((*big.Float)(ptr))
 	case timeType:
-		writer.WriteTime((*time.Time)(ptr))
+		w.WriteTime((*time.Time)(ptr))
 	case listType:
-		writer.WriteList((*list.List)(ptr))
+		w.WriteList((*list.List)(ptr))
 	default:
-		if !writeRef(writer, ptr) {
-			writeStruct(writer, v)
+		if !writeRef(w, ptr) {
+			writeStruct(w, v)
 		}
 	}
 }
 
-func ptrEncoder(writer *Writer, v reflect.Value) {
+func ptrEncoder(w *Writer, v reflect.Value) {
 	if v.IsNil() {
-		writer.WriteNil()
+		w.WriteNil()
 		return
 	}
 	e := v.Elem()
@@ -169,17 +169,17 @@ func ptrEncoder(writer *Writer, v reflect.Value) {
 	ptr := (*reflectValue)(unsafe.Pointer(&v)).ptr
 	switch kind {
 	case reflect.Array:
-		arrayPtrEncoder(writer, e, ptr)
+		arrayPtrEncoder(w, e, ptr)
 	case reflect.Map:
-		mapPtrEncoder(writer, e, ptr)
+		mapPtrEncoder(w, e, ptr)
 	case reflect.Slice:
-		slicePtrEncoder(writer, e, ptr)
+		slicePtrEncoder(w, e, ptr)
 	case reflect.String:
-		stringPtrEncoder(writer, e, ptr)
+		stringPtrEncoder(w, e, ptr)
 	case reflect.Struct:
-		structPtrEncoder(writer, v, ptr)
+		structPtrEncoder(w, v, ptr)
 	default:
-		valueEncoders[kind](writer, e)
+		valueEncoders[kind](w, e)
 	}
 }
 

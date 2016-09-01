@@ -12,7 +12,7 @@
  *                                                        *
  * hprose struct encoder for Go.                          *
  *                                                        *
- * LastModified: Aug 29, 2015                             *
+ * LastModified: Sep 1, 2015                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -20,7 +20,6 @@
 package io
 
 import (
-	"bytes"
 	"reflect"
 	"strings"
 	"sync"
@@ -111,28 +110,28 @@ func getFields(t reflect.Type, tag string) []*fieldCache {
 }
 
 func initStructCacheData(cache *structCache) {
-	s := &bytes.Buffer{}
+	w := &BytesWriter{}
 	fields := cache.Fields
 	count := len(fields)
-	s.WriteByte(TagClass)
+	w.writeByte(TagClass)
 	var buf [20]byte
-	s.Write(getIntBytes(buf[:], int64(utf16Length(cache.Alias))))
-	s.WriteByte(TagQuote)
-	s.WriteString(cache.Alias)
-	s.WriteByte(TagQuote)
+	w.write(getIntBytes(buf[:], int64(utf16Length(cache.Alias))))
+	w.writeByte(TagQuote)
+	w.writeString(cache.Alias)
+	w.writeByte(TagQuote)
 	if count > 0 {
-		s.Write(getIntBytes(buf[:], int64(count)))
+		w.write(getIntBytes(buf[:], int64(count)))
 	}
-	s.WriteByte(TagOpenbrace)
+	w.writeByte(TagOpenbrace)
 	for _, field := range fields {
-		s.WriteByte(TagString)
-		s.Write(getIntBytes(buf[:], int64(utf16Length(field.Alias))))
-		s.WriteByte(TagQuote)
-		s.WriteString(field.Alias)
-		s.WriteByte(TagQuote)
+		w.writeByte(TagString)
+		w.write(getIntBytes(buf[:], int64(utf16Length(field.Alias))))
+		w.writeByte(TagQuote)
+		w.writeString(field.Alias)
+		w.writeByte(TagQuote)
 	}
-	s.WriteByte(TagClosebrace)
-	cache.Data = s.Bytes()
+	w.writeByte(TagClosebrace)
+	cache.Data = w.Bytes()
 }
 
 func getStructCache(structType reflect.Type) *structCache {

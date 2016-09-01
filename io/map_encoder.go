@@ -12,7 +12,7 @@
  *                                                        *
  * hprose map encoder for Go.                             *
  *                                                        *
- * LastModified: Aug 27, 2016                             *
+ * LastModified: Sep 1, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -40,27 +40,27 @@ func RegisterMapEncoder(m interface{}, encoder func(*Writer, unsafe.Pointer)) {
 	mapBodyEncoders[getType(m)] = encoder
 }
 
-func stringStringMapEncoder(writer *Writer, ptr unsafe.Pointer) {
+func stringStringMapEncoder(w *Writer, ptr unsafe.Pointer) {
 	m := *(*map[string]string)(ptr)
 	for k, v := range m {
-		writer.WriteString(k)
-		writer.WriteString(v)
+		w.WriteString(k)
+		w.WriteString(v)
 	}
 }
 
-func stringInterfaceMapEncoder(writer *Writer, ptr unsafe.Pointer) {
+func stringInterfaceMapEncoder(w *Writer, ptr unsafe.Pointer) {
 	m := *(*map[string]interface{})(ptr)
 	for k, v := range m {
-		writer.WriteString(k)
-		writer.Serialize(v)
+		w.WriteString(k)
+		w.Serialize(v)
 	}
 }
 
-func stringIntMapEncoder(writer *Writer, ptr unsafe.Pointer) {
+func stringIntMapEncoder(w *Writer, ptr unsafe.Pointer) {
 	m := *(*map[string]int)(ptr)
 	for k, v := range m {
-		writer.WriteString(k)
-		writer.WriteInt(int64(v))
+		w.WriteString(k)
+		w.WriteInt(int64(v))
 	}
 }
 
@@ -72,42 +72,42 @@ func intIntMapEncoder(writer *Writer, ptr unsafe.Pointer) {
 	}
 }
 
-func intStringMapEncoder(writer *Writer, ptr unsafe.Pointer) {
+func intStringMapEncoder(w *Writer, ptr unsafe.Pointer) {
 	m := *(*map[int]string)(ptr)
 	for k, v := range m {
-		writer.WriteInt(int64(k))
-		writer.WriteString(v)
+		w.WriteInt(int64(k))
+		w.WriteString(v)
 	}
 }
 
-func intInterfaceMapEncoder(writer *Writer, ptr unsafe.Pointer) {
+func intInterfaceMapEncoder(w *Writer, ptr unsafe.Pointer) {
 	m := *(*map[int]interface{})(ptr)
 	for k, v := range m {
-		writer.WriteInt(int64(k))
-		writer.Serialize(v)
+		w.WriteInt(int64(k))
+		w.Serialize(v)
 	}
 }
 
-func interfaceInterfaceMapEncoder(writer *Writer, ptr unsafe.Pointer) {
+func interfaceInterfaceMapEncoder(w *Writer, ptr unsafe.Pointer) {
 	m := *(*map[interface{}]interface{})(ptr)
 	for k, v := range m {
-		writer.Serialize(k)
-		writer.Serialize(v)
+		w.Serialize(k)
+		w.Serialize(v)
 	}
 }
 
-func interfaceIntMapEncoder(writer *Writer, ptr unsafe.Pointer) {
+func interfaceIntMapEncoder(w *Writer, ptr unsafe.Pointer) {
 	m := *(*map[interface{}]int)(ptr)
 	for k, v := range m {
-		writer.Serialize(k)
-		writer.WriteInt(int64(v))
+		w.Serialize(k)
+		w.WriteInt(int64(v))
 	}
 }
 
-func interfaceStringMapEncoder(writer *Writer, ptr unsafe.Pointer) {
+func interfaceStringMapEncoder(w *Writer, ptr unsafe.Pointer) {
 	m := *(*map[interface{}]string)(ptr)
 	for k, v := range m {
-		writer.Serialize(k)
-		writer.WriteString(v)
+		w.Serialize(k)
+		w.WriteString(v)
 	}
 }

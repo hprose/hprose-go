@@ -8,48 +8,36 @@
 \**********************************************************/
 /**********************************************************\
  *                                                        *
- * io/byte_writer.go                                      *
+ * io/bytes_writer.go                                     *
  *                                                        *
- * byte writer for Go.                                    *
+ * bytes writer for Go.                                   *
  *                                                        *
- * LastModified: Aug 29, 2016                             *
+ * LastModified: Sep 1, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 
 package io
 
-import "math"
-
-// ByteWriter implements the io.Writer and io.ByteWriter interfaces by writing
+// BytesWriter implements the io.Writer and io.ByteWriter interfaces by writing
 // to a byte slice
-type ByteWriter struct {
+type BytesWriter struct {
 	buf []byte
 }
 
-func pow2roundup(x int) int {
-	x--
-	x |= x >> 1
-	x |= x >> 2
-	x |= x >> 4
-	x |= x >> 8
-	x |= x >> 16
-	return x + 1
-}
-
 // Len return the number of bytes of this writer.
-func (w *ByteWriter) Len() int {
+func (w *BytesWriter) Len() int {
 	return len(w.buf)
 }
 
 // Bytes returns the byte slice of this writer.
-func (w *ByteWriter) Bytes() []byte {
+func (w *BytesWriter) Bytes() []byte {
 	return w.buf
 }
 
 // String returns the contents of this writer as a string.
 // If the ByteWriter is a nil pointer, it returns "<nil>".
-func (w *ByteWriter) String() string {
+func (w *BytesWriter) String() string {
 	if w == nil {
 		// Special case, useful in debugging.
 		return "<nil>"
@@ -58,25 +46,26 @@ func (w *ByteWriter) String() string {
 }
 
 // Clear the byte slice of this writer.
-func (w *ByteWriter) Clear() {
+func (w *BytesWriter) Clear() {
 	w.buf = w.buf[:0]
 }
 
-func (w *ByteWriter) grow(n int) int {
+func (w *BytesWriter) grow(n int) int {
 	p := len(w.buf)
 	c := cap(w.buf)
 	l := p + n
 	if l > c {
 		var buf []byte
-		if w.buf == nil && n <= 64 {
-			buf = make([]byte, 64)
+		if w.buf == nil && n <= maxSize {
+			buf = BytesPool.Get(n)
 		} else {
-			if l < math.MaxInt32 {
-				buf = make([]byte, pow2roundup(l))
+			if l <= maxSize {
+				buf = BytesPool.Get(l)
 			} else {
 				buf = make([]byte, c*2+n)
 			}
 			copy(buf, w.buf)
+			BytesPool.Put(w.buf)
 		}
 		w.buf = buf
 	}
@@ -85,7 +74,7 @@ func (w *ByteWriter) grow(n int) int {
 }
 
 // Grow the the byte slice capacity of this writer.
-func (w *ByteWriter) Grow(n int) {
+func (w *BytesWriter) Grow(n int) {
 	if n < 0 {
 		panic("BytesWriter: negative count")
 	}
@@ -94,27 +83,32 @@ func (w *ByteWriter) Grow(n int) {
 }
 
 // WriteByte c to the byte slice of this writer.
-func (w *ByteWriter) WriteByte(c byte) error {
+func (w *BytesWriter) WriteByte(c byte) error {
 	w.writeByte(c)
 	return nil
 }
 
 // Write the contents of b to the byte slice of this writer.
-func (w *ByteWriter) Write(b []byte) (int, error) {
+func (w *BytesWriter) Write(b []byte) (int, error) {
 	return w.write(b), nil
 }
 
-func (w *ByteWriter) writeByte(c byte) {
+// Close the writer and put the buf to bytes pool
+func (w *BytesWriter) Close() {
+	BytesPool.Put(w.buf)
+}
+
+func (w *BytesWriter) writeByte(c byte) {
 	p := w.grow(1)
 	w.buf[p] = c
 }
 
-func (w *ByteWriter) write(b []byte) int {
+func (w *BytesWriter) write(b []byte) int {
 	p := w.grow(len(b))
 	return copy(w.buf[p:], b)
 }
 
-func (w *ByteWriter) writeString(s string) int {
+func (w *BytesWriter) writeString(s string) int {
 	p := w.grow(len(s))
 	return copy(w.buf[p:], s)
 }

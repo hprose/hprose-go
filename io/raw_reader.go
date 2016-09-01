@@ -12,7 +12,7 @@
  *                                                        *
  * hprose raw reader for Go.                              *
  *                                                        *
- * LastModified: Aug 29, 2016                             *
+ * LastModified: Sep 1, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -27,7 +27,7 @@ import (
 
 // RawReader is the hprose raw reader
 type RawReader struct {
-	ByteReader
+	BytesReader
 }
 
 // NewRawReader is a constructor for RawReader
@@ -39,22 +39,22 @@ func NewRawReader(buf []byte) (reader *RawReader) {
 
 // ReadRaw from stream
 func (r *RawReader) ReadRaw() (raw []byte, err error) {
-	writer := new(ByteWriter)
-	err = r.ReadRawTo(writer)
-	raw = writer.Bytes()
+	w := new(BytesWriter)
+	err = r.ReadRawTo(w)
+	raw = w.Bytes()
 	return
 }
 
 // ReadRawTo buffer from stream
-func (r *RawReader) ReadRawTo(writer *ByteWriter) error {
+func (r *RawReader) ReadRawTo(w *BytesWriter) error {
 	if r.off >= len(r.buf) {
 		return io.EOF
 	}
-	return r.readRaw(writer, r.readByte())
+	return r.readRaw(w, r.readByte())
 }
 
-func (r *RawReader) readRaw(writer *ByteWriter, tag byte) (err error) {
-	writer.writeByte(tag)
+func (r *RawReader) readRaw(w *BytesWriter, tag byte) (err error) {
+	w.writeByte(tag)
 	switch tag {
 	case '0', '1', '2', '3', '4', '5', '6', '7', '8', '9',
 		TagNull, TagEmpty, TagTrue, TagFalse, TagNaN:
@@ -62,37 +62,37 @@ func (r *RawReader) readRaw(writer *ByteWriter, tag byte) (err error) {
 		if r.off >= len(r.buf) {
 			return io.EOF
 		}
-		writer.writeByte(r.readByte())
+		w.writeByte(r.readByte())
 	case TagInteger, TagLong, TagDouble, TagRef:
-		err = r.readNumberRaw(writer)
+		err = r.readNumberRaw(w)
 	case TagDate, TagTime:
-		err = r.readDateTimeRaw(writer)
+		err = r.readDateTimeRaw(w)
 	case TagUTF8Char:
-		err = r.readUTF8CharRaw(writer)
+		err = r.readUTF8CharRaw(w)
 	case TagBytes:
-		err = r.readBytesRaw(writer)
+		err = r.readBytesRaw(w)
 	case TagString:
-		err = r.readStringRaw(writer)
+		err = r.readStringRaw(w)
 	case TagGUID:
-		err = r.readGUIDRaw(writer)
+		err = r.readGUIDRaw(w)
 	case TagList, TagMap, TagObject:
-		err = r.readComplexRaw(writer)
+		err = r.readComplexRaw(w)
 	case TagClass:
-		if err = r.readComplexRaw(writer); err == nil {
-			err = r.ReadRawTo(writer)
+		if err = r.readComplexRaw(w); err == nil {
+			err = r.ReadRawTo(w)
 		}
 	case TagError:
-		err = r.ReadRawTo(writer)
+		err = r.ReadRawTo(w)
 	default:
 		err = unexpectedTag(tag, nil)
 	}
 	return
 }
 
-func (r *RawReader) readNumberRaw(writer *ByteWriter) error {
+func (r *RawReader) readNumberRaw(w *BytesWriter) error {
 	for r.off < len(r.buf) {
 		tag := r.readByte()
-		writer.writeByte(tag)
+		w.writeByte(tag)
 		if tag == TagSemicolon {
 			return nil
 		}
@@ -100,10 +100,10 @@ func (r *RawReader) readNumberRaw(writer *ByteWriter) error {
 	return io.EOF
 }
 
-func (r *RawReader) readDateTimeRaw(writer *ByteWriter) error {
+func (r *RawReader) readDateTimeRaw(w *BytesWriter) error {
 	for r.off < len(r.buf) {
 		tag := r.readByte()
-		writer.writeByte(tag)
+		w.writeByte(tag)
 		if tag == TagSemicolon || tag == TagUTC {
 			return nil
 		}
@@ -111,47 +111,47 @@ func (r *RawReader) readDateTimeRaw(writer *ByteWriter) error {
 	return io.EOF
 }
 
-func (r *RawReader) readUTF8CharRaw(writer *ByteWriter) (err error) {
+func (r *RawReader) readUTF8CharRaw(w *BytesWriter) (err error) {
 	var bytes []byte
 	if bytes, err = r.readUTF8Slice(1); err == nil {
-		writer.write(bytes)
+		w.write(bytes)
 	}
 	return
 }
 
-func (r *RawReader) readBytesRaw(writer *ByteWriter) (err error) {
+func (r *RawReader) readBytesRaw(w *BytesWriter) (err error) {
 	count := 0
 	tag := byte('0')
 	for r.off < len(r.buf) {
 		count *= 10
 		count += int(tag - '0')
 		tag = r.readByte()
-		writer.writeByte(tag)
+		w.writeByte(tag)
 		if tag == TagQuote {
 			count++
 			b := r.Next(count)
 			if len(b) < count {
 				err = io.EOF
 			}
-			writer.write(b)
+			w.write(b)
 			return
 		}
 	}
 	return io.EOF
 }
 
-func (r *RawReader) readStringRaw(writer *ByteWriter) (err error) {
+func (r *RawReader) readStringRaw(w *BytesWriter) (err error) {
 	count := 0
 	tag := byte('0')
 	for r.off < len(r.buf) {
 		count *= 10
 		count += int(tag - '0')
 		tag = r.readByte()
-		writer.writeByte(tag)
+		w.writeByte(tag)
 		if tag == TagQuote {
 			var bytes []byte
 			if bytes, err = r.readUTF8Slice(count + 1); err == nil {
-				writer.write(bytes)
+				w.write(bytes)
 			}
 			return
 		}
@@ -159,32 +159,32 @@ func (r *RawReader) readStringRaw(writer *ByteWriter) (err error) {
 	return io.EOF
 }
 
-func (r *RawReader) readGUIDRaw(writer *ByteWriter) (err error) {
+func (r *RawReader) readGUIDRaw(w *BytesWriter) (err error) {
 	guid := r.Next(38)
 	if len(guid) < 38 {
 		err = io.EOF
 	}
-	writer.write(guid)
+	w.write(guid)
 	return err
 }
 
-func (r *RawReader) readComplexRaw(writer *ByteWriter) (err error) {
+func (r *RawReader) readComplexRaw(w *BytesWriter) (err error) {
 	var tag byte
 	for r.off < len(r.buf) && tag != TagOpenbrace {
 		tag = r.readByte()
-		writer.writeByte(tag)
+		w.writeByte(tag)
 	}
 	if r.off >= len(r.buf) {
 		return io.EOF
 	}
 	tag = r.readByte()
 	for err == nil && tag != TagClosebrace {
-		if err = r.readRaw(writer, tag); err == nil {
+		if err = r.readRaw(w, tag); err == nil {
 			tag, err = r.ReadByte()
 		}
 	}
 	if err == nil {
-		writer.writeByte(tag)
+		w.writeByte(tag)
 	}
 	return err
 }

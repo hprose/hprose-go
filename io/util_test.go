@@ -177,3 +177,58 @@ func TestUTF16Length(t *testing.T) {
 		}
 	}
 }
+
+func TestPow2roundup(t *testing.T) {
+	data := map[int]int{
+		0:             0,
+		1:             1,
+		2:             2,
+		3:             4,
+		4:             4,
+		5:             8,
+		7:             8,
+		8:             8,
+		9:             16,
+		15:            16,
+		17:            32,
+		31:            32,
+		33:            64,
+		63:            64,
+		65:            128,
+		127:           128,
+		129:           256,
+		257:           512,
+		513:           1024,
+		math.MaxInt16: math.MaxInt16 + 1,
+		math.MaxInt32: math.MaxInt32 + 1,
+	}
+	for k, v := range data {
+		if pow2roundup(k) != v {
+			t.Error("The pow2roundup of \"" + strconv.Itoa(k) + "\" must be " + strconv.Itoa(v))
+		}
+	}
+}
+
+func TestLog2(t *testing.T) {
+	data := map[int]int{
+		0:                 0,
+		1:                 0,
+		2:                 1,
+		4:                 2,
+		8:                 3,
+		16:                4,
+		32:                5,
+		64:                6,
+		128:               7,
+		256:               8,
+		512:               9,
+		1024:              10,
+		math.MaxInt16 + 1: 15,
+		math.MaxInt32 + 1: 31,
+	}
+	for k, v := range data {
+		if log2(k) != v {
+			t.Error("The log2 of \"" + strconv.Itoa(k) + "\" must be " + strconv.Itoa(v) + ", now it is " + strconv.Itoa(log2(k)))
+		}
+	}
+}

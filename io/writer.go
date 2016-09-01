@@ -12,7 +12,7 @@
  *                                                        *
  * hprose writer for Go.                                  *
  *                                                        *
- * LastModified: Aug 29, 2016                             *
+ * LastModified: Sep 1, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -20,7 +20,6 @@
 package io
 
 import (
-	"bytes"
 	"container/list"
 	"math"
 	"math/big"
@@ -32,7 +31,7 @@ import (
 
 // Writer is a fine-grained operation struct for Hprose serialization
 type Writer struct {
-	Stream   *bytes.Buffer
+	BytesWriter
 	Simple   bool
 	classref map[uintptr]int
 	ref      map[uintptr]int
@@ -40,186 +39,178 @@ type Writer struct {
 }
 
 // NewWriter is the constructor for Hprose Writer
-func NewWriter(stream *bytes.Buffer, simple bool) (writer *Writer) {
-	writer = new(Writer)
-	writer.Stream = stream
-	writer.Simple = simple
-	writer.classref = map[uintptr]int{}
+func NewWriter(simple bool) (w *Writer) {
+	w = new(Writer)
+	w.Simple = simple
+	w.classref = map[uintptr]int{}
 	if !simple {
-		writer.ref = map[uintptr]int{}
+		w.ref = map[uintptr]int{}
 	}
 	return
 }
 
 // Serialize a data v to stream
-func (writer *Writer) Serialize(v interface{}) {
+func (w *Writer) Serialize(v interface{}) {
 	if v == nil {
-		writer.WriteNil()
+		w.WriteNil()
 	} else {
-		writer.WriteValue(reflect.ValueOf(v))
+		w.WriteValue(reflect.ValueOf(v))
 	}
 }
 
 // WriteValue to stream
-func (writer *Writer) WriteValue(v reflect.Value) {
-	valueEncoders[v.Kind()](writer, v)
+func (w *Writer) WriteValue(v reflect.Value) {
+	valueEncoders[v.Kind()](w, v)
 }
 
 // WriteNil to stream
-func (writer *Writer) WriteNil() {
-	writer.Stream.WriteByte(TagNull)
+func (w *Writer) WriteNil() {
+	w.writeByte(TagNull)
 }
 
 // WriteBool to stream
-func (writer *Writer) WriteBool(b bool) {
-	s := writer.Stream
+func (w *Writer) WriteBool(b bool) {
 	if b {
-		s.WriteByte(TagTrue)
+		w.writeByte(TagTrue)
 	} else {
-		s.WriteByte(TagFalse)
+		w.writeByte(TagFalse)
 	}
 }
 
 // WriteInt to stream
-func (writer *Writer) WriteInt(i int64) {
-	s := writer.Stream
+func (w *Writer) WriteInt(i int64) {
 	if i >= 0 && i <= 9 {
-		s.WriteByte(byte('0' + i))
+		w.writeByte(byte('0' + i))
 		return
 	}
 	if i >= math.MinInt32 && i <= math.MaxInt32 {
-		s.WriteByte(TagInteger)
+		w.writeByte(TagInteger)
 	} else {
-		s.WriteByte(TagLong)
+		w.writeByte(TagLong)
 	}
 	var buf [20]byte
-	s.Write(getIntBytes(buf[:], i))
-	s.WriteByte(TagSemicolon)
+	w.write(getIntBytes(buf[:], i))
+	w.writeByte(TagSemicolon)
 }
 
 // WriteUint to stream
-func (writer *Writer) WriteUint(i uint64) {
-	s := writer.Stream
+func (w *Writer) WriteUint(i uint64) {
 	if i <= 9 {
-		s.WriteByte(byte('0' + i))
+		w.writeByte(byte('0' + i))
 		return
 	}
 	if i <= math.MaxInt32 {
-		s.WriteByte(TagInteger)
+		w.writeByte(TagInteger)
 	} else {
-		s.WriteByte(TagLong)
+		w.writeByte(TagLong)
 	}
 	var buf [20]byte
-	s.Write(getUintBytes(buf[:], i))
-	s.WriteByte(TagSemicolon)
+	w.write(getUintBytes(buf[:], i))
+	w.writeByte(TagSemicolon)
 }
 
 // WriteFloat to stream
-func (writer *Writer) WriteFloat(f float64, bitSize int) {
-	s := writer.Stream
+func (w *Writer) WriteFloat(f float64, bitSize int) {
 	if f != f {
-		s.WriteByte(TagNaN)
+		w.writeByte(TagNaN)
 		return
 	}
 	if f > math.MaxFloat64 {
-		s.Write([]byte{TagInfinity, TagPos})
+		w.write([]byte{TagInfinity, TagPos})
 		return
 	}
 	if f < -math.MaxFloat64 {
-		s.Write([]byte{TagInfinity, TagNeg})
+		w.write([]byte{TagInfinity, TagNeg})
 		return
 	}
-	s.WriteByte(TagDouble)
+	w.writeByte(TagDouble)
 	var buf [64]byte
-	s.Write(strconv.AppendFloat(buf[:0], f, 'g', -1, bitSize))
-	s.WriteByte(TagSemicolon)
+	w.write(strconv.AppendFloat(buf[:0], f, 'g', -1, bitSize))
+	w.writeByte(TagSemicolon)
 }
 
 // WriteComplex64 to stream
-func (writer *Writer) WriteComplex64(c complex64) {
+func (w *Writer) WriteComplex64(c complex64) {
 	if imag(c) == 0 {
-		writer.WriteFloat(float64(real(c)), 32)
+		w.WriteFloat(float64(real(c)), 32)
 		return
 	}
-	setRef(writer, nil)
-	writeListHeader(writer, 2)
-	writer.WriteFloat(float64(real(c)), 32)
-	writer.WriteFloat(float64(imag(c)), 32)
-	writeListFooter(writer)
+	setRef(w, nil)
+	writeListHeader(w, 2)
+	w.WriteFloat(float64(real(c)), 32)
+	w.WriteFloat(float64(imag(c)), 32)
+	writeListFooter(w)
 }
 
 // WriteComplex128 to stream
-func (writer *Writer) WriteComplex128(c complex128) {
+func (w *Writer) WriteComplex128(c complex128) {
 	if imag(c) == 0 {
-		writer.WriteFloat(real(c), 64)
+		w.WriteFloat(real(c), 64)
 		return
 	}
-	setRef(writer, nil)
-	writeListHeader(writer, 2)
-	writer.WriteFloat(real(c), 64)
-	writer.WriteFloat(imag(c), 64)
-	writeListFooter(writer)
+	setRef(w, nil)
+	writeListHeader(w, 2)
+	w.WriteFloat(real(c), 64)
+	w.WriteFloat(imag(c), 64)
+	writeListFooter(w)
 }
 
 // WriteString to stream
-func (writer *Writer) WriteString(str string) {
+func (w *Writer) WriteString(str string) {
 	length := utf16Length(str)
 	switch {
 	case length == 0:
-		writer.Stream.WriteByte(TagEmpty)
+		w.writeByte(TagEmpty)
 	case length < 0:
-		writer.WriteBytes(*(*[]byte)(unsafe.Pointer(&str)))
+		w.WriteBytes(*(*[]byte)(unsafe.Pointer(&str)))
 	case length == 1:
-		writer.Stream.WriteByte(TagUTF8Char)
-		writer.Stream.WriteString(str)
+		w.writeByte(TagUTF8Char)
+		w.writeString(str)
 	default:
-		setRef(writer, nil)
-		writeString(writer, str, length)
+		setRef(w, nil)
+		writeString(w, str, length)
 	}
 }
 
 // WriteBytes to stream
-func (writer *Writer) WriteBytes(bytes []byte) {
-	setRef(writer, nil)
-	writeBytes(writer, bytes)
+func (w *Writer) WriteBytes(bytes []byte) {
+	setRef(w, nil)
+	writeBytes(w, bytes)
 }
 
 // WriteBigInt to stream
-func (writer *Writer) WriteBigInt(bi *big.Int) {
-	s := writer.Stream
-	s.WriteByte(TagLong)
-	s.WriteString(bi.String())
-	s.WriteByte(TagSemicolon)
+func (w *Writer) WriteBigInt(bi *big.Int) {
+	w.writeByte(TagLong)
+	w.writeString(bi.String())
+	w.writeByte(TagSemicolon)
 }
 
 // WriteBigRat to stream
-func (writer *Writer) WriteBigRat(br *big.Rat) {
+func (w *Writer) WriteBigRat(br *big.Rat) {
 	if br.IsInt() {
-		writer.WriteBigInt(br.Num())
+		w.WriteBigInt(br.Num())
 	} else {
 		str := br.String()
-		setRef(writer, nil)
-		writeString(writer, str, len(str))
+		setRef(w, nil)
+		writeString(w, str, len(str))
 	}
 }
 
 // WriteBigFloat to stream
-func (writer *Writer) WriteBigFloat(bf *big.Float) {
-	s := writer.Stream
-	s.WriteByte(TagDouble)
+func (w *Writer) WriteBigFloat(bf *big.Float) {
+	w.writeByte(TagDouble)
 	var buf [64]byte
-	s.Write(bf.Append(buf[:0], 'g', -1))
-	s.WriteByte(TagSemicolon)
+	w.write(bf.Append(buf[:0], 'g', -1))
+	w.writeByte(TagSemicolon)
 }
 
 // WriteTime to stream
-func (writer *Writer) WriteTime(t *time.Time) {
+func (w *Writer) WriteTime(t *time.Time) {
 	ptr := unsafe.Pointer(t)
-	if writeRef(writer, ptr) {
+	if writeRef(w, ptr) {
 		return
 	}
-	setRef(writer, ptr)
-	s := writer.Stream
+	setRef(w, ptr)
 	year, month, day := t.Date()
 	hour, min, sec := t.Clock()
 	nsec := t.Nanosecond()
@@ -231,315 +222,314 @@ func (writer *Writer) WriteTime(t *time.Time) {
 	if hour == 0 && min == 0 && sec == 0 && nsec == 0 {
 		datelen := formatDate(buf[:], year, int(month), day)
 		buf[datelen] = tag
-		s.Write(buf[:datelen+1])
+		w.write(buf[:datelen+1])
 	} else if year == 1970 && month == 1 && day == 1 {
 		timelen := formatTime(buf[:], hour, min, sec, nsec)
 		buf[timelen] = tag
-		s.Write(buf[:timelen+1])
+		w.write(buf[:timelen+1])
 	} else {
 		datelen := formatDate(buf[:], year, int(month), day)
 		timelen := formatTime(buf[datelen:], hour, min, sec, nsec)
 		datetimelen := datelen + timelen
 		buf[datetimelen] = tag
-		s.Write(buf[:datetimelen+1])
+		w.write(buf[:datetimelen+1])
 	}
 }
 
 // WriteList to stream
-func (writer *Writer) WriteList(lst *list.List) {
+func (w *Writer) WriteList(lst *list.List) {
 	ptr := unsafe.Pointer(lst)
-	if writeRef(writer, ptr) {
+	if writeRef(w, ptr) {
 		return
 	}
-	setRef(writer, ptr)
+	setRef(w, ptr)
 	count := lst.Len()
 	if count == 0 {
-		writeEmptyList(writer)
+		writeEmptyList(w)
 		return
 	}
-	writeListHeader(writer, count)
+	writeListHeader(w, count)
 	for e := lst.Front(); e != nil; e = e.Next() {
-		writer.Serialize(e.Value)
+		w.Serialize(e.Value)
 	}
-	writeListFooter(writer)
+	writeListFooter(w)
 }
 
 // WriteTuple to stream
-func (writer *Writer) WriteTuple(tuple ...interface{}) {
-	setRef(writer, nil)
+func (w *Writer) WriteTuple(tuple ...interface{}) {
+	setRef(w, nil)
 	count := len(tuple)
 	if count == 0 {
-		writeEmptyList(writer)
+		writeEmptyList(w)
 		return
 	}
-	writeListHeader(writer, count)
+	writeListHeader(w, count)
 	for _, v := range tuple {
-		writer.Serialize(v)
+		w.Serialize(v)
 	}
-	writeListFooter(writer)
+	writeListFooter(w)
 }
 
 // WriteBoolSlice to stream
-func (writer *Writer) WriteBoolSlice(slice []bool) {
-	setRef(writer, nil)
+func (w *Writer) WriteBoolSlice(slice []bool) {
+	setRef(w, nil)
 	count := len(slice)
 	if count == 0 {
-		writeEmptyList(writer)
+		writeEmptyList(w)
 		return
 	}
-	writeListHeader(writer, count)
-	boolSliceEncoder(writer, unsafe.Pointer(&slice))
-	writeListFooter(writer)
+	writeListHeader(w, count)
+	boolSliceEncoder(w, unsafe.Pointer(&slice))
+	writeListFooter(w)
 }
 
 // WriteIntSlice to stream
-func (writer *Writer) WriteIntSlice(slice []int) {
-	setRef(writer, nil)
+func (w *Writer) WriteIntSlice(slice []int) {
+	setRef(w, nil)
 	count := len(slice)
 	if count == 0 {
-		writeEmptyList(writer)
+		writeEmptyList(w)
 		return
 	}
-	writeListHeader(writer, count)
-	intSliceEncoder(writer, unsafe.Pointer(&slice))
-	writeListFooter(writer)
+	writeListHeader(w, count)
+	intSliceEncoder(w, unsafe.Pointer(&slice))
+	writeListFooter(w)
 }
 
 // WriteInt8Slice to stream
-func (writer *Writer) WriteInt8Slice(slice []int8) {
-	setRef(writer, nil)
+func (w *Writer) WriteInt8Slice(slice []int8) {
+	setRef(w, nil)
 	count := len(slice)
 	if count == 0 {
-		writeEmptyList(writer)
+		writeEmptyList(w)
 		return
 	}
-	writeListHeader(writer, count)
-	int8SliceEncoder(writer, unsafe.Pointer(&slice))
-	writeListFooter(writer)
+	writeListHeader(w, count)
+	int8SliceEncoder(w, unsafe.Pointer(&slice))
+	writeListFooter(w)
 }
 
 // WriteInt16Slice to stream
-func (writer *Writer) WriteInt16Slice(slice []int16) {
-	setRef(writer, nil)
+func (w *Writer) WriteInt16Slice(slice []int16) {
+	setRef(w, nil)
 	count := len(slice)
 	if count == 0 {
-		writeEmptyList(writer)
+		writeEmptyList(w)
 		return
 	}
-	writeListHeader(writer, count)
-	int16SliceEncoder(writer, unsafe.Pointer(&slice))
-	writeListFooter(writer)
+	writeListHeader(w, count)
+	int16SliceEncoder(w, unsafe.Pointer(&slice))
+	writeListFooter(w)
 }
 
 // WriteInt32Slice to stream
-func (writer *Writer) WriteInt32Slice(slice []int32) {
-	setRef(writer, nil)
+func (w *Writer) WriteInt32Slice(slice []int32) {
+	setRef(w, nil)
 	count := len(slice)
 	if count == 0 {
-		writeEmptyList(writer)
+		writeEmptyList(w)
 		return
 	}
-	writeListHeader(writer, count)
-	int32SliceEncoder(writer, unsafe.Pointer(&slice))
-	writeListFooter(writer)
+	writeListHeader(w, count)
+	int32SliceEncoder(w, unsafe.Pointer(&slice))
+	writeListFooter(w)
 }
 
 // WriteInt64Slice to stream
-func (writer *Writer) WriteInt64Slice(slice []int64) {
-	setRef(writer, nil)
+func (w *Writer) WriteInt64Slice(slice []int64) {
+	setRef(w, nil)
 	count := len(slice)
 	if count == 0 {
-		writeEmptyList(writer)
+		writeEmptyList(w)
 		return
 	}
-	writeListHeader(writer, count)
-	int64SliceEncoder(writer, unsafe.Pointer(&slice))
-	writeListFooter(writer)
+	writeListHeader(w, count)
+	int64SliceEncoder(w, unsafe.Pointer(&slice))
+	writeListFooter(w)
 }
 
 // WriteUintSlice to stream
-func (writer *Writer) WriteUintSlice(slice []uint) {
-	setRef(writer, nil)
+func (w *Writer) WriteUintSlice(slice []uint) {
+	setRef(w, nil)
 	count := len(slice)
 	if count == 0 {
-		writeEmptyList(writer)
+		writeEmptyList(w)
 		return
 	}
-	writeListHeader(writer, count)
-	uintSliceEncoder(writer, unsafe.Pointer(&slice))
-	writeListFooter(writer)
+	writeListHeader(w, count)
+	uintSliceEncoder(w, unsafe.Pointer(&slice))
+	writeListFooter(w)
 }
 
 // WriteUint8Slice to stream
-func (writer *Writer) WriteUint8Slice(slice []uint8) {
-	setRef(writer, nil)
+func (w *Writer) WriteUint8Slice(slice []uint8) {
+	setRef(w, nil)
 	count := len(slice)
 	if count == 0 {
-		writeEmptyList(writer)
+		writeEmptyList(w)
 		return
 	}
-	writeListHeader(writer, count)
-	uint8SliceEncoder(writer, unsafe.Pointer(&slice))
-	writeListFooter(writer)
+	writeListHeader(w, count)
+	uint8SliceEncoder(w, unsafe.Pointer(&slice))
+	writeListFooter(w)
 }
 
 // WriteUint16Slice to stream
-func (writer *Writer) WriteUint16Slice(slice []uint16) {
-	setRef(writer, nil)
+func (w *Writer) WriteUint16Slice(slice []uint16) {
+	setRef(w, nil)
 	count := len(slice)
 	if count == 0 {
-		writeEmptyList(writer)
+		writeEmptyList(w)
 		return
 	}
-	writeListHeader(writer, count)
-	uint16SliceEncoder(writer, unsafe.Pointer(&slice))
-	writeListFooter(writer)
+	writeListHeader(w, count)
+	uint16SliceEncoder(w, unsafe.Pointer(&slice))
+	writeListFooter(w)
 }
 
 // WriteUint32Slice to stream
-func (writer *Writer) WriteUint32Slice(slice []uint32) {
-	setRef(writer, nil)
+func (w *Writer) WriteUint32Slice(slice []uint32) {
+	setRef(w, nil)
 	count := len(slice)
 	if count == 0 {
-		writeEmptyList(writer)
+		writeEmptyList(w)
 		return
 	}
-	writeListHeader(writer, count)
-	uint32SliceEncoder(writer, unsafe.Pointer(&slice))
-	writeListFooter(writer)
+	writeListHeader(w, count)
+	uint32SliceEncoder(w, unsafe.Pointer(&slice))
+	writeListFooter(w)
 }
 
 // WriteUint64Slice to stream
-func (writer *Writer) WriteUint64Slice(slice []uint64) {
-	setRef(writer, nil)
+func (w *Writer) WriteUint64Slice(slice []uint64) {
+	setRef(w, nil)
 	count := len(slice)
 	if count == 0 {
-		writeEmptyList(writer)
+		writeEmptyList(w)
 		return
 	}
-	writeListHeader(writer, count)
-	uint64SliceEncoder(writer, unsafe.Pointer(&slice))
-	writeListFooter(writer)
+	writeListHeader(w, count)
+	uint64SliceEncoder(w, unsafe.Pointer(&slice))
+	writeListFooter(w)
 }
 
 // WriteUintptrSlice to stream
-func (writer *Writer) WriteUintptrSlice(slice []uintptr) {
-	setRef(writer, nil)
+func (w *Writer) WriteUintptrSlice(slice []uintptr) {
+	setRef(w, nil)
 	count := len(slice)
 	if count == 0 {
-		writeEmptyList(writer)
+		writeEmptyList(w)
 		return
 	}
-	writeListHeader(writer, count)
-	uintptrSliceEncoder(writer, unsafe.Pointer(&slice))
-	writeListFooter(writer)
+	writeListHeader(w, count)
+	uintptrSliceEncoder(w, unsafe.Pointer(&slice))
+	writeListFooter(w)
 }
 
 // WriteFloat32Slice to stream
-func (writer *Writer) WriteFloat32Slice(slice []float32) {
-	setRef(writer, nil)
+func (w *Writer) WriteFloat32Slice(slice []float32) {
+	setRef(w, nil)
 	count := len(slice)
 	if count == 0 {
-		writeEmptyList(writer)
+		writeEmptyList(w)
 		return
 	}
-	writeListHeader(writer, count)
-	float32SliceEncoder(writer, unsafe.Pointer(&slice))
-	writeListFooter(writer)
+	writeListHeader(w, count)
+	float32SliceEncoder(w, unsafe.Pointer(&slice))
+	writeListFooter(w)
 }
 
 // WriteFloat64Slice to stream
-func (writer *Writer) WriteFloat64Slice(slice []float64) {
-	setRef(writer, nil)
+func (w *Writer) WriteFloat64Slice(slice []float64) {
+	setRef(w, nil)
 	count := len(slice)
 	if count == 0 {
-		writeEmptyList(writer)
+		writeEmptyList(w)
 		return
 	}
-	writeListHeader(writer, count)
-	float64SliceEncoder(writer, unsafe.Pointer(&slice))
-	writeListFooter(writer)
+	writeListHeader(w, count)
+	float64SliceEncoder(w, unsafe.Pointer(&slice))
+	writeListFooter(w)
 }
 
 // WriteComplex64Slice to stream
-func (writer *Writer) WriteComplex64Slice(slice []complex64) {
-	setRef(writer, nil)
+func (w *Writer) WriteComplex64Slice(slice []complex64) {
+	setRef(w, nil)
 	count := len(slice)
 	if count == 0 {
-		writeEmptyList(writer)
+		writeEmptyList(w)
 		return
 	}
-	writeListHeader(writer, count)
-	complex64SliceEncoder(writer, unsafe.Pointer(&slice))
-	writeListFooter(writer)
+	writeListHeader(w, count)
+	complex64SliceEncoder(w, unsafe.Pointer(&slice))
+	writeListFooter(w)
 }
 
 // WriteComplex128Slice to stream
-func (writer *Writer) WriteComplex128Slice(slice []complex128) {
-	setRef(writer, nil)
+func (w *Writer) WriteComplex128Slice(slice []complex128) {
+	setRef(w, nil)
 	count := len(slice)
 	if count == 0 {
-		writeEmptyList(writer)
+		writeEmptyList(w)
 		return
 	}
-	writeListHeader(writer, count)
-	complex128SliceEncoder(writer, unsafe.Pointer(&slice))
-	writeListFooter(writer)
+	writeListHeader(w, count)
+	complex128SliceEncoder(w, unsafe.Pointer(&slice))
+	writeListFooter(w)
 }
 
 // WriteStringSlice to stream
-func (writer *Writer) WriteStringSlice(slice []string) {
-	setRef(writer, nil)
+func (w *Writer) WriteStringSlice(slice []string) {
+	setRef(w, nil)
 	count := len(slice)
 	if count == 0 {
-		writeEmptyList(writer)
+		writeEmptyList(w)
 		return
 	}
-	writeListHeader(writer, count)
-	stringSliceEncoder(writer, unsafe.Pointer(&slice))
-	writeListFooter(writer)
+	writeListHeader(w, count)
+	stringSliceEncoder(w, unsafe.Pointer(&slice))
+	writeListFooter(w)
 }
 
 // WriteBytesSlice to stream
-func (writer *Writer) WriteBytesSlice(slice [][]byte) {
-	setRef(writer, nil)
+func (w *Writer) WriteBytesSlice(slice [][]byte) {
+	setRef(w, nil)
 	count := len(slice)
 	if count == 0 {
-		writeEmptyList(writer)
+		writeEmptyList(w)
 		return
 	}
-	writeListHeader(writer, count)
-	bytesSliceEncoder(writer, unsafe.Pointer(&slice))
-	writeListFooter(writer)
+	writeListHeader(w, count)
+	bytesSliceEncoder(w, unsafe.Pointer(&slice))
+	writeListFooter(w)
 }
 
 // Reset the reference counter
-func (writer *Writer) Reset() {
-	for k := range writer.classref {
-		delete(writer.classref, k)
+func (w *Writer) Reset() {
+	for k := range w.classref {
+		delete(w.classref, k)
 	}
-	if writer.Simple {
+	if w.Simple {
 		return
 	}
-	writer.refcount = 0
-	for k := range writer.ref {
-		delete(writer.ref, k)
+	w.refcount = 0
+	for k := range w.ref {
+		delete(w.ref, k)
 	}
 }
 
 // private functions
 
-func writeRef(writer *Writer, ref unsafe.Pointer) bool {
-	if writer.Simple {
+func writeRef(w *Writer, ref unsafe.Pointer) bool {
+	if w.Simple {
 		return false
 	}
-	n, found := writer.ref[uintptr(ref)]
+	n, found := w.ref[uintptr(ref)]
 	if found {
-		s := writer.Stream
-		s.WriteByte(TagRef)
+		w.writeByte(TagRef)
 		var buf [20]byte
-		s.Write(getIntBytes(buf[:], int64(n)))
-		s.WriteByte(TagSemicolon)
+		w.write(getIntBytes(buf[:], int64(n)))
+		w.writeByte(TagSemicolon)
 	}
 	return found
 }
@@ -554,55 +544,52 @@ func setRef(writer *Writer, ref unsafe.Pointer) {
 	writer.refcount++
 }
 
-func writeString(writer *Writer, str string, length int) {
-	s := writer.Stream
-	s.WriteByte(TagString)
+func writeString(w *Writer, str string, length int) {
+	w.writeByte(TagString)
 	var buf [20]byte
-	s.Write(getIntBytes(buf[:], int64(length)))
-	s.WriteByte(TagQuote)
-	s.WriteString(str)
-	s.WriteByte(TagQuote)
+	w.write(getIntBytes(buf[:], int64(length)))
+	w.writeByte(TagQuote)
+	w.writeString(str)
+	w.writeByte(TagQuote)
 }
 
-func writeBytes(writer *Writer, bytes []byte) {
-	s := writer.Stream
+func writeBytes(w *Writer, bytes []byte) {
 	count := len(bytes)
 	if count == 0 {
-		s.Write([]byte{TagBytes, TagQuote, TagQuote})
+		w.write([]byte{TagBytes, TagQuote, TagQuote})
 		return
 	}
-	s.WriteByte(TagBytes)
+	w.writeByte(TagBytes)
 	var buf [20]byte
-	s.Write(getIntBytes(buf[:], int64(count)))
-	s.WriteByte(TagQuote)
-	s.Write(bytes)
-	s.WriteByte(TagQuote)
+	w.write(getIntBytes(buf[:], int64(count)))
+	w.writeByte(TagQuote)
+	w.write(bytes)
+	w.writeByte(TagQuote)
 }
 
-func writeListHeader(writer *Writer, count int) {
-	s := writer.Stream
-	s.WriteByte(TagList)
+func writeListHeader(w *Writer, count int) {
+	w.writeByte(TagList)
 	var buf [20]byte
-	s.Write(getIntBytes(buf[:], int64(count)))
-	s.WriteByte(TagOpenbrace)
+	w.write(getIntBytes(buf[:], int64(count)))
+	w.writeByte(TagOpenbrace)
 }
 
-func writeListBody(writer *Writer, list reflect.Value, count int) {
+func writeListBody(w *Writer, list reflect.Value, count int) {
 	for i := 0; i < count; i++ {
 		e := list.Index(i)
-		valueEncoders[e.Kind()](writer, e)
+		valueEncoders[e.Kind()](w, e)
 	}
 }
 
-func writeListFooter(writer *Writer) {
-	writer.Stream.WriteByte(TagClosebrace)
+func writeListFooter(w *Writer) {
+	w.writeByte(TagClosebrace)
 }
 
-func writeEmptyList(writer *Writer) {
-	writer.Stream.Write([]byte{TagList, TagOpenbrace, TagClosebrace})
+func writeEmptyList(w *Writer) {
+	w.write([]byte{TagList, TagOpenbrace, TagClosebrace})
 }
 
-func writeArray(writer *Writer, v reflect.Value) {
+func writeArray(w *Writer, v reflect.Value) {
 	st := reflect.SliceOf(v.Type().Elem())
 	sliceType := (*emptyInterface)(unsafe.Pointer(&st)).ptr
 	count := v.Len()
@@ -612,14 +599,14 @@ func writeArray(writer *Writer, v reflect.Value) {
 			Len:  count,
 			Cap:  count,
 		}
-		writeBytes(writer, *(*[]byte)(unsafe.Pointer(&sliceHeader)))
+		writeBytes(w, *(*[]byte)(unsafe.Pointer(&sliceHeader)))
 		return
 	}
 	if count == 0 {
-		writeEmptyList(writer)
+		writeEmptyList(w)
 		return
 	}
-	writeListHeader(writer, count)
+	writeListHeader(w, count)
 	encoder := sliceBodyEncoders[sliceType]
 	if encoder != nil {
 		sliceHeader := reflect.SliceHeader{
@@ -627,113 +614,111 @@ func writeArray(writer *Writer, v reflect.Value) {
 			Len:  count,
 			Cap:  count,
 		}
-		encoder(writer, unsafe.Pointer(&sliceHeader))
+		encoder(w, unsafe.Pointer(&sliceHeader))
 	} else {
-		writeListBody(writer, v, count)
+		writeListBody(w, v, count)
 	}
-	writeListFooter(writer)
+	writeListFooter(w)
 }
 
-func writeSlice(writer *Writer, v reflect.Value) {
+func writeSlice(w *Writer, v reflect.Value) {
 	val := (*reflectValue)(unsafe.Pointer(&v))
 	if val.typ == bytesType {
-		writeBytes(writer, v.Bytes())
+		writeBytes(w, v.Bytes())
 		return
 	}
 	count := v.Len()
 	if count == 0 {
-		writeEmptyList(writer)
+		writeEmptyList(w)
 		return
 	}
-	writeListHeader(writer, count)
+	writeListHeader(w, count)
 	encoder := sliceBodyEncoders[val.typ]
 	if encoder != nil {
-		encoder(writer, val.ptr)
+		encoder(w, val.ptr)
 	} else {
-		writeListBody(writer, v, count)
+		writeListBody(w, v, count)
 	}
-	writeListFooter(writer)
+	writeListFooter(w)
 }
 
-func writeEmptyMap(writer *Writer) {
-	writer.Stream.Write([]byte{TagMap, TagOpenbrace, TagClosebrace})
+func writeEmptyMap(w *Writer) {
+	w.write([]byte{TagMap, TagOpenbrace, TagClosebrace})
 }
 
-func writeMapHeader(writer *Writer, count int) {
-	s := writer.Stream
-	s.WriteByte(TagMap)
+func writeMapHeader(w *Writer, count int) {
+	w.writeByte(TagMap)
 	var buf [20]byte
-	s.Write(getIntBytes(buf[:], int64(count)))
-	s.WriteByte(TagOpenbrace)
+	w.write(getIntBytes(buf[:], int64(count)))
+	w.writeByte(TagOpenbrace)
 }
 
-func writeMapBody(writer *Writer, v reflect.Value) {
+func writeMapBody(w *Writer, v reflect.Value) {
 	mapType := v.Type()
 	keyEncoder := valueEncoders[mapType.Key().Kind()]
 	valueEncoder := valueEncoders[mapType.Elem().Kind()]
 	keys := v.MapKeys()
 	for _, key := range keys {
-		keyEncoder(writer, key)
-		valueEncoder(writer, v.MapIndex(key))
+		keyEncoder(w, key)
+		valueEncoder(w, v.MapIndex(key))
 	}
 }
 
-func writeMapFooter(writer *Writer) {
-	writer.Stream.WriteByte(TagClosebrace)
+func writeMapFooter(w *Writer) {
+	w.writeByte(TagClosebrace)
 }
 
-func writeMap(writer *Writer, v reflect.Value) {
+func writeMap(w *Writer, v reflect.Value) {
 	count := v.Len()
 	if count == 0 {
-		writeEmptyMap(writer)
+		writeEmptyMap(w)
 		return
 	}
-	writeMapHeader(writer, count)
+	writeMapHeader(w, count)
 	val := (*reflectValue)(unsafe.Pointer(&v))
 	mapEncoder := mapBodyEncoders[val.typ]
 	if mapEncoder != nil {
-		mapEncoder(writer, unsafe.Pointer(&val.ptr))
+		mapEncoder(w, unsafe.Pointer(&val.ptr))
 	} else {
-		writeMapBody(writer, v)
+		writeMapBody(w, v)
 	}
-	writeMapFooter(writer)
+	writeMapFooter(w)
 }
 
-func writeMapPtr(writer *Writer, v reflect.Value) {
+func writeMapPtr(w *Writer, v reflect.Value) {
 	count := v.Len()
 	if count == 0 {
-		writeEmptyMap(writer)
+		writeEmptyMap(w)
 		return
 	}
-	writeMapHeader(writer, count)
+	writeMapHeader(w, count)
 	val := (*reflectValue)(unsafe.Pointer(&v))
 	mapEncoder := mapBodyEncoders[val.typ]
 	if mapEncoder != nil {
-		mapEncoder(writer, unsafe.Pointer(val.ptr))
+		mapEncoder(w, unsafe.Pointer(val.ptr))
 	} else {
-		writeMapBody(writer, v)
+		writeMapBody(w, v)
 	}
-	writeMapFooter(writer)
+	writeMapFooter(w)
 }
 
-func writeStruct(writer *Writer, v reflect.Value) {
+func writeStruct(w *Writer, v reflect.Value) {
 	val := (*reflectValue)(unsafe.Pointer(&v))
 	cache := getStructCache(v.Type().Elem())
-	index, found := writer.classref[val.typ]
+	index, found := w.classref[val.typ]
 	if !found {
-		writer.Stream.Write(cache.Data)
-		if !writer.Simple {
-			writer.refcount += len(cache.Fields)
+		w.write(cache.Data)
+		if !w.Simple {
+			w.refcount += len(cache.Fields)
 		}
-		index = len(writer.classref)
-		writer.classref[val.typ] = index
+		index = len(w.classref)
+		w.classref[val.typ] = index
 	}
-	setRef(writer, val.ptr)
-	s := writer.Stream
-	s.WriteByte(TagObject)
+	setRef(w, val.ptr)
+	w.writeByte(TagObject)
 	var buf [20]byte
-	s.Write(getIntBytes(buf[:], int64(index)))
-	s.WriteByte(TagOpenbrace)
+	w.write(getIntBytes(buf[:], int64(index)))
+	w.writeByte(TagOpenbrace)
 	fields := cache.Fields
 	for _, field := range fields {
 		var f reflect.Value
@@ -744,7 +729,7 @@ func writeStruct(writer *Writer, v reflect.Value) {
 		if field.Kind == reflect.Ptr || field.Kind == reflect.Map {
 			fp.ptr = **(**unsafe.Pointer)(unsafe.Pointer(&fp.ptr))
 		}
-		valueEncoders[field.Kind](writer, f)
+		valueEncoders[field.Kind](w, f)
 	}
-	s.WriteByte(TagClosebrace)
+	w.writeByte(TagClosebrace)
 }
