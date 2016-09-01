@@ -25,7 +25,7 @@ type ByteWriter struct {
 	buf []byte
 }
 
-// Len return the number of bytes of this writer.
+// Len return the number of byte of this writer.
 func (w *ByteWriter) Len() int {
 	return len(w.buf)
 }
@@ -89,7 +89,7 @@ func (w *ByteWriter) Write(b []byte) (int, error) {
 	return w.write(b), nil
 }
 
-// Close the writer and put the buf to bytes pool
+// Close the writer and put the buf to []byte pool
 func (w *ByteWriter) Close() {
 	BytePool.Put(w.buf)
 }
