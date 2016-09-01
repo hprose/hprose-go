@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	poolNum = 31
+	poolNum = 30
 	maxSize = 1 << poolNum
 )
 
