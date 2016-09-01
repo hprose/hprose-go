@@ -41,7 +41,7 @@ var bytePool = struct {
 }{}
 
 func init() {
-	bytePool.d = time.Second * 4
+	bytePool.d = time.Second << 2
 	if bytePool.d > 0 {
 		bytePool.timer = time.AfterFunc(bytePool.d, func() {
 			drain()
@@ -55,7 +55,11 @@ func drain() {
 	for i := 0; i < n; i++ {
 		p := &bytePool.pools[i]
 		p.locker.Lock()
-		p.list = p.list[:len(p.list)>>1]
+		l := len(p.list)
+		for j := l - 1; j >= l>>1; j-- {
+			p.list[j] = nil
+		}
+		p.list = p.list[:l>>1]
 		p.locker.Unlock()
 	}
 }
