@@ -64,11 +64,11 @@ func stringIntMapEncoder(w *Writer, ptr unsafe.Pointer) {
 	}
 }
 
-func intIntMapEncoder(writer *Writer, ptr unsafe.Pointer) {
+func intIntMapEncoder(w *Writer, ptr unsafe.Pointer) {
 	m := *(*map[int]int)(ptr)
 	for k, v := range m {
-		writer.WriteInt(int64(k))
-		writer.WriteInt(int64(v))
+		w.WriteInt(int64(k))
+		w.WriteInt(int64(v))
 	}
 }
 
