@@ -97,7 +97,6 @@ func (bp *bytePool) Put(bytes []byte) {
 
 // Drain some items from the pool and make them available for garbage collection.
 func (bp *bytePool) Drain() {
-	println("ooo")
 	n := len(bp.pools)
 	for i := 0; i < n; i++ {
 		p := &bp.pools[i]

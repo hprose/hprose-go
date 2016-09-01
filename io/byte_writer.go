@@ -56,14 +56,10 @@ func (w *ByteWriter) grow(n int) int {
 	l := p + n
 	if l > c {
 		var buf []byte
-		if w.buf == nil && n <= maxSize {
+		if w.buf == nil {
 			buf = BytePool.Get(n)
 		} else {
-			if l <= maxSize {
-				buf = BytePool.Get(l)
-			} else {
-				buf = make([]byte, c*2+n)
-			}
+			buf = BytePool.Get(c<<1 + n)
 			copy(buf, w.buf)
 			BytePool.Put(w.buf)
 		}
