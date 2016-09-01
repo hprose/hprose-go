@@ -168,6 +168,6 @@ func BenchmarkRawReaderReadUTF8String(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		rawReader := NewRawReader(data)
 		bytes, _ := rawReader.ReadRaw()
-		BytePool.Put(bytes)
+		Recycle(bytes)
 	}
 }

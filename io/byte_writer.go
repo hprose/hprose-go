@@ -57,11 +57,11 @@ func (w *ByteWriter) grow(n int) int {
 	if l > c {
 		var buf []byte
 		if w.buf == nil {
-			buf = BytePool.Get(n)
+			buf = Alloc(n)
 		} else {
-			buf = BytePool.Get(c<<1 + n)
+			buf = Alloc(c<<1 + n)
 			copy(buf, w.buf)
-			BytePool.Put(w.buf)
+			Recycle(w.buf)
 		}
 		w.buf = buf
 	}
@@ -91,7 +91,7 @@ func (w *ByteWriter) Write(b []byte) (int, error) {
 
 // Close the writer and put the buf to []byte pool
 func (w *ByteWriter) Close() {
-	BytePool.Put(w.buf)
+	Recycle(w.buf)
 }
 
 func (w *ByteWriter) writeByte(c byte) {

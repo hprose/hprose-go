@@ -34,41 +34,46 @@ type pool struct {
 	locker sync.Mutex
 }
 
-type bytePool struct {
+var bytePool = struct {
 	pools [poolNum]pool
 	timer *time.Timer
 	d     time.Duration
-}
+}{}
 
-func newBytePool(d time.Duration) (bp *bytePool) {
-	bp = new(bytePool)
-	bp.d = d
-	if d > 0 {
-		bp.timer = time.AfterFunc(d, func() {
-			bp.Drain()
-			bp.timer.Reset(d)
+func init() {
+	bytePool.d = time.Second * 4
+	if bytePool.d > 0 {
+		bytePool.timer = time.AfterFunc(bytePool.d, func() {
+			drain()
+			bytePool.timer.Reset(bytePool.d)
 		})
 	}
-	return bp
 }
 
-// BytePool is a pool of []byte.
-var BytePool = newBytePool(time.Second * 10)
+func drain() {
+	n := len(bytePool.pools)
+	for i := 0; i < n; i++ {
+		p := &bytePool.pools[i]
+		p.locker.Lock()
+		p.list = p.list[:len(p.list)>>1]
+		p.locker.Unlock()
+	}
+}
 
-// Get a []byte from pool.
-func (bp *bytePool) Get(size int) []byte {
+// Alloc a []byte from pool.
+func Alloc(size int) []byte {
 	if size < 1 || size > maxSize {
 		return make([]byte, size)
 	}
-	if bp.d > 0 {
-		bp.timer.Reset(bp.d)
+	if bytePool.d > 0 {
+		bytePool.timer.Reset(bytePool.d)
 	}
 	var bytes []byte
 	capacity := pow2roundup(size)
 	if capacity < 64 {
 		capacity = 64
 	}
-	p := &bp.pools[log2(capacity)-6]
+	p := &bytePool.pools[log2(capacity)-6]
 	p.locker.Lock()
 	if n := len(p.list); n > 0 {
 		bytes = p.list[n-1]
@@ -82,26 +87,14 @@ func (bp *bytePool) Get(size int) []byte {
 	return bytes[:size]
 }
 
-// Put a []byte to pool.
-func (bp *bytePool) Put(bytes []byte) {
+// Recycle a []byte to pool.
+func Recycle(bytes []byte) {
 	capacity := cap(bytes)
 	if capacity < 64 || capacity > maxSize || capacity != pow2roundup(capacity) {
 		return
 	}
-	p := &bp.pools[log2(capacity)-6]
+	p := &bytePool.pools[log2(capacity)-6]
 	p.locker.Lock()
 	p.list = append(p.list, bytes[:capacity])
 	p.locker.Unlock()
-
-}
-
-// Drain some items from the pool and make them available for garbage collection.
-func (bp *bytePool) Drain() {
-	n := len(bp.pools)
-	for i := 0; i < n; i++ {
-		p := &bp.pools[i]
-		p.locker.Lock()
-		p.list = p.list[:len(p.list)>>1]
-		p.locker.Unlock()
-	}
 }
