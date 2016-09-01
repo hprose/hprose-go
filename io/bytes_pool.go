@@ -20,14 +20,13 @@
 package io
 
 import (
-	"runtime"
 	"sync"
 	"time"
 )
 
 const (
-	poolNum = 30
-	maxSize = 1 << poolNum
+	poolNum = 20
+	maxSize = 1 << (poolNum + 5)
 )
 
 type pool struct {
@@ -36,37 +35,40 @@ type pool struct {
 }
 
 type bytesPool struct {
-	pools       [poolNum]pool
-	drainTicker *time.Ticker
+	pools [poolNum]pool
+	timer *time.Timer
+	d     time.Duration
 }
 
-func newBytesPool(drainPeriod time.Duration) (bp *bytesPool) {
+func newBytesPool(d time.Duration) (bp *bytesPool) {
 	bp = new(bytesPool)
-	if drainPeriod > 0 {
-		bp.drainTicker = time.NewTicker(drainPeriod)
-		go func() {
-			for _ = range bp.drainTicker.C {
-				bp.Drain()
-			}
-		}()
-		runtime.SetFinalizer(bp, func(bp *bytesPool) {
-			bp.Close()
+	bp.d = d
+	if d > 0 {
+		bp.timer = time.AfterFunc(d, func() {
+			bp.Drain()
+			bp.timer.Reset(d)
 		})
 	}
 	return bp
 }
 
 // BytesPool is a pool of []byte.
-var BytesPool = newBytesPool(time.Second * 8)
+var BytesPool = newBytesPool(time.Second * 2)
 
 // Get a []byte from pool.
 func (bp *bytesPool) Get(size int) []byte {
 	if size < 1 || size > maxSize {
 		return make([]byte, size)
 	}
+	if bp.d > 0 {
+		bp.timer.Reset(bp.d)
+	}
 	var bytes []byte
 	capacity := pow2roundup(size)
-	p := &bp.pools[log2(capacity)]
+	if capacity < 64 {
+		capacity = 64
+	}
+	p := &bp.pools[log2(capacity)-6]
 	p.locker.Lock()
 	if n := len(p.list); n > 0 {
 		bytes = p.list[n-1]
@@ -83,10 +85,10 @@ func (bp *bytesPool) Get(size int) []byte {
 // Put a []byte to pool.
 func (bp *bytesPool) Put(bytes []byte) {
 	capacity := cap(bytes)
-	if capacity < 1 || capacity > maxSize || capacity != pow2roundup(capacity) {
+	if capacity < 64 || capacity > maxSize || capacity != pow2roundup(capacity) {
 		return
 	}
-	p := &bp.pools[log2(capacity)]
+	p := &bp.pools[log2(capacity)-6]
 	p.locker.Lock()
 	p.list = append(p.list, bytes[:capacity])
 	p.locker.Unlock()
@@ -101,14 +103,5 @@ func (bp *bytesPool) Drain() {
 		p.locker.Lock()
 		p.list = p.list[:len(p.list)>>1]
 		p.locker.Unlock()
-	}
-}
-
-// Close the drain ticker.
-func (bp *bytesPool) Close() {
-	bp.Drain()
-	if bp.drainTicker != nil {
-		bp.drainTicker.Stop()
-		bp.drainTicker = nil
 	}
 }

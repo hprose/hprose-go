@@ -160,7 +160,7 @@ func BenchmarkRawReaderReadUTF8StringEmpty(b *testing.B) {
 func BenchmarkRawReaderReadUTF8String(b *testing.B) {
 	w := NewWriter(true)
 	s := "我爱你🇨🇳"
-	for i := 0; i < 21; i++ {
+	for i := 0; i < 20; i++ {
 		s += s
 	}
 	w.Serialize(s)
