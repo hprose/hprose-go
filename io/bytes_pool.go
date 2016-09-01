@@ -57,7 +57,7 @@ func newBytesPool(drainPeriod time.Duration) (bp *bytesPool) {
 }
 
 // BytesPool is a pool of []byte.
-var BytesPool = newBytesPool(time.Second * 10)
+var BytesPool = newBytesPool(time.Second * 8)
 
 // Get a []byte from pool.
 func (bp *bytesPool) Get(size int) []byte {
@@ -99,7 +99,7 @@ func (bp *bytesPool) Drain() {
 	for i := 0; i < n; i++ {
 		p := &bp.pools[i]
 		p.locker.Lock()
-		p.list = make([][]byte, 0, cap(p.list)/2)
+		p.list = p.list[:len(p.list)>>1]
 		p.locker.Unlock()
 	}
 }
