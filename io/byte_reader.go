@@ -12,7 +12,7 @@
  *                                                        *
  * byte reader for Go.                                    *
  *                                                        *
- * LastModified: Sep 1, 2016                              *
+ * LastModified: Sep 2, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -48,6 +48,29 @@ func (r *ByteReader) readByte() (b byte) {
 	b = r.buf[r.off]
 	r.off++
 	return
+}
+
+// UnreadByte unreads 1 byte from the current position.
+func (r *ByteReader) UnreadByte() error {
+	if r.off > 0 {
+		r.off--
+	}
+	return nil
+}
+
+func (r *ByteReader) unreadByte() {
+	if r.off > 0 {
+		r.off--
+	}
+}
+
+// Unread n bytes from the current position.
+func (r *ByteReader) Unread(n int) {
+	if r.off >= n {
+		r.off -= n
+	} else {
+		r.off = 0
+	}
 }
 
 // Read reads the next len(b) bytes from the buffer or until the buffer is
