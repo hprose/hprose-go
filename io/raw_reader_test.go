@@ -12,7 +12,7 @@
  *                                                        *
  * hprose RawReader Test for Go.                          *
  *                                                        *
- * LastModified: Sep 1, 2016                              *
+ * LastModified: Sep 2, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -28,10 +28,7 @@ func TestRawReaderTag(t *testing.T) {
 	w := NewWriter(true)
 	w.Serialize(nil)
 	rawReader := NewRawReader(w.Bytes())
-	raw, err := rawReader.ReadRaw()
-	if err != nil {
-		t.Error(err.Error())
-	}
+	raw := rawReader.ReadRaw()
 	if string(raw) != "n" {
 		t.Error("read tag error: ", string(raw))
 	}
@@ -41,10 +38,7 @@ func TestRawReaderNumber(t *testing.T) {
 	w := NewWriter(true)
 	w.Serialize(123)
 	rawReader := NewRawReader(w.Bytes())
-	raw, err := rawReader.ReadRaw()
-	if err != nil {
-		t.Error(err.Error())
-	}
+	raw := rawReader.ReadRaw()
 	if string(raw) != "i123;" {
 		t.Error("read integer error: ", string(raw))
 	}
@@ -54,10 +48,7 @@ func TestRawReaderChar(t *testing.T) {
 	w := NewWriter(true)
 	w.Serialize("我")
 	rawReader := NewRawReader(w.Bytes())
-	raw, err := rawReader.ReadRaw()
-	if err != nil {
-		t.Error(err.Error())
-	}
+	raw := rawReader.ReadRaw()
 	if string(raw) != `u我` {
 		t.Error("read char error: ", string(raw))
 	}
@@ -67,10 +58,7 @@ func TestRawReaderBytes(t *testing.T) {
 	w := NewWriter(true)
 	w.Serialize([]byte("hello world!"))
 	rawReader := NewRawReader(w.Bytes())
-	raw, err := rawReader.ReadRaw()
-	if err != nil {
-		t.Error(err.Error())
-	}
+	raw := rawReader.ReadRaw()
 	if string(raw) != `b12"hello world!"` {
 		t.Error("read bytes error: ", string(raw))
 	}
@@ -80,10 +68,7 @@ func TestRawReaderString(t *testing.T) {
 	w := NewWriter(true)
 	w.Serialize("我爱你!")
 	rawReader := NewRawReader(w.Bytes())
-	raw, err := rawReader.ReadRaw()
-	if err != nil {
-		t.Error(err.Error())
-	}
+	raw := rawReader.ReadRaw()
 	if string(raw) != `s4"我爱你!"` {
 		t.Error("read string error: ", string(raw))
 	}
@@ -91,10 +76,7 @@ func TestRawReaderString(t *testing.T) {
 
 func TestRawReaderGuid(t *testing.T) {
 	rawReader := NewRawReader([]byte("g{AFA7F4B1-A64D-46FA-886F-ED7FBCE569B6}"))
-	raw, err := rawReader.ReadRaw()
-	if err != nil {
-		t.Error(err.Error())
-	}
+	raw := rawReader.ReadRaw()
 	if string(raw) != "g{AFA7F4B1-A64D-46FA-886F-ED7FBCE569B6}" {
 		t.Error("read guid error: ", string(raw))
 	}
@@ -104,10 +86,7 @@ func TestRawReaderDateTime(t *testing.T) {
 	w := NewWriter(true)
 	w.Serialize(time.Date(2008, 12, 11, 23, 12, 21, 123433453, time.UTC))
 	rawReader := NewRawReader(w.Bytes())
-	raw, err := rawReader.ReadRaw()
-	if err != nil {
-		t.Error(err.Error())
-	}
+	raw := rawReader.ReadRaw()
 	if string(raw) != "D20081211T231221.123433453Z" {
 		t.Error("read datetime error: ", string(raw))
 	}
@@ -117,10 +96,7 @@ func TestRawReaderComplex(t *testing.T) {
 	w := NewWriter(true)
 	w.Serialize([]int{0, 1, 2, 3, 4, 5, 6, 7, 8, 9})
 	rawReader := NewRawReader(w.Bytes())
-	raw, err := rawReader.ReadRaw()
-	if err != nil {
-		t.Error(err.Error())
-	}
+	raw := rawReader.ReadRaw()
 	if string(raw) != "a10{0123456789}" {
 		t.Error("read complex error: ", string(raw))
 	}
@@ -134,10 +110,7 @@ func TestRawReaderStruct(t *testing.T) {
 	w := NewWriter(true)
 	w.Serialize(Person{"Tom", 18})
 	rawReader := NewRawReader(w.Bytes())
-	raw, err := rawReader.ReadRaw()
-	if err != nil {
-		t.Error(err.Error())
-	}
+	raw := rawReader.ReadRaw()
 	if string(raw) != `c6"Person"2{s4"name"s3"age"}o0{s3"Tom"i18;}` {
 		t.Error("read object error: ", string(raw))
 	}
@@ -167,7 +140,6 @@ func BenchmarkRawReaderReadUTF8String(b *testing.B) {
 	data := w.Bytes()
 	for i := 0; i < b.N; i++ {
 		rawReader := NewRawReader(data)
-		bytes, _ := rawReader.ReadRaw()
-		Recycle(bytes)
+		Recycle(rawReader.ReadRaw())
 	}
 }
