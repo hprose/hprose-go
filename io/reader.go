@@ -113,63 +113,47 @@ func resetReaderRef(r *Reader) {
 	}
 }
 
-func tagToString(tag byte) string {
-	switch tag {
-	case '0':
-	case '1':
-	case '2':
-	case '3':
-	case '4':
-	case '5':
-	case '6':
-	case '7':
-	case '8':
-	case '9':
-	case TagInteger:
-		return "int"
-	case TagLong:
-		return "big.Int"
-	case TagDouble:
-		return "float64"
-	case TagNull:
-		return "nil"
-	case TagEmpty:
-		return "empty string"
-	case TagTrue:
-		return "true"
-	case TagFalse:
-		return "false"
-	case TagNaN:
-		return "NaN"
-	case TagInfinity:
-		return "Infinity"
-	case TagDate:
-		return "time.Time"
-	case TagTime:
-		return "time.Time"
-	case TagBytes:
-		return "[]byte"
-	case TagUTF8Char:
-		return "string"
-	case TagString:
-		return "string"
-	case TagGUID:
-		return "GUID"
-	case TagList:
-		return "slice"
-	case TagMap:
-		return "map"
-	case TagClass:
-		return "struct"
-	case TagObject:
-		return "struct"
-	case TagRef:
-		return "reference"
-	default:
+var tagStringMap = map[byte]string{
+	'0':         "int",
+	'1':         "int",
+	'2':         "int",
+	'3':         "int",
+	'4':         "int",
+	'5':         "int",
+	'6':         "int",
+	'7':         "int",
+	'8':         "int",
+	'9':         "int",
+	TagInteger:  "int",
+	TagLong:     "big.Int",
+	TagDouble:   "float64",
+	TagNull:     "nil",
+	TagEmpty:    "empty string",
+	TagTrue:     "true",
+	TagFalse:    "false",
+	TagNaN:      "NaN",
+	TagInfinity: "Infinity",
+	TagDate:     "time.Time",
+	TagTime:     "time.Time",
+	TagBytes:    "[]byte",
+	TagUTF8Char: "string",
+	TagString:   "string",
+	TagGUID:     "GUID",
+	TagList:     "slice",
+	TagMap:      "map",
+	TagClass:    "struct",
+	TagObject:   "struct",
+	TagRef:      "reference",
+}
+
+func tagToString(tag byte) (str string) {
+	str = tagStringMap[tag]
+	if str == "" {
 		unexpectedTag(tag, nil)
 	}
-	return ""
+	return
 }
+
 func castError(tag byte, descType string) {
 	srcType := tagToString(tag)
 	panic(errors.New("can't convert " + srcType + " to " + descType))
