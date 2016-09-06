@@ -22,83 +22,36 @@ package io
 import "testing"
 
 func TestReadBool(t *testing.T) {
-	w := NewWriter(false)
-	w.Serialize(true)
-	w.Serialize(false)
-	w.Serialize(nil)
-	w.Serialize("")
-	w.Serialize(0)
-	w.Serialize(1)
-	w.Serialize(9)
-	w.Serialize(100)
-	w.Serialize(10000000000000)
-	w.Serialize(0.0)
-	w.Serialize("t")
-	w.Serialize("f")
 	trueValue := "true"
-	w.Serialize(&trueValue)
-	w.Serialize(&trueValue)
-	w.Serialize("false")
+	data := map[interface{}]bool{
+		true:            true,
+		false:           false,
+		nil:             false,
+		"":              false,
+		0:               false,
+		1:               true,
+		9:               true,
+		100:             true,
+		100000000000000: true,
+		0.0:             false,
+		"t":             true,
+		"f":             false,
+		&trueValue:      true,
+		&trueValue:      true,
+		"false":         false,
+	}
+	w := NewWriter(false)
+	keys := []interface{}{}
+	for k := range data {
+		w.Serialize(k)
+		keys = append(keys, k)
+	}
 	reader := NewReader(w.Bytes(), false)
-	b := reader.ReadBool()
-	if b != true {
-		t.Error(b)
-	}
-	b = reader.ReadBool()
-	if b != false {
-		t.Error(b)
-	}
-	b = reader.ReadBool()
-	if b != false {
-		t.Error(b)
-	}
-	b = reader.ReadBool()
-	if b != false {
-		t.Error(b)
-	}
-	b = reader.ReadBool()
-	if b != false {
-		t.Error(b)
-	}
-	b = reader.ReadBool()
-	if b != true {
-		t.Error(b)
-	}
-	b = reader.ReadBool()
-	if b != true {
-		t.Error(b)
-	}
-	b = reader.ReadBool()
-	if b != true {
-		t.Error(b)
-	}
-	b = reader.ReadBool()
-	if b != true {
-		t.Error(b)
-	}
-	b = reader.ReadBool()
-	if b != false {
-		t.Error(b)
-	}
-	b = reader.ReadBool()
-	if b != true {
-		t.Error(b)
-	}
-	b = reader.ReadBool()
-	if b != false {
-		t.Error(b)
-	}
-	b = reader.ReadBool()
-	if b != true {
-		t.Error(b)
-	}
-	b = reader.ReadBool()
-	if b != true {
-		t.Error(b)
-	}
-	b = reader.ReadBool()
-	if b != false {
-		t.Error(b)
+	for _, k := range keys {
+		b := reader.ReadBool()
+		if b != data[k] {
+			t.Error(k, data[k], b)
+		}
 	}
 	w.Close()
 }
