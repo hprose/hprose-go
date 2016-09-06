@@ -19,7 +19,10 @@
 
 package io
 
-import "math"
+import (
+	"math"
+	"unsafe"
+)
 
 const digits = "0123456789"
 
@@ -269,4 +272,8 @@ var debruijn = []int{
 
 func log2(x int) int {
 	return debruijn[uint32(x*0x077CB531)>>27]
+}
+
+func byteString(b []byte) string {
+	return *(*string)(unsafe.Pointer(&b))
 }
