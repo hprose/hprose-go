@@ -12,7 +12,7 @@
  *                                                        *
  * hprose raw reader for Go.                              *
  *                                                        *
- * LastModified: Sep 2, 2016                              *
+ * LastModified: Sep 6, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -99,7 +99,7 @@ func (r *RawReader) readDateTimeRaw(w *ByteWriter) {
 }
 
 func (r *RawReader) readUTF8CharRaw(w *ByteWriter) {
-	w.write(r.readUTF8Slice(1))
+	w.write(readUTF8Slice(&r.ByteReader, 1))
 }
 
 func (r *RawReader) readBytesRaw(w *ByteWriter) {
@@ -127,7 +127,7 @@ func (r *RawReader) readStringRaw(w *ByteWriter) {
 		tag = r.readByte()
 		w.writeByte(tag)
 		if tag == TagQuote {
-			w.write(r.readUTF8Slice(count + 1))
+			w.write(readUTF8Slice(&r.ByteReader, count+1))
 			return
 		}
 	}
@@ -149,38 +149,6 @@ func (r *RawReader) readComplexRaw(w *ByteWriter) {
 		tag = r.readByte()
 	}
 	w.writeByte(tag)
-}
-
-func (r *RawReader) readUTF8Slice(length int) []byte {
-	var empty = []byte{}
-	if length == 0 {
-		return empty
-	}
-	p := r.off
-	for i := 0; i < length; i++ {
-		b := r.buf[r.off]
-		switch b >> 4 {
-		case 0, 1, 2, 3, 4, 5, 6, 7:
-			r.off++
-		case 12, 13:
-			r.off += 2
-		case 14:
-			r.off += 3
-		case 15:
-			if b&8 == 8 {
-				panic(errors.New("bad utf-8 encode"))
-			}
-			r.off += 4
-			i++
-		default:
-			panic(errors.New("bad utf-8 encode"))
-		}
-	}
-	return r.buf[p:r.off]
-}
-
-func (r *RawReader) readUTF8String(length int) string {
-	return string(r.readUTF8Slice(length))
 }
 
 // private functions
