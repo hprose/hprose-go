@@ -25,6 +25,7 @@ import (
 	"io"
 	"math"
 	"math/big"
+	"strconv"
 )
 
 // ByteReader implements the io.Reader and io.ByteReader interfaces by reading
@@ -192,6 +193,24 @@ func readUntil(r *ByteReader, tag byte) (result []byte) {
 	}
 	r.off += i + 1
 	return result[:i]
+}
+
+func readFloat32(r *ByteReader) float32 {
+	s := byteString(readUntil(r, TagSemicolon))
+	f, e := strconv.ParseFloat(s, 32)
+	if e != nil {
+		panic(e)
+	}
+	return float32(f)
+}
+
+func readFloat64(r *ByteReader) float64 {
+	s := byteString(readUntil(r, TagSemicolon))
+	f, e := strconv.ParseFloat(s, 64)
+	if e != nil {
+		panic(e)
+	}
+	return f
 }
 
 func readUTF8Slice(r *ByteReader, length int) []byte {

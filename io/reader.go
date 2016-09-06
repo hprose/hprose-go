@@ -22,6 +22,7 @@ package io
 import (
 	"bytes"
 	"errors"
+	"reflect"
 )
 
 // Reader is a fine-grained operation struct for Hprose unserialization
@@ -41,6 +42,19 @@ func NewReader(buf []byte, simple bool) (reader *Reader) {
 	reader.buf = buf
 	reader.Simple = simple
 	return
+}
+
+// Unserialize a data from the reader
+func (r *Reader) Unserialize(p interface{}) {
+	v := reflect.ValueOf(p)
+	if v.Kind() != reflect.Ptr {
+		panic(errors.New("Unserialize: argument p must be a pointer"))
+	}
+	e := v.Elem()
+	decoder := valueDecoders[e.Kind()]
+	if decoder != nil {
+		decoder(r, e)
+	}
 }
 
 // CheckTag the next byte in reader is the expected tag or not
@@ -70,6 +84,66 @@ func (r *Reader) ReadBool() bool {
 	}
 	castError(tag, "bool")
 	return false
+}
+
+// ReadIntWithoutTag from the reader
+func (r *Reader) ReadIntWithoutTag() int {
+	return readInt(&r.ByteReader)
+}
+
+// ReadInt from the reader
+func (r *Reader) ReadInt() int {
+	tag := r.readByte()
+	decoder := intDecoders[tag]
+	if decoder != nil {
+		return int(decoder(r))
+	}
+	castError(tag, "int")
+	return 0
+}
+
+// ReadInt8 from the reader
+func (r *Reader) ReadInt8() int8 {
+	tag := r.readByte()
+	decoder := intDecoders[tag]
+	if decoder != nil {
+		return int8(decoder(r))
+	}
+	castError(tag, "int8")
+	return 0
+}
+
+// ReadInt16 from the reader
+func (r *Reader) ReadInt16() int16 {
+	tag := r.readByte()
+	decoder := intDecoders[tag]
+	if decoder != nil {
+		return int16(decoder(r))
+	}
+	castError(tag, "int16")
+	return 0
+}
+
+// ReadInt32 from the reader
+func (r *Reader) ReadInt32() int32 {
+	tag := r.readByte()
+	decoder := intDecoders[tag]
+	if decoder != nil {
+		return int32(decoder(r))
+	}
+	castError(tag, "int32")
+	return 0
+}
+
+// ReadInt64 from the reader
+func (r *Reader) ReadInt64() int64 {
+	tag := r.readByte()
+	decoder := intDecoders[tag]
+	if decoder != nil {
+		return int64(decoder(r))
+	}
+	castError(tag, "int64")
+	return 0
 }
 
 // ReadStringWithoutTag from the reader
