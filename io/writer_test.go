@@ -8,9 +8,9 @@
 \**********************************************************/
 /**********************************************************\
  *                                                        *
- * io/w_test.go                                      *
+ * io/writer_test.go                                      *
  *                                                        *
- * hprose w test for Go.                             *
+ * hprose writer test for Go.                             *
  *                                                        *
  * LastModified: Aug 29, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *

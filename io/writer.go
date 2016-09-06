@@ -32,17 +32,17 @@ import (
 // Writer is a fine-grained operation struct for Hprose serialization
 type Writer struct {
 	ByteWriter
-	Simple   bool
-	classref map[uintptr]int
-	ref      map[uintptr]int
-	refcount int
+	Simple    bool
+	structRef map[uintptr]int
+	ref       map[uintptr]int
+	refCount  int
 }
 
 // NewWriter is the constructor for Hprose Writer
 func NewWriter(simple bool) (w *Writer) {
 	w = new(Writer)
 	w.Simple = simple
-	w.classref = map[uintptr]int{}
+	w.structRef = map[uintptr]int{}
 	if !simple {
 		w.ref = map[uintptr]int{}
 	}
@@ -506,13 +506,13 @@ func (w *Writer) WriteBytesSlice(slice [][]byte) {
 
 // Reset the reference counter
 func (w *Writer) Reset() {
-	for k := range w.classref {
-		delete(w.classref, k)
+	for k := range w.structRef {
+		delete(w.structRef, k)
 	}
 	if w.Simple {
 		return
 	}
-	w.refcount = 0
+	w.refCount = 0
 	for k := range w.ref {
 		delete(w.ref, k)
 	}
@@ -539,9 +539,9 @@ func setWriterRef(writer *Writer, ref unsafe.Pointer) {
 		return
 	}
 	if ref != nil {
-		writer.ref[uintptr(ref)] = writer.refcount
+		writer.ref[uintptr(ref)] = writer.refCount
 	}
-	writer.refcount++
+	writer.refCount++
 }
 
 func writeString(w *Writer, str string, length int) {
@@ -705,14 +705,14 @@ func writeMapPtr(w *Writer, v reflect.Value) {
 func writeStruct(w *Writer, v reflect.Value) {
 	val := (*reflectValue)(unsafe.Pointer(&v))
 	cache := getStructCache(v.Type().Elem())
-	index, found := w.classref[val.typ]
+	index, found := w.structRef[val.typ]
 	if !found {
 		w.write(cache.Data)
 		if !w.Simple {
-			w.refcount += len(cache.Fields)
+			w.refCount += len(cache.Fields)
 		}
-		index = len(w.classref)
-		w.classref[val.typ] = index
+		index = len(w.structRef)
+		w.structRef[val.typ] = index
 	}
 	setWriterRef(w, val.ptr)
 	w.writeByte(TagObject)
