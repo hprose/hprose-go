@@ -12,7 +12,7 @@
  *                                                        *
  * hprose encoder for Go.                                 *
  *                                                        *
- * LastModified: Sep 1, 2016                              *
+ * LastModified: Sep 6, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -73,19 +73,19 @@ func interfaceEncoder(w *Writer, v reflect.Value) {
 }
 
 func arrayEncoder(w *Writer, v reflect.Value) {
-	setRef(w, nil)
+	setWriterRef(w, nil)
 	writeArray(w, v)
 }
 
 func sliceEncoder(w *Writer, v reflect.Value) {
-	setRef(w, nil)
+	setWriterRef(w, nil)
 	writeSlice(w, v)
 }
 
 func mapEncoder(w *Writer, v reflect.Value) {
 	ptr := (*reflectValue)(unsafe.Pointer(&v)).ptr
 	if !writeRef(w, ptr) {
-		setRef(w, ptr)
+		setWriterRef(w, ptr)
 		writeMap(w, v)
 	}
 }
@@ -102,21 +102,21 @@ func structEncoder(w *Writer, v reflect.Value) {
 
 func arrayPtrEncoder(w *Writer, v reflect.Value, ptr unsafe.Pointer) {
 	if !writeRef(w, ptr) {
-		setRef(w, ptr)
+		setWriterRef(w, ptr)
 		writeArray(w, v)
 	}
 }
 
 func mapPtrEncoder(w *Writer, v reflect.Value, ptr unsafe.Pointer) {
 	if !writeRef(w, ptr) {
-		setRef(w, ptr)
+		setWriterRef(w, ptr)
 		writeMapPtr(w, v)
 	}
 }
 
 func slicePtrEncoder(w *Writer, v reflect.Value, ptr unsafe.Pointer) {
 	if !writeRef(w, ptr) {
-		setRef(w, ptr)
+		setWriterRef(w, ptr)
 		writeSlice(w, v)
 	}
 }
@@ -134,7 +134,7 @@ func stringPtrEncoder(w *Writer, v reflect.Value, ptr unsafe.Pointer) {
 		w.writeString(str)
 	default:
 		if !writeRef(w, ptr) {
-			setRef(w, ptr)
+			setWriterRef(w, ptr)
 			writeString(w, str, length)
 		}
 	}

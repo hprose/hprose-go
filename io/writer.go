@@ -135,7 +135,7 @@ func (w *Writer) WriteComplex64(c complex64) {
 		w.WriteFloat(float64(real(c)), 32)
 		return
 	}
-	setRef(w, nil)
+	setWriterRef(w, nil)
 	writeListHeader(w, 2)
 	w.WriteFloat(float64(real(c)), 32)
 	w.WriteFloat(float64(imag(c)), 32)
@@ -148,7 +148,7 @@ func (w *Writer) WriteComplex128(c complex128) {
 		w.WriteFloat(real(c), 64)
 		return
 	}
-	setRef(w, nil)
+	setWriterRef(w, nil)
 	writeListHeader(w, 2)
 	w.WriteFloat(real(c), 64)
 	w.WriteFloat(imag(c), 64)
@@ -167,14 +167,14 @@ func (w *Writer) WriteString(str string) {
 		w.writeByte(TagUTF8Char)
 		w.writeString(str)
 	default:
-		setRef(w, nil)
+		setWriterRef(w, nil)
 		writeString(w, str, length)
 	}
 }
 
 // WriteBytes to the writer
 func (w *Writer) WriteBytes(bytes []byte) {
-	setRef(w, nil)
+	setWriterRef(w, nil)
 	writeBytes(w, bytes)
 }
 
@@ -191,7 +191,7 @@ func (w *Writer) WriteBigRat(br *big.Rat) {
 		w.WriteBigInt(br.Num())
 	} else {
 		str := br.String()
-		setRef(w, nil)
+		setWriterRef(w, nil)
 		writeString(w, str, len(str))
 	}
 }
@@ -210,7 +210,7 @@ func (w *Writer) WriteTime(t *time.Time) {
 	if writeRef(w, ptr) {
 		return
 	}
-	setRef(w, ptr)
+	setWriterRef(w, ptr)
 	year, month, day := t.Date()
 	hour, min, sec := t.Clock()
 	nsec := t.Nanosecond()
@@ -242,7 +242,7 @@ func (w *Writer) WriteList(lst *list.List) {
 	if writeRef(w, ptr) {
 		return
 	}
-	setRef(w, ptr)
+	setWriterRef(w, ptr)
 	count := lst.Len()
 	if count == 0 {
 		writeEmptyList(w)
@@ -257,7 +257,7 @@ func (w *Writer) WriteList(lst *list.List) {
 
 // WriteTuple to the writer
 func (w *Writer) WriteTuple(tuple ...interface{}) {
-	setRef(w, nil)
+	setWriterRef(w, nil)
 	count := len(tuple)
 	if count == 0 {
 		writeEmptyList(w)
@@ -272,7 +272,7 @@ func (w *Writer) WriteTuple(tuple ...interface{}) {
 
 // WriteBoolSlice to the writer
 func (w *Writer) WriteBoolSlice(slice []bool) {
-	setRef(w, nil)
+	setWriterRef(w, nil)
 	count := len(slice)
 	if count == 0 {
 		writeEmptyList(w)
@@ -285,7 +285,7 @@ func (w *Writer) WriteBoolSlice(slice []bool) {
 
 // WriteIntSlice to the writer
 func (w *Writer) WriteIntSlice(slice []int) {
-	setRef(w, nil)
+	setWriterRef(w, nil)
 	count := len(slice)
 	if count == 0 {
 		writeEmptyList(w)
@@ -298,7 +298,7 @@ func (w *Writer) WriteIntSlice(slice []int) {
 
 // WriteInt8Slice to the writer
 func (w *Writer) WriteInt8Slice(slice []int8) {
-	setRef(w, nil)
+	setWriterRef(w, nil)
 	count := len(slice)
 	if count == 0 {
 		writeEmptyList(w)
@@ -311,7 +311,7 @@ func (w *Writer) WriteInt8Slice(slice []int8) {
 
 // WriteInt16Slice to the writer
 func (w *Writer) WriteInt16Slice(slice []int16) {
-	setRef(w, nil)
+	setWriterRef(w, nil)
 	count := len(slice)
 	if count == 0 {
 		writeEmptyList(w)
@@ -324,7 +324,7 @@ func (w *Writer) WriteInt16Slice(slice []int16) {
 
 // WriteInt32Slice to the writer
 func (w *Writer) WriteInt32Slice(slice []int32) {
-	setRef(w, nil)
+	setWriterRef(w, nil)
 	count := len(slice)
 	if count == 0 {
 		writeEmptyList(w)
@@ -337,7 +337,7 @@ func (w *Writer) WriteInt32Slice(slice []int32) {
 
 // WriteInt64Slice to the writer
 func (w *Writer) WriteInt64Slice(slice []int64) {
-	setRef(w, nil)
+	setWriterRef(w, nil)
 	count := len(slice)
 	if count == 0 {
 		writeEmptyList(w)
@@ -350,7 +350,7 @@ func (w *Writer) WriteInt64Slice(slice []int64) {
 
 // WriteUintSlice to the writer
 func (w *Writer) WriteUintSlice(slice []uint) {
-	setRef(w, nil)
+	setWriterRef(w, nil)
 	count := len(slice)
 	if count == 0 {
 		writeEmptyList(w)
@@ -363,7 +363,7 @@ func (w *Writer) WriteUintSlice(slice []uint) {
 
 // WriteUint8Slice to the writer
 func (w *Writer) WriteUint8Slice(slice []uint8) {
-	setRef(w, nil)
+	setWriterRef(w, nil)
 	count := len(slice)
 	if count == 0 {
 		writeEmptyList(w)
@@ -376,7 +376,7 @@ func (w *Writer) WriteUint8Slice(slice []uint8) {
 
 // WriteUint16Slice to the writer
 func (w *Writer) WriteUint16Slice(slice []uint16) {
-	setRef(w, nil)
+	setWriterRef(w, nil)
 	count := len(slice)
 	if count == 0 {
 		writeEmptyList(w)
@@ -389,7 +389,7 @@ func (w *Writer) WriteUint16Slice(slice []uint16) {
 
 // WriteUint32Slice to the writer
 func (w *Writer) WriteUint32Slice(slice []uint32) {
-	setRef(w, nil)
+	setWriterRef(w, nil)
 	count := len(slice)
 	if count == 0 {
 		writeEmptyList(w)
@@ -402,7 +402,7 @@ func (w *Writer) WriteUint32Slice(slice []uint32) {
 
 // WriteUint64Slice to the writer
 func (w *Writer) WriteUint64Slice(slice []uint64) {
-	setRef(w, nil)
+	setWriterRef(w, nil)
 	count := len(slice)
 	if count == 0 {
 		writeEmptyList(w)
@@ -415,7 +415,7 @@ func (w *Writer) WriteUint64Slice(slice []uint64) {
 
 // WriteUintptrSlice to the writer
 func (w *Writer) WriteUintptrSlice(slice []uintptr) {
-	setRef(w, nil)
+	setWriterRef(w, nil)
 	count := len(slice)
 	if count == 0 {
 		writeEmptyList(w)
@@ -428,7 +428,7 @@ func (w *Writer) WriteUintptrSlice(slice []uintptr) {
 
 // WriteFloat32Slice to the writer
 func (w *Writer) WriteFloat32Slice(slice []float32) {
-	setRef(w, nil)
+	setWriterRef(w, nil)
 	count := len(slice)
 	if count == 0 {
 		writeEmptyList(w)
@@ -441,7 +441,7 @@ func (w *Writer) WriteFloat32Slice(slice []float32) {
 
 // WriteFloat64Slice to the writer
 func (w *Writer) WriteFloat64Slice(slice []float64) {
-	setRef(w, nil)
+	setWriterRef(w, nil)
 	count := len(slice)
 	if count == 0 {
 		writeEmptyList(w)
@@ -454,7 +454,7 @@ func (w *Writer) WriteFloat64Slice(slice []float64) {
 
 // WriteComplex64Slice to the writer
 func (w *Writer) WriteComplex64Slice(slice []complex64) {
-	setRef(w, nil)
+	setWriterRef(w, nil)
 	count := len(slice)
 	if count == 0 {
 		writeEmptyList(w)
@@ -467,7 +467,7 @@ func (w *Writer) WriteComplex64Slice(slice []complex64) {
 
 // WriteComplex128Slice to the writer
 func (w *Writer) WriteComplex128Slice(slice []complex128) {
-	setRef(w, nil)
+	setWriterRef(w, nil)
 	count := len(slice)
 	if count == 0 {
 		writeEmptyList(w)
@@ -480,7 +480,7 @@ func (w *Writer) WriteComplex128Slice(slice []complex128) {
 
 // WriteStringSlice to the writer
 func (w *Writer) WriteStringSlice(slice []string) {
-	setRef(w, nil)
+	setWriterRef(w, nil)
 	count := len(slice)
 	if count == 0 {
 		writeEmptyList(w)
@@ -493,7 +493,7 @@ func (w *Writer) WriteStringSlice(slice []string) {
 
 // WriteBytesSlice to the writer
 func (w *Writer) WriteBytesSlice(slice [][]byte) {
-	setRef(w, nil)
+	setWriterRef(w, nil)
 	count := len(slice)
 	if count == 0 {
 		writeEmptyList(w)
@@ -534,7 +534,7 @@ func writeRef(w *Writer, ref unsafe.Pointer) bool {
 	return found
 }
 
-func setRef(writer *Writer, ref unsafe.Pointer) {
+func setWriterRef(writer *Writer, ref unsafe.Pointer) {
 	if writer.Simple {
 		return
 	}
@@ -714,7 +714,7 @@ func writeStruct(w *Writer, v reflect.Value) {
 		index = len(w.classref)
 		w.classref[val.typ] = index
 	}
-	setRef(w, val.ptr)
+	setWriterRef(w, val.ptr)
 	w.writeByte(TagObject)
 	var buf [20]byte
 	w.write(getIntBytes(buf[:], int64(index)))
