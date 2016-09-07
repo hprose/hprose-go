@@ -12,7 +12,7 @@
  *                                                        *
  * hprose reader for Go.                                  *
  *                                                        *
- * LastModified: Sep 6, 2016                              *
+ * LastModified: Sep 7, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -140,9 +140,75 @@ func (r *Reader) ReadInt64() int64 {
 	tag := r.readByte()
 	decoder := intDecoders[tag]
 	if decoder != nil {
-		return int64(decoder(r))
+		return decoder(r)
 	}
 	castError(tag, "int64")
+	return 0
+}
+
+// ReadUint from the reader
+func (r *Reader) ReadUint() uint {
+	tag := r.readByte()
+	decoder := uintDecoders[tag]
+	if decoder != nil {
+		return uint(decoder(r))
+	}
+	castError(tag, "uint")
+	return 0
+}
+
+// ReadUint8 from the reader
+func (r *Reader) ReadUint8() uint8 {
+	tag := r.readByte()
+	decoder := uintDecoders[tag]
+	if decoder != nil {
+		return uint8(decoder(r))
+	}
+	castError(tag, "uint8")
+	return 0
+}
+
+// ReadUint16 from the reader
+func (r *Reader) ReadUint16() uint16 {
+	tag := r.readByte()
+	decoder := uintDecoders[tag]
+	if decoder != nil {
+		return uint16(decoder(r))
+	}
+	castError(tag, "uint16")
+	return 0
+}
+
+// ReadUint32 from the reader
+func (r *Reader) ReadUint32() uint32 {
+	tag := r.readByte()
+	decoder := uintDecoders[tag]
+	if decoder != nil {
+		return uint32(decoder(r))
+	}
+	castError(tag, "uint32")
+	return 0
+}
+
+// ReadUint64 from the reader
+func (r *Reader) ReadUint64() uint64 {
+	tag := r.readByte()
+	decoder := uintDecoders[tag]
+	if decoder != nil {
+		return decoder(r)
+	}
+	castError(tag, "uint64")
+	return 0
+}
+
+// ReadUintptr from the reader
+func (r *Reader) ReadUintptr() uintptr {
+	tag := r.readByte()
+	decoder := uintDecoders[tag]
+	if decoder != nil {
+		return uintptr(decoder(r))
+	}
+	castError(tag, "uintptr")
 	return 0
 }
 

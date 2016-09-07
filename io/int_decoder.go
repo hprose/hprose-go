@@ -45,7 +45,7 @@ func readUTF8CharAsInt(r *Reader) int64 {
 	return stringToInt(byteString(readUTF8Slice(&r.ByteReader, 1)))
 }
 
-func readStringAsIntInt(r *Reader) int64 {
+func readStringAsInt(r *Reader) int64 {
 	return stringToInt(r.ReadStringWithoutTag())
 }
 
@@ -56,7 +56,7 @@ func readRefAsInt(r *Reader) int64 {
 	}
 	panic(errors.New("value of type " +
 		reflect.TypeOf(ref).String() +
-		" cannot be converted to type bool"))
+		" cannot be converted to type int"))
 }
 
 var intDecoders = [256]func(r *Reader) int64{
@@ -78,7 +78,7 @@ var intDecoders = [256]func(r *Reader) int64{
 	TagLong:     readInt64,
 	TagDouble:   readFloat64AsInt64,
 	TagUTF8Char: readUTF8CharAsInt,
-	TagString:   readStringAsIntInt,
+	TagString:   readStringAsInt,
 	TagRef:      readRefAsInt,
 }
 
