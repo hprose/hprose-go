@@ -8,9 +8,9 @@
 \**********************************************************/
 /**********************************************************\
  *                                                        *
- * io/int_decoder.go                                      *
+ * io/uint_decoder.go                                     *
  *                                                        *
- * hprose int decoder for Go.                             *
+ * hprose uint decoder for Go.                            *
  *                                                        *
  * LastModified: Sep 7, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
@@ -23,13 +23,14 @@ import (
 	"errors"
 	"reflect"
 	"strconv"
+	"time"
 )
 
 func readUint64(r *Reader) uint64 {
 	return ReadUint64(&r.ByteReader, TagSemicolon)
 }
 
-func readFloat64AsUint64(r *Reader) uint64 {
+func readFloat64AsUint(r *Reader) uint64 {
 	return uint64(readFloat64(&r.ByteReader))
 }
 
@@ -49,10 +50,21 @@ func readStringAsUint(r *Reader) uint64 {
 	return stringToUint(r.ReadStringWithoutTag())
 }
 
+func readDateTimeAsUint(r *Reader) uint64 {
+	return uint64(r.ReadDateTimeWithoutTag().UnixNano())
+}
+
+func readTimeAsUint(r *Reader) uint64 {
+	return uint64(r.ReadTimeWithoutTag().UnixNano())
+}
+
 func readRefAsUint(r *Reader) uint64 {
 	ref := r.ReadRef()
 	if str, ok := ref.(string); ok {
 		return stringToUint(str)
+	}
+	if t, ok := ref.(*time.Time); ok {
+		return uint64(t.UnixNano())
 	}
 	panic(errors.New("value of type " +
 		reflect.TypeOf(ref).String() +
@@ -76,9 +88,11 @@ var uintDecoders = [256]func(r *Reader) uint64{
 	TagTrue:     func(r *Reader) uint64 { return 1 },
 	TagInteger:  readUint64,
 	TagLong:     readUint64,
-	TagDouble:   readFloat64AsUint64,
+	TagDouble:   readFloat64AsUint,
 	TagUTF8Char: readUTF8CharAsUint,
 	TagString:   readStringAsUint,
+	TagDate:     readDateTimeAsUint,
+	TagTime:     readTimeAsUint,
 	TagRef:      readRefAsUint,
 }
 

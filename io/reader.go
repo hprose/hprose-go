@@ -23,6 +23,7 @@ import (
 	"bytes"
 	"errors"
 	"reflect"
+	"time"
 )
 
 // Reader is a fine-grained operation struct for Hprose unserialization
@@ -113,6 +114,17 @@ func (r *Reader) ReadUint() uint64 {
 	return 0
 }
 
+// ReadFloat32 from the reader
+func (r *Reader) ReadFloat32() float32 {
+	tag := r.readByte()
+	decoder := float32Decoders[tag]
+	if decoder != nil {
+		return decoder(r)
+	}
+	castError(tag, "float32")
+	return 0
+}
+
 // ReadStringWithoutTag from the reader
 func (r *Reader) ReadStringWithoutTag() (str string) {
 	str = readString(&r.ByteReader)
@@ -125,6 +137,42 @@ func (r *Reader) ReadStringWithoutTag() (str string) {
 // ReadString from the reader
 func (r *Reader) ReadString() (str string) {
 	return ""
+}
+
+// ReadDateTimeWithoutTag from the reader
+func (r *Reader) ReadDateTimeWithoutTag() (dt time.Time) {
+	year, month, day, tag := readDate(&r.ByteReader)
+	var hour, min, sec, nsec int
+	if tag == TagTime {
+		hour, min, sec, nsec, tag = readTime(&r.ByteReader)
+	}
+	var loc *time.Location
+	if tag == TagUTC {
+		loc = time.UTC
+	} else {
+		loc = time.Local
+	}
+	dt = time.Date(year, time.Month(month), day, hour, min, sec, nsec, loc)
+	if !r.Simple {
+		setReaderRef(r, &dt)
+	}
+	return
+}
+
+// ReadTimeWithoutTag from the reader
+func (r *Reader) ReadTimeWithoutTag() (t time.Time) {
+	hour, min, sec, nsec, tag := readTime(&r.ByteReader)
+	var loc *time.Location
+	if tag == TagUTC {
+		loc = time.UTC
+	} else {
+		loc = time.Local
+	}
+	t = time.Date(1970, 1, 1, hour, min, sec, nsec, loc)
+	if !r.Simple {
+		setReaderRef(r, &t)
+	}
+	return
 }
 
 // ReadRef from the reader

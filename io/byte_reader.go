@@ -266,7 +266,7 @@ func readBigFloat(r *ByteReader) (result *big.Float) {
 	return
 }
 
-func readInf(r *ByteReader) (result float64) {
+func readInf(r *ByteReader) float64 {
 	// '+' - '+' == 0 >= 0, return positive infinity
 	// '+' - '-' == -2 < 0, return negative infinity
 	return math.Inf(int(TagPos - r.readByte()))

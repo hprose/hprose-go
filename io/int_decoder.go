@@ -23,13 +23,14 @@ import (
 	"errors"
 	"reflect"
 	"strconv"
+	"time"
 )
 
 func readInt64(r *Reader) int64 {
 	return ReadInt64(&r.ByteReader, TagSemicolon)
 }
 
-func readFloat64AsInt64(r *Reader) int64 {
+func readFloat64AsInt(r *Reader) int64 {
 	return int64(readFloat64(&r.ByteReader))
 }
 
@@ -49,10 +50,21 @@ func readStringAsInt(r *Reader) int64 {
 	return stringToInt(r.ReadStringWithoutTag())
 }
 
+func readDateTimeAsInt(r *Reader) int64 {
+	return r.ReadDateTimeWithoutTag().UnixNano()
+}
+
+func readTimeAsInt(r *Reader) int64 {
+	return r.ReadTimeWithoutTag().UnixNano()
+}
+
 func readRefAsInt(r *Reader) int64 {
 	ref := r.ReadRef()
 	if str, ok := ref.(string); ok {
 		return stringToInt(str)
+	}
+	if t, ok := ref.(*time.Time); ok {
+		return t.UnixNano()
 	}
 	panic(errors.New("value of type " +
 		reflect.TypeOf(ref).String() +
@@ -76,9 +88,11 @@ var intDecoders = [256]func(r *Reader) int64{
 	TagTrue:     func(r *Reader) int64 { return 1 },
 	TagInteger:  readInt64,
 	TagLong:     readInt64,
-	TagDouble:   readFloat64AsInt64,
+	TagDouble:   readFloat64AsInt,
 	TagUTF8Char: readUTF8CharAsInt,
 	TagString:   readStringAsInt,
+	TagDate:     readDateTimeAsInt,
+	TagTime:     readTimeAsInt,
 	TagRef:      readRefAsInt,
 }
 
