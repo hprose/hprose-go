@@ -125,6 +125,17 @@ func (r *Reader) ReadFloat32() float32 {
 	return 0
 }
 
+// ReadFloat64 from the reader
+func (r *Reader) ReadFloat64() float64 {
+	tag := r.readByte()
+	decoder := float64Decoders[tag]
+	if decoder != nil {
+		return decoder(r)
+	}
+	castError(tag, "float64")
+	return 0
+}
+
 // ReadStringWithoutTag from the reader
 func (r *Reader) ReadStringWithoutTag() (str string) {
 	str = readString(&r.ByteReader)

@@ -24,6 +24,7 @@ import (
 	"math"
 	"reflect"
 	"strconv"
+	"time"
 )
 
 func readLongAsFloat32(r *Reader) float32 {
@@ -50,20 +51,25 @@ func readStringAsFloat32(r *Reader) float32 {
 	return stringToFloat32(r.ReadStringWithoutTag())
 }
 
+func timeToFloat32(t time.Time) float32 {
+	return float32(t.Unix()) + float32(t.Nanosecond())/1000000000
+}
+
 func readDateTimeAsFloat32(r *Reader) float32 {
-	dt := r.ReadDateTimeWithoutTag()
-	return float32(dt.Unix()) + float32(dt.Nanosecond())/1000000000
+	return timeToFloat32(r.ReadDateTimeWithoutTag())
 }
 
 func readTimeAsFloat32(r *Reader) float32 {
-	t := r.ReadTimeWithoutTag()
-	return float32(t.Unix()) + float32(t.Nanosecond())/1000000000
+	return timeToFloat32(r.ReadTimeWithoutTag())
 }
 
 func readRefAsFloat32(r *Reader) float32 {
 	ref := r.ReadRef()
 	if str, ok := ref.(string); ok {
 		return stringToFloat32(str)
+	}
+	if t, ok := ref.(*time.Time); ok {
+		return timeToFloat32(*t)
 	}
 	panic(errors.New("value of type " +
 		reflect.TypeOf(ref).String() +

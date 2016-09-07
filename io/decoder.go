@@ -48,7 +48,7 @@ func init() {
 		reflect.Uint64:  uintDecoder,
 		reflect.Uintptr: uintDecoder,
 		reflect.Float32: float32Decoder,
-		// reflect.Float64:       float64Decoder,
+		reflect.Float64: float64Decoder,
 		// reflect.Complex64:     complex64Decoder,
 		// reflect.Complex128:    complex128Decoder,
 		// reflect.Array:         arrayDecoder,

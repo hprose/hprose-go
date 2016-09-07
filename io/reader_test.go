@@ -455,3 +455,109 @@ func BenchmarkUnserializeFloat32(b *testing.B) {
 	}
 	w.Close()
 }
+
+func TestReadFloat64(t *testing.T) {
+	floatValue := "3.14159"
+	data := map[interface{}]float64{
+		true:                             1,
+		false:                            0,
+		nil:                              0,
+		"":                               0,
+		0:                                0,
+		1:                                1,
+		9:                                9,
+		100:                              100,
+		math.MaxFloat32:                  math.MaxFloat32,
+		math.MaxFloat64:                  math.MaxFloat64,
+		0.0:                              0,
+		"1":                              1,
+		"9":                              9,
+		&floatValue:                      3.14159,
+		time.Unix(123, 456):              float64(123.000000456),
+		time.Unix(1234567890, 123456789): float64(1234567890.123456789),
+	}
+	w := NewWriter(false)
+	keys := []interface{}{}
+	for k := range data {
+		w.Serialize(k)
+		keys = append(keys, k)
+	}
+	w.Serialize(&floatValue)
+	reader := NewReader(w.Bytes(), false)
+	for _, k := range keys {
+		x := reader.ReadFloat64()
+		if x != data[k] {
+			t.Error(k, data[k], x)
+		}
+	}
+	x := reader.ReadFloat64()
+	if x != float64(3.14159) {
+		t.Error(floatValue, 3.14159, x)
+	}
+	w.Close()
+}
+
+func TestUnserializeFloat64(t *testing.T) {
+	floatValue := "3.14159"
+	data := map[interface{}]float64{
+		true:                             1,
+		false:                            0,
+		nil:                              0,
+		"":                               0,
+		0:                                0,
+		1:                                1,
+		9:                                9,
+		100:                              100,
+		math.MaxFloat32:                  math.MaxFloat32,
+		math.MaxFloat64:                  math.MaxFloat64,
+		0.0:                              0,
+		"1":                              1,
+		"9":                              9,
+		&floatValue:                      3.14159,
+		time.Unix(123, 456):              float64(123.000000456),
+		time.Unix(1234567890, 123456789): float64(1234567890.123456789),
+	}
+	w := NewWriter(false)
+	keys := []interface{}{}
+	for k := range data {
+		w.Serialize(k)
+		keys = append(keys, k)
+	}
+	w.Serialize(&floatValue)
+	reader := NewReader(w.Bytes(), false)
+	var p float64
+	for _, k := range keys {
+		reader.Unserialize(&p)
+		if p != data[k] {
+			t.Error(k, data[k], p)
+		}
+	}
+	reader.Unserialize(&p)
+	if p != float64(3.14159) {
+		t.Error(floatValue, 3.14159, p)
+	}
+	w.Close()
+}
+
+func BenchmarkReadFloat64(b *testing.B) {
+	w := NewWriter(true)
+	w.Serialize(3.14159)
+	bytes := w.Bytes()
+	for i := 0; i < b.N; i++ {
+		reader := NewReader(bytes, true)
+		reader.ReadFloat64()
+	}
+	w.Close()
+}
+
+func BenchmarkUnserializeFloat64(b *testing.B) {
+	w := NewWriter(true)
+	w.Serialize(3.14159)
+	bytes := w.Bytes()
+	var p float64
+	for i := 0; i < b.N; i++ {
+		reader := NewReader(bytes, true)
+		reader.Unserialize(&p)
+	}
+	w.Close()
+}
