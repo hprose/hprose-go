@@ -130,7 +130,7 @@ func BenchmarkUnserializeBool(b *testing.B) {
 func TestReadInt(t *testing.T) {
 	intValue := "1234567"
 	u := uint(math.MaxUint64)
-	data := map[interface{}]int{
+	data := map[interface{}]int64{
 		true:          1,
 		false:         0,
 		nil:           0,
@@ -140,10 +140,10 @@ func TestReadInt(t *testing.T) {
 		9:             9,
 		100:           100,
 		-100:          -100,
-		math.MinInt32: int(math.MinInt32),
-		math.MaxInt64: int(math.MaxInt64),
-		math.MinInt64: int(math.MinInt64),
-		u:             int(u),
+		math.MinInt32: int64(math.MinInt32),
+		math.MaxInt64: int64(math.MaxInt64),
+		math.MinInt64: int64(math.MinInt64),
+		u:             int64(u),
 		0.0:           0,
 		"1":           1,
 		"9":           9,
@@ -240,7 +240,7 @@ func BenchmarkUnserializeInt(b *testing.B) {
 func TestReadUint(t *testing.T) {
 	intValue := "1234567"
 	u := uint(math.MaxUint64)
-	data := map[interface{}]uint{
+	data := map[interface{}]uint64{
 		true:          1,
 		false:         0,
 		nil:           0,
@@ -249,8 +249,8 @@ func TestReadUint(t *testing.T) {
 		1:             1,
 		9:             9,
 		100:           100,
-		math.MaxInt64: uint(math.MaxInt64),
-		u:             uint(u),
+		math.MaxInt64: uint64(math.MaxInt64),
+		u:             uint64(u),
 		0.0:           0,
 		"1":           1,
 		"9":           9,

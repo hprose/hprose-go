@@ -92,51 +92,7 @@ func (r *Reader) ReadIntWithoutTag() int {
 }
 
 // ReadInt from the reader
-func (r *Reader) ReadInt() int {
-	tag := r.readByte()
-	decoder := intDecoders[tag]
-	if decoder != nil {
-		return int(decoder(r))
-	}
-	castError(tag, "int")
-	return 0
-}
-
-// ReadInt8 from the reader
-func (r *Reader) ReadInt8() int8 {
-	tag := r.readByte()
-	decoder := intDecoders[tag]
-	if decoder != nil {
-		return int8(decoder(r))
-	}
-	castError(tag, "int8")
-	return 0
-}
-
-// ReadInt16 from the reader
-func (r *Reader) ReadInt16() int16 {
-	tag := r.readByte()
-	decoder := intDecoders[tag]
-	if decoder != nil {
-		return int16(decoder(r))
-	}
-	castError(tag, "int16")
-	return 0
-}
-
-// ReadInt32 from the reader
-func (r *Reader) ReadInt32() int32 {
-	tag := r.readByte()
-	decoder := intDecoders[tag]
-	if decoder != nil {
-		return int32(decoder(r))
-	}
-	castError(tag, "int32")
-	return 0
-}
-
-// ReadInt64 from the reader
-func (r *Reader) ReadInt64() int64 {
+func (r *Reader) ReadInt() int64 {
 	tag := r.readByte()
 	decoder := intDecoders[tag]
 	if decoder != nil {
@@ -147,68 +103,13 @@ func (r *Reader) ReadInt64() int64 {
 }
 
 // ReadUint from the reader
-func (r *Reader) ReadUint() uint {
-	tag := r.readByte()
-	decoder := uintDecoders[tag]
-	if decoder != nil {
-		return uint(decoder(r))
-	}
-	castError(tag, "uint")
-	return 0
-}
-
-// ReadUint8 from the reader
-func (r *Reader) ReadUint8() uint8 {
-	tag := r.readByte()
-	decoder := uintDecoders[tag]
-	if decoder != nil {
-		return uint8(decoder(r))
-	}
-	castError(tag, "uint8")
-	return 0
-}
-
-// ReadUint16 from the reader
-func (r *Reader) ReadUint16() uint16 {
-	tag := r.readByte()
-	decoder := uintDecoders[tag]
-	if decoder != nil {
-		return uint16(decoder(r))
-	}
-	castError(tag, "uint16")
-	return 0
-}
-
-// ReadUint32 from the reader
-func (r *Reader) ReadUint32() uint32 {
-	tag := r.readByte()
-	decoder := uintDecoders[tag]
-	if decoder != nil {
-		return uint32(decoder(r))
-	}
-	castError(tag, "uint32")
-	return 0
-}
-
-// ReadUint64 from the reader
-func (r *Reader) ReadUint64() uint64 {
+func (r *Reader) ReadUint() uint64 {
 	tag := r.readByte()
 	decoder := uintDecoders[tag]
 	if decoder != nil {
 		return decoder(r)
 	}
 	castError(tag, "uint64")
-	return 0
-}
-
-// ReadUintptr from the reader
-func (r *Reader) ReadUintptr() uintptr {
-	tag := r.readByte()
-	decoder := uintDecoders[tag]
-	if decoder != nil {
-		return uintptr(decoder(r))
-	}
-	castError(tag, "uintptr")
 	return 0
 }
 

@@ -83,5 +83,5 @@ var intDecoders = [256]func(r *Reader) int64{
 }
 
 func intDecoder(r *Reader, v reflect.Value) {
-	v.SetInt(r.ReadInt64())
+	v.SetInt(r.ReadInt())
 }
