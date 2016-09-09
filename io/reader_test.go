@@ -883,3 +883,128 @@ func BenchmarkUnserializeComplex128(b *testing.B) {
 	}
 	w.Close()
 }
+
+func TestUnserializeListAsMap(t *testing.T) {
+	a := [5]int{1, 2, 3, 4, 5}
+	m := map[int]int{0: 1, 1: 2, 2: 3, 3: 4, 4: 5}
+	w := NewWriter(false)
+	w.Serialize(a)
+	w.Serialize(a)
+	w.Serialize(a)
+	reader := NewReader(w.Bytes(), false)
+	var m1 map[int]int
+	reader.Unserialize(&m1)
+	if !reflect.DeepEqual(m1, m) {
+		t.Error(m1, m, a)
+	}
+	m2 := make(map[int]int)
+	reader.Unserialize(&m2)
+	if !reflect.DeepEqual(m2, m) {
+		t.Error(m2, m, a)
+	}
+	m3 := make(map[int]int, 10)
+	reader.Unserialize(&m3)
+	if !reflect.DeepEqual(m3, m) {
+		t.Error(m3, m, a)
+	}
+	w.Close()
+}
+
+func TestUnserializeListRefAsMapRef(t *testing.T) {
+	a := [5]int{1, 2, 3, 4, 5}
+	m := map[int]int{0: 1, 1: 2, 2: 3, 3: 4, 4: 5}
+	w := NewWriter(false)
+	w.Serialize(&a)
+	w.Serialize(&a)
+	w.Serialize(&a)
+	w.Serialize(&a)
+	w.Serialize(&a)
+	w.Serialize(&a)
+	reader := NewReader(w.Bytes(), false)
+	var m1 map[int]int
+	reader.Unserialize(&m1)
+	if !reflect.DeepEqual(m1, m) {
+		t.Error(m1, m, a)
+	}
+	m2 := make(map[int]int)
+	reader.Unserialize(&m2)
+	if !reflect.DeepEqual(m2, m) {
+		t.Error(m2, m, a)
+	}
+	m3 := make(map[int]int, 10)
+	reader.Unserialize(&m3)
+	if !reflect.DeepEqual(m3, m) {
+		t.Error(m3, m, a)
+	}
+	var m4 map[int]int
+	reader.Unserialize(&m4)
+	if !reflect.DeepEqual(m4, m) {
+		t.Error(m4, m, a)
+	}
+	m5 := make(map[int]int)
+	reader.Unserialize(&m5)
+	if !reflect.DeepEqual(m5, m) {
+		t.Error(m5, m, a)
+	}
+	m6 := make(map[int]int, 10)
+	reader.Unserialize(&m6)
+	if !reflect.DeepEqual(m6, m) {
+		t.Error(m6, m, a)
+	}
+	w.Close()
+}
+
+func TestUnserializeMap(t *testing.T) {
+	m := map[string]string{
+		"name": "Tom",
+		"国家":   "🇨🇳",
+	}
+	w := NewWriter(false)
+	w.Serialize(m)
+	w.Serialize(m)
+	w.Serialize(m)
+	reader := NewReader(w.Bytes(), false)
+	var m1 map[string]string
+	reader.Unserialize(&m1)
+	if !reflect.DeepEqual(m1, m) {
+		t.Error(m1, m)
+	}
+	m2 := make(map[string]string)
+	reader.Unserialize(&m2)
+	if !reflect.DeepEqual(m2, m) {
+		t.Error(m2, m)
+	}
+	m3 := make(map[string]string, 10)
+	reader.Unserialize(&m3)
+	if !reflect.DeepEqual(m3, m) {
+		t.Error(m3, m)
+	}
+	w.Close()
+}
+
+func BenchmarkUnserializeSliceAsMap(b *testing.B) {
+	w := NewWriter(true)
+	w.Serialize([5]int{1, 2, 3, 4, 5})
+	bytes := w.Bytes()
+	var p map[int]int
+	for i := 0; i < b.N; i++ {
+		reader := NewReader(bytes, true)
+		reader.Unserialize(&p)
+	}
+	w.Close()
+}
+
+func BenchmarkUnserializeMap(b *testing.B) {
+	w := NewWriter(true)
+	w.Serialize(map[string]string{
+		"name": "Tom",
+		"国家":   "🇨🇳",
+	})
+	bytes := w.Bytes()
+	var p map[string]string
+	for i := 0; i < b.N; i++ {
+		reader := NewReader(bytes, true)
+		reader.Unserialize(&p)
+	}
+	w.Close()
+}

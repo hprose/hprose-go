@@ -55,10 +55,10 @@ func init() {
 		reflect.Chan:       invalidDecoder,
 		reflect.Func:       invalidDecoder,
 		// reflect.Interface:     interfaceDecoder,
-		// reflect.Map:           mapDecoder,
+		reflect.Map: mapDecoder,
 		// reflect.Ptr:           ptrDecoder,
-		reflect.Slice: sliceDecoder,
-		// reflect.String:        stringDecoder,
+		reflect.Slice:  sliceDecoder,
+		reflect.String: stringDecoder,
 		// reflect.Struct:        structDecoder,
 		reflect.UnsafePointer: invalidDecoder,
 	}

@@ -173,6 +173,12 @@ func (r *Reader) ReadStringWithoutTag() (str string) {
 
 // ReadString from the reader
 func (r *Reader) ReadString() (str string) {
+	tag := r.readByte()
+	decoder := stringDecoders[tag]
+	if decoder != nil {
+		return decoder(r)
+	}
+	castError(tag, "string")
 	return ""
 }
 
