@@ -51,10 +51,14 @@ func (r *Reader) Unserialize(p interface{}) {
 	if v.Kind() != reflect.Ptr {
 		panic(errors.New("Unserialize: argument p must be a pointer"))
 	}
-	e := v.Elem()
-	decoder := valueDecoders[e.Kind()]
+	r.ReadValue(v.Elem())
+}
+
+// ReadValue from the reader
+func (r *Reader) ReadValue(v reflect.Value) {
+	decoder := valueDecoders[v.Kind()]
 	if decoder != nil {
-		decoder(r, e)
+		decoder(r, v)
 	}
 }
 
@@ -150,6 +154,20 @@ func (r *Reader) ReadString() (str string) {
 	return ""
 }
 
+// ReadBytesWithoutTag from the reader
+func (r *Reader) ReadBytesWithoutTag() (b []byte) {
+	l := readLength(&r.ByteReader)
+	b = make([]byte, l)
+	if _, err := r.Read(b); err != nil {
+		panic(err)
+	}
+	r.readByte()
+	if !r.Simple {
+		setReaderRef(r, b)
+	}
+	return
+}
+
 // ReadDateTimeWithoutTag from the reader
 func (r *Reader) ReadDateTimeWithoutTag() (dt time.Time) {
 	year, month, day, tag := readDate(&r.ByteReader)
@@ -211,6 +229,19 @@ func resetReaderRef(r *Reader) {
 	if r.ref != nil {
 		r.ref = r.ref[:0]
 	}
+}
+
+func readSliceWithoutTag(r *Reader, t reflect.Type) (slice reflect.Value) {
+	l := readCount(&r.ByteReader)
+	slice = reflect.MakeSlice(t, l, l)
+	if !r.Simple {
+		setReaderRef(r, slice)
+	}
+	for i := 0; i < l; i++ {
+		r.ReadValue(slice.Index(i))
+	}
+	r.readByte()
+	return
 }
 
 var tagStringMap = map[byte]string{

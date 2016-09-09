@@ -21,6 +21,7 @@ package io
 
 import (
 	"math"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -555,6 +556,74 @@ func BenchmarkUnserializeFloat64(b *testing.B) {
 	w.Serialize(3.14159)
 	bytes := w.Bytes()
 	var p float64
+	for i := 0; i < b.N; i++ {
+		reader := NewReader(bytes, true)
+		reader.Unserialize(&p)
+	}
+	w.Close()
+}
+
+func TestUnserializeArray(t *testing.T) {
+	a := [5]int{1, 2, 3, 4, 5}
+	b := [5]byte{'h', 'e', 'l', 'l', 'o'}
+	w := NewWriter(false)
+	w.Serialize(&a)
+	w.Serialize(&b)
+	w.Serialize(&a)
+	w.Serialize(&b)
+	w.Serialize(&a)
+	w.Serialize(&b)
+	reader := NewReader(w.Bytes(), false)
+	var a1 [5]int
+	reader.Unserialize(&a1)
+	if !reflect.DeepEqual(a1, a) {
+		t.Error(a1, a)
+	}
+	var b1 [5]byte
+	reader.Unserialize(&b1)
+	if !reflect.DeepEqual(b1, b) {
+		t.Error(b1, b)
+	}
+	var a2 [4]int
+	reader.Unserialize(&a2)
+	if !reflect.DeepEqual(a2[:4], a[:4]) {
+		t.Error(a2[:4], a[:4])
+	}
+	var b2 [4]byte
+	reader.Unserialize(&b2)
+	if !reflect.DeepEqual(b2[:4], b[:4]) {
+		t.Error(b2[:4], b[:4])
+	}
+	var a3 [6]int
+	reader.Unserialize(&a3)
+	if !reflect.DeepEqual(a3, [6]int{1, 2, 3, 4, 5, 0}) {
+		t.Error(a3)
+	}
+	var b3 [6]byte
+	reader.Unserialize(&b3)
+	if !reflect.DeepEqual(b3, [6]byte{'h', 'e', 'l', 'l', 'o', 0}) {
+		t.Error(b3)
+	}
+	w.Close()
+}
+
+func BenchmarkUnserializeByteArray(b *testing.B) {
+	w := NewWriter(true)
+	w.Serialize([5]byte{'h', 'e', 'l', 'l', 'o'})
+	bytes := w.Bytes()
+	var p [5]byte
+	for i := 0; i < b.N; i++ {
+		reader := NewReader(bytes, true)
+		reader.Unserialize(&p)
+	}
+	w.Close()
+}
+
+func BenchmarkUnserializeIntArray(b *testing.B) {
+	w := NewWriter(true)
+	w.Serialize([5]int{1, 2, 3, 4, 5})
+	bytes := w.Bytes()
+	var p [5]int
 	for i := 0; i < b.N; i++ {
 		reader := NewReader(bytes, true)
 		reader.Unserialize(&p)

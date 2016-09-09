@@ -51,7 +51,7 @@ func init() {
 		reflect.Float64: float64Decoder,
 		// reflect.Complex64:     complex64Decoder,
 		// reflect.Complex128:    complex128Decoder,
-		// reflect.Array:         arrayDecoder,
+		reflect.Array: arrayDecoder,
 		// reflect.Chan:          nilDecoder,
 		// reflect.Func:          nilDecoder,
 		// reflect.Interface:     interfaceDecoder,
