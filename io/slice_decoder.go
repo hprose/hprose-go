@@ -8,9 +8,9 @@
 \**********************************************************/
 /**********************************************************\
  *                                                        *
- * io/array_decoder.go                                    *
+ * io/slice_decoder.go                                    *
  *                                                        *
- * hprose array decoder for Go.                           *
+ * hprose slice decoder for Go.                           *
  *                                                        *
  * LastModified: Sep 9, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
@@ -22,82 +22,81 @@ package io
 import (
 	"errors"
 	"reflect"
-	"unsafe"
 )
 
-func readBytesAsArray(r *Reader, v reflect.Value) {
-	if !r.Simple {
-		setReaderRef(r, v)
-	}
+func readBytesAsSlice(r *Reader, v reflect.Value) {
 	if v.Type().Elem().Kind() != reflect.Uint8 {
 		panic(errors.New("cannot be converted []byte to " + v.Type().String()))
 	}
-	n := v.Len()
-	sliceHeader := reflect.SliceHeader{
-		Data: (*emptyInterface)(unsafe.Pointer(&v)).ptr,
-		Len:  n,
-		Cap:  n,
-	}
-	b := *(*[]byte)(unsafe.Pointer(&sliceHeader))
+	b := v.Bytes()
+	n := cap(b)
 	l := readLength(&r.ByteReader)
-	min := min(n, l)
-	if _, err := r.Read(b[:min]); err != nil {
-		panic(err)
+	if n >= l {
+		b = b[:l]
+		v.SetLen(l)
+	} else {
+		b = make([]byte, l)
+		v.SetBytes(b)
 	}
-	if l > min {
-		r.Next(l - min)
-	}
-	r.readByte()
-}
-
-func readListAsArray(r *Reader, v reflect.Value) {
-	n := v.Len()
-	l := readCount(&r.ByteReader)
 	if !r.Simple {
 		setReaderRef(r, v)
 	}
-	min := min(n, l)
-	for i := 0; i < min; i++ {
-		r.ReadValue(v.Index(i))
-	}
-	if min < l {
-		x := reflect.New(v.Type().Elem()).Elem()
-		for i := min; i < l; i++ {
-			r.ReadValue(x)
-		}
+	if _, err := r.Read(b); err != nil {
+		panic(err)
 	}
 	r.readByte()
 }
 
-func readRefAsArray(r *Reader, v reflect.Value) {
+func readListAsSlice(r *Reader, v reflect.Value) {
+	n := v.Cap()
+	l := readCount(&r.ByteReader)
+	if n >= l {
+		v.SetLen(l)
+	} else {
+		v.Set(reflect.MakeSlice(v.Type(), l, l))
+	}
+	if !r.Simple {
+		setReaderRef(r, v)
+	}
+	for i := 0; i < l; i++ {
+		r.ReadValue(v.Index(i))
+	}
+	r.readByte()
+}
+
+func readRefAsSlice(r *Reader, v reflect.Value) {
 	ref := r.ReadRef()
 	if b, ok := ref.([]byte); ok {
 		reflect.Copy(v, reflect.ValueOf(b))
 		return
 	}
-	if a, ok := ref.(reflect.Value); ok {
-		reflect.Copy(v, a)
+	if s, ok := ref.(reflect.Value); ok {
+		if s.Kind() == reflect.Slice {
+			v.Set(s)
+		} else {
+			reflect.Copy(v, s)
+		}
 		return
 	}
 	panic(errors.New("value of type " +
 		reflect.TypeOf(ref).String() +
-		" cannot be converted to type array"))
+		" cannot be converted to type slice"))
 }
 
-var arrayDecoders = [256]func(r *Reader, v reflect.Value){
+var sliceDecoders = [256]func(r *Reader, v reflect.Value){
 	TagNull:  func(r *Reader, v reflect.Value) {},
 	TagEmpty: func(r *Reader, v reflect.Value) {},
-	TagBytes: readBytesAsArray,
-	TagList:  readListAsArray,
-	TagRef:   readRefAsArray,
+	TagBytes: readBytesAsSlice,
+	TagList:  readListAsSlice,
+	TagRef:   readRefAsSlice,
 }
 
-func arrayDecoder(r *Reader, v reflect.Value) {
+func sliceDecoder(r *Reader, v reflect.Value) {
 	tag := r.readByte()
-	decoder := arrayDecoders[tag]
+	decoder := sliceDecoders[tag]
 	if decoder != nil {
 		decoder(r, v)
 		return
 	}
-	castError(tag, "array")
+	castError(tag, "slice")
 }

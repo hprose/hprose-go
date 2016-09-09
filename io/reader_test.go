@@ -12,7 +12,7 @@
  *                                                        *
  * hprose Reader Test for Go.                             *
  *                                                        *
- * LastModified: Sep 6, 2016                              *
+ * LastModified: Sep 9, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -624,6 +624,118 @@ func BenchmarkUnserializeIntArray(b *testing.B) {
 	w.Serialize([5]int{1, 2, 3, 4, 5})
 	bytes := w.Bytes()
 	var p [5]int
+	for i := 0; i < b.N; i++ {
+		reader := NewReader(bytes, true)
+		reader.Unserialize(&p)
+	}
+	w.Close()
+}
+
+func TestUnserializeSlice(t *testing.T) {
+	a := []int{1, 2, 3, 4, 5}
+	b := []byte{'h', 'e', 'l', 'l', 'o'}
+	w := NewWriter(false)
+	w.Serialize(a)
+	w.Serialize(b)
+	w.Serialize(a)
+	w.Serialize(b)
+	w.Serialize(a)
+	w.Serialize(b)
+	reader := NewReader(w.Bytes(), false)
+	var a1 []int
+	reader.Unserialize(&a1)
+	if !reflect.DeepEqual(a1, a) {
+		t.Error(a1, a)
+	}
+	var b1 []byte
+	reader.Unserialize(&b1)
+	if !reflect.DeepEqual(b1, b) {
+		t.Error(b1, b)
+	}
+	a2 := []int{}
+	reader.Unserialize(&a2)
+	if !reflect.DeepEqual(a2, a) {
+		t.Error(a2, a)
+	}
+	b2 := []byte{}
+	reader.Unserialize(&b2)
+	if !reflect.DeepEqual(b2, b) {
+		t.Error(b2, b)
+	}
+	a2 = make([]int, 10)
+	reader.Unserialize(&a2)
+	if !reflect.DeepEqual(a2, a) {
+		t.Error(a2, a)
+	}
+	b2 = make([]byte, 10)
+	reader.Unserialize(&b2)
+	if !reflect.DeepEqual(b2, b) {
+		t.Error(b2, b)
+	}
+	w.Close()
+}
+
+func TestUnserializeSliceRef(t *testing.T) {
+	a := []int{1, 2, 3, 4, 5}
+	b := []byte{'h', 'e', 'l', 'l', 'o'}
+	w := NewWriter(false)
+	w.Serialize(&a)
+	w.Serialize(&b)
+	w.Serialize(&a)
+	w.Serialize(&b)
+	w.Serialize(&a)
+	w.Serialize(&b)
+	reader := NewReader(w.Bytes(), false)
+	var a1 []int
+	reader.Unserialize(&a1)
+	if !reflect.DeepEqual(a1, a) {
+		t.Error(a1, a)
+	}
+	var b1 []byte
+	reader.Unserialize(&b1)
+	if !reflect.DeepEqual(b1, b) {
+		t.Error(b1, b)
+	}
+	a2 := []int{}
+	reader.Unserialize(&a2)
+	if !reflect.DeepEqual(a2, a) {
+		t.Error(a2, a)
+	}
+	b2 := []byte{}
+	reader.Unserialize(&b2)
+	if !reflect.DeepEqual(b2, b) {
+		t.Error(b2, b)
+	}
+	a2 = make([]int, 10)
+	reader.Unserialize(&a2)
+	if !reflect.DeepEqual(a2, a) {
+		t.Error(a2, a)
+	}
+	b2 = make([]byte, 10)
+	reader.Unserialize(&b2)
+	if !reflect.DeepEqual(b2, b) {
+		t.Error(b2, b)
+	}
+	w.Close()
+}
+
+func BenchmarkUnserializeByteSlice(b *testing.B) {
+	w := NewWriter(true)
+	w.Serialize([]byte{'h', 'e', 'l', 'l', 'o'})
+	bytes := w.Bytes()
+	var p []byte
+	for i := 0; i < b.N; i++ {
+		reader := NewReader(bytes, true)
+		reader.Unserialize(&p)
+	}
+	w.Close()
+}
+
+func BenchmarkUnserializeIntSlice(b *testing.B) {
+	w := NewWriter(true)
+	w.Serialize([]int{1, 2, 3, 4, 5})
+	bytes := w.Bytes()
+	var p []int
 	for i := 0; i < b.N; i++ {
 		reader := NewReader(bytes, true)
 		reader.Unserialize(&p)

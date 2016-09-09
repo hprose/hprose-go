@@ -12,7 +12,7 @@
  *                                                        *
  * io util for Go.                                        *
  *                                                        *
- * LastModified: Aug 24, 2016                             *
+ * LastModified: Sep 9, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -276,4 +276,11 @@ func log2(x int) int {
 
 func byteString(b []byte) string {
 	return *(*string)(unsafe.Pointer(&b))
+}
+
+func min(a, b int) int {
+	if a > b {
+		return b
+	}
+	return a
 }

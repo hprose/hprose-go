@@ -57,7 +57,7 @@ func init() {
 		// reflect.Interface:     interfaceDecoder,
 		// reflect.Map:           mapDecoder,
 		// reflect.Ptr:           ptrDecoder,
-		// reflect.Slice:         sliceDecoder,
+		reflect.Slice: sliceDecoder,
 		// reflect.String:        stringDecoder,
 		// reflect.Struct:        structDecoder,
 		// reflect.UnsafePointer: nilDecoder,
