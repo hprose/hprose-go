@@ -151,6 +151,17 @@ func (r *Reader) ReadComplex64() complex64 {
 	return 0
 }
 
+// ReadComplex128 from the reader
+func (r *Reader) ReadComplex128() complex128 {
+	tag := r.readByte()
+	decoder := complex128Decoders[tag]
+	if decoder != nil {
+		return decoder(r)
+	}
+	castError(tag, "complex128")
+	return 0
+}
+
 // ReadStringWithoutTag from the reader
 func (r *Reader) ReadStringWithoutTag() (str string) {
 	str = readString(&r.ByteReader)

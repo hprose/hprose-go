@@ -813,3 +813,73 @@ func BenchmarkUnserializeComplex64(b *testing.B) {
 	}
 	w.Close()
 }
+
+func TestUnserializeComplex128(t *testing.T) {
+	complex128Value := "3.14159"
+	complex128Slice := []float64{math.MaxFloat64, math.MaxFloat64}
+	data := map[interface{}]complex128{
+		true:                                      1,
+		false:                                     0,
+		nil:                                       0,
+		"":                                        0,
+		0:                                         0,
+		1:                                         1,
+		9:                                         9,
+		100:                                       100,
+		math.MaxFloat32:                           complex(math.MaxFloat32, 0),
+		0.0:                                       0,
+		"1":                                       1,
+		"9":                                       9,
+		&complex128Value:                          complex(float64(3.14159), 0),
+		complex(math.MaxFloat32, math.MaxFloat32): complex(math.MaxFloat32, math.MaxFloat32),
+		&complex128Slice:                          complex(math.MaxFloat64, math.MaxFloat64),
+	}
+	w := NewWriter(false)
+	keys := []interface{}{}
+	for k := range data {
+		w.Serialize(k)
+		keys = append(keys, k)
+	}
+	w.Serialize(&complex128Value)
+	w.Serialize(&complex128Slice)
+	reader := NewReader(w.Bytes(), false)
+	var p complex128
+	for _, k := range keys {
+		reader.Unserialize(&p)
+		if p != data[k] {
+			t.Error(k, data[k], p)
+		}
+	}
+	reader.Unserialize(&p)
+	if p != complex128(3.14159) {
+		t.Error(complex128Value, 3.14159, p)
+	}
+	reader.Unserialize(&p)
+	if p != complex(math.MaxFloat64, math.MaxFloat64) {
+		t.Error(complex128Value, complex(math.MaxFloat64, math.MaxFloat64), p)
+	}
+	w.Close()
+}
+
+func BenchmarkReadComplex128(b *testing.B) {
+	w := NewWriter(true)
+	w.Serialize(complex(math.MaxFloat64, math.MaxFloat64))
+	bytes := w.Bytes()
+	for i := 0; i < b.N; i++ {
+		reader := NewReader(bytes, true)
+		reader.ReadComplex128()
+	}
+	w.Close()
+}
+
+func BenchmarkUnserializeComplex128(b *testing.B) {
+	w := NewWriter(true)
+	w.Serialize(complex(math.MaxFloat64, math.MaxFloat64))
+	bytes := w.Bytes()
+	var p complex128
+	for i := 0; i < b.N; i++ {
+		reader := NewReader(bytes, true)
+		reader.Unserialize(&p)
+	}
+	w.Close()
+}
