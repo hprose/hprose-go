@@ -742,3 +742,74 @@ func BenchmarkUnserializeIntSlice(b *testing.B) {
 	}
 	w.Close()
 }
+
+func TestUnserializeComplex64(t *testing.T) {
+	complex64Value := "3.14159"
+	complex64Slice := []float32{math.MaxFloat32, math.MaxFloat32}
+	data := map[interface{}]complex64{
+		true:                                      1,
+		false:                                     0,
+		nil:                                       0,
+		"":                                        0,
+		0:                                         0,
+		1:                                         1,
+		9:                                         9,
+		100:                                       100,
+		math.MaxInt64:                             complex(float32(math.MaxInt64), 0),
+		math.MaxFloat32:                           complex(math.MaxFloat32, 0),
+		0.0:                                       0,
+		"1":                                       1,
+		"9":                                       9,
+		&complex64Value:                           complex(float32(3.14159), 0),
+		complex(math.MaxFloat32, math.MaxFloat32): complex(math.MaxFloat32, math.MaxFloat32),
+		&complex64Slice:                           complex(math.MaxFloat32, math.MaxFloat32),
+	}
+	w := NewWriter(false)
+	keys := []interface{}{}
+	for k := range data {
+		w.Serialize(k)
+		keys = append(keys, k)
+	}
+	w.Serialize(&complex64Value)
+	w.Serialize(&complex64Slice)
+	reader := NewReader(w.Bytes(), false)
+	var p complex64
+	for _, k := range keys {
+		reader.Unserialize(&p)
+		if p != data[k] {
+			t.Error(k, data[k], p)
+		}
+	}
+	reader.Unserialize(&p)
+	if p != complex64(3.14159) {
+		t.Error(complex64Value, 3.14159, p)
+	}
+	reader.Unserialize(&p)
+	if p != complex(math.MaxFloat32, math.MaxFloat32) {
+		t.Error(complex64Value, complex(math.MaxFloat32, math.MaxFloat32), p)
+	}
+	w.Close()
+}
+
+func BenchmarkReadComplex64(b *testing.B) {
+	w := NewWriter(true)
+	w.Serialize(complex(math.MaxFloat32, math.MaxFloat32))
+	bytes := w.Bytes()
+	for i := 0; i < b.N; i++ {
+		reader := NewReader(bytes, true)
+		reader.ReadComplex64()
+	}
+	w.Close()
+}
+
+func BenchmarkUnserializeComplex64(b *testing.B) {
+	w := NewWriter(true)
+	w.Serialize(complex(math.MaxFloat32, math.MaxFloat32))
+	bytes := w.Bytes()
+	var p complex64
+	for i := 0; i < b.N; i++ {
+		reader := NewReader(bytes, true)
+		reader.Unserialize(&p)
+	}
+	w.Close()
+}

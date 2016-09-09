@@ -140,6 +140,17 @@ func (r *Reader) ReadFloat64() float64 {
 	return 0
 }
 
+// ReadComplex64 from the reader
+func (r *Reader) ReadComplex64() complex64 {
+	tag := r.readByte()
+	decoder := complex64Decoders[tag]
+	if decoder != nil {
+		return decoder(r)
+	}
+	castError(tag, "complex64")
+	return 0
+}
+
 // ReadStringWithoutTag from the reader
 func (r *Reader) ReadStringWithoutTag() (str string) {
 	str = readString(&r.ByteReader)
