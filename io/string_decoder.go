@@ -54,6 +54,9 @@ func readGUIDAsString(r *Reader) (str string) {
 	r.readByte()
 	str = string(r.Next(36))
 	r.readByte()
+	if !r.Simple {
+		setReaderRef(r, str)
+	}
 	return
 }
 

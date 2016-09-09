@@ -22,6 +22,7 @@ package io
 import (
 	"bytes"
 	"errors"
+	"math/big"
 	"reflect"
 	"time"
 )
@@ -230,6 +231,24 @@ func (r *Reader) ReadTimeWithoutTag() (t time.Time) {
 		setReaderRef(r, &t)
 	}
 	return
+}
+
+// ReadBigIntWithoutTag from the reader
+func (r *Reader) ReadBigIntWithoutTag() *big.Int {
+	b := readUntil(&r.ByteReader, TagSemicolon)
+	i, _ := new(big.Int).SetString(byteString(b), 10)
+	return i
+}
+
+// ReadInterface from the reader
+func (r *Reader) ReadInterface() interface{} {
+	tag := r.readByte()
+	decoder := interfaceDecoders[tag]
+	if decoder != nil {
+		return decoder(r)
+	}
+	castError(tag, "interface{}")
+	return nil
 }
 
 // ReadRef from the reader

@@ -21,6 +21,7 @@ package io
 
 import (
 	"math"
+	"math/big"
 	"reflect"
 	"strconv"
 	"testing"
@@ -1105,6 +1106,70 @@ func BenchmarkUnserializeString(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		reader := NewReader(bytes, true)
 		reader.Unserialize(&p)
+	}
+	w.Close()
+}
+
+func TestUnserializeInterface(t *testing.T) {
+	strValue := "你好"
+	d := time.Date(1980, 12, 1, 0, 0, 0, 0, time.UTC)
+	ti := time.Date(1970, 1, 1, 12, 23, 45, 123456789, time.Local)
+	dt := time.Date(2006, 9, 9, 12, 23, 45, 123456789, time.UTC)
+	a := []int{1, 2, 3, 4, 5}
+	m := map[int]int{0: 1, 1: 2, 2: 3, 3: 4, 4: 5}
+	data := map[interface{}]interface{}{
+		true:            true,
+		false:           false,
+		nil:             nil,
+		"":              "",
+		0:               0,
+		1:               1,
+		9:               9,
+		100:             100,
+		math.MaxInt32:   math.MaxInt32,
+		math.MaxFloat32: math.MaxFloat32,
+		math.MaxFloat64: math.MaxFloat64,
+		0.0:             0.0,
+		"1":             "1",
+		"9":             "9",
+		&strValue:       "你好",
+		d:               d,
+		ti:              ti,
+		dt:              dt,
+	}
+	w := NewWriter(false)
+	keys := []interface{}{}
+	for k := range data {
+		w.Serialize(k)
+		keys = append(keys, k)
+	}
+	w.Serialize(&strValue)
+	w.Serialize(math.MaxInt64)
+	w.Serialize(a)
+	w.Serialize(m)
+	reader := NewReader(w.Bytes(), false)
+	var p interface{}
+	for _, k := range keys {
+		reader.Unserialize(&p)
+		if p != data[k] {
+			t.Error(k, data[k], p)
+		}
+	}
+	reader.Unserialize(&p)
+	if p != strValue {
+		t.Error(strValue, p)
+	}
+	reader.Unserialize(&p)
+	if p.(*big.Int).Cmp(big.NewInt(math.MaxInt64)) != 0 {
+		t.Error(p)
+	}
+	reader.Unserialize(&p)
+	if !reflect.DeepEqual(p.([]interface{}), []interface{}{1, 2, 3, 4, 5}) {
+		t.Error(p)
+	}
+	reader.Unserialize(&p)
+	if !reflect.DeepEqual(p.(map[interface{}]interface{}), map[interface{}]interface{}{0: 1, 1: 2, 2: 3, 3: 4, 4: 5}) {
+		t.Error(p)
 	}
 	w.Close()
 }
