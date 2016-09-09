@@ -12,7 +12,7 @@
  *                                                        *
  * hprose decoder for Go.                                 *
  *                                                        *
- * LastModified: Sep 6, 2016                              *
+ * LastModified: Sep 9, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -30,6 +30,10 @@ var valueDecoders []valueDecoder
 
 func invalidDecoder(r *Reader, v reflect.Value) {
 	panic(errors.New("can't unserialize the type: " + v.Type().String()))
+}
+
+func nilDecoder(r *Reader, v reflect.Value) {
+	v.Set(reflect.Zero(v.Type()))
 }
 
 func init() {

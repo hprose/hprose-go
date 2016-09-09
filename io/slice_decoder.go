@@ -84,8 +84,8 @@ func readRefAsSlice(r *Reader, v reflect.Value) {
 }
 
 var sliceDecoders = [256]func(r *Reader, v reflect.Value){
-	TagNull:  func(r *Reader, v reflect.Value) {},
-	TagEmpty: func(r *Reader, v reflect.Value) {},
+	TagNull:  nilDecoder,
+	TagEmpty: nilDecoder,
 	TagBytes: readBytesAsSlice,
 	TagList:  readListAsSlice,
 	TagRef:   readRefAsSlice,

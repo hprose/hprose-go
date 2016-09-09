@@ -574,6 +574,8 @@ func TestUnserializeArray(t *testing.T) {
 	w.Serialize(&b)
 	w.Serialize(&a)
 	w.Serialize(&b)
+	w.Serialize(nil)
+	w.Serialize("")
 	reader := NewReader(w.Bytes(), false)
 	var a1 [5]int
 	reader.Unserialize(&a1)
@@ -603,6 +605,14 @@ func TestUnserializeArray(t *testing.T) {
 	var b3 [6]byte
 	reader.Unserialize(&b3)
 	if !reflect.DeepEqual(b3, [6]byte{'h', 'e', 'l', 'l', 'o', 0}) {
+		t.Error(b3)
+	}
+	reader.Unserialize(&a3)
+	if !reflect.DeepEqual(a3, [6]int{0, 0, 0, 0, 0, 0}) {
+		t.Error(a3)
+	}
+	reader.Unserialize(&b3)
+	if !reflect.DeepEqual(b3, [6]byte{0, 0, 0, 0, 0, 0}) {
 		t.Error(b3)
 	}
 	w.Close()
@@ -642,6 +652,8 @@ func TestUnserializeSlice(t *testing.T) {
 	w.Serialize(b)
 	w.Serialize(a)
 	w.Serialize(b)
+	w.Serialize(nil)
+	w.Serialize("")
 	reader := NewReader(w.Bytes(), false)
 	var a1 []int
 	reader.Unserialize(&a1)
@@ -672,6 +684,14 @@ func TestUnserializeSlice(t *testing.T) {
 	reader.Unserialize(&b2)
 	if !reflect.DeepEqual(b2, b) {
 		t.Error(b2, b)
+	}
+	reader.Unserialize(&a2)
+	if a2 != nil {
+		t.Error(a2, nil)
+	}
+	reader.Unserialize(&b2)
+	if b2 != nil {
+		t.Error(b2, nil)
 	}
 	w.Close()
 }
@@ -964,6 +984,8 @@ func TestUnserializeMap(t *testing.T) {
 	w.Serialize(m)
 	w.Serialize(m)
 	w.Serialize(m)
+	w.Serialize(nil)
+	w.Serialize("")
 	reader := NewReader(w.Bytes(), false)
 	var m1 map[string]string
 	reader.Unserialize(&m1)
@@ -979,6 +1001,14 @@ func TestUnserializeMap(t *testing.T) {
 	reader.Unserialize(&m3)
 	if !reflect.DeepEqual(m3, m) {
 		t.Error(m3, m)
+	}
+	reader.Unserialize(&m3)
+	if m3 != nil {
+		t.Error(m3, nil)
+	}
+	reader.Unserialize(&m3)
+	if m3 != nil {
+		t.Error(m3, nil)
 	}
 	w.Close()
 }

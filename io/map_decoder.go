@@ -98,8 +98,8 @@ func readRefAsMap(r *Reader, v reflect.Value) {
 }
 
 var mapDecoders = [256]func(r *Reader, v reflect.Value){
-	TagNull:  func(r *Reader, v reflect.Value) {},
-	TagEmpty: func(r *Reader, v reflect.Value) {},
+	TagNull:  nilDecoder,
+	TagEmpty: nilDecoder,
 	TagList:  readListAsMap,
 	TagMap:   readMap,
 	TagRef:   readRefAsMap,

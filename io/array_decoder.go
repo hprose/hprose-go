@@ -85,8 +85,8 @@ func readRefAsArray(r *Reader, v reflect.Value) {
 }
 
 var arrayDecoders = [256]func(r *Reader, v reflect.Value){
-	TagNull:  func(r *Reader, v reflect.Value) {},
-	TagEmpty: func(r *Reader, v reflect.Value) {},
+	TagNull:  nilDecoder,
+	TagEmpty: nilDecoder,
 	TagBytes: readBytesAsArray,
 	TagList:  readListAsArray,
 	TagRef:   readRefAsArray,
