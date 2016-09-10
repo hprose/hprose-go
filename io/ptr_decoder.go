@@ -19,17 +19,14 @@
 
 package io
 
-import (
-	"reflect"
-	"unsafe"
-)
+import "reflect"
 
 func ptrDecoder(r *Reader, v reflect.Value, tag byte) {
 	if tag == TagNull {
 		if v.IsNil() {
 			return
 		}
-		(*reflectValue)(unsafe.Pointer(&v)).ptr = unsafe.Pointer(nil)
+		v.Set(reflect.Zero(v.Type()))
 		return
 	}
 	if v.IsNil() {

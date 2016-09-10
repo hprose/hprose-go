@@ -20,6 +20,7 @@
 package io
 
 import (
+	"container/list"
 	"math"
 	"math/big"
 	"reflect"
@@ -1577,6 +1578,27 @@ func BenchmarkUnserializeTime(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		reader := NewReader(bytes, true)
 		reader.Unserialize(&p)
+	}
+	w.Close()
+}
+
+func TestUnserializeList(t *testing.T) {
+	a := list.New()
+	a.PushBack(1)
+	a.PushBack("hello")
+	a.PushBack(true)
+	w := NewWriter(false)
+	w.Serialize(a)
+	w.Serialize(nil)
+	reader := NewReader(w.Bytes(), false)
+	var p *list.List
+	reader.Unserialize(&p)
+	if !reflect.DeepEqual(*p, *a) {
+		t.Error(p, a)
+	}
+	reader.Unserialize(&p)
+	if p != nil {
+		t.Error(p, nil)
 	}
 	w.Close()
 }

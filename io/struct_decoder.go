@@ -20,6 +20,7 @@
 package io
 
 import (
+	"container/list"
 	"math/big"
 	"reflect"
 	"strconv"
@@ -168,6 +169,22 @@ func readTimeStruct(r *Reader, v reflect.Value, tag byte) {
 }
 
 func readListAsStruct(r *Reader, v reflect.Value, tag byte) {
+	typ := (*reflectValue)(unsafe.Pointer(&v)).typ
+	if typ != listType {
+		castError(tag, v.Type().String())
+	}
+	lst := list.New()
+	l := readCount(&r.ByteReader)
+	if !r.Simple {
+		setReaderRef(r, v)
+	}
+	for i := 0; i < l; i++ {
+		var e interface{}
+		r.Unserialize(&e)
+		lst.PushBack(e)
+	}
+	r.readByte()
+	v.Set(reflect.ValueOf(*lst))
 }
 
 func readMapAsStruct(r *Reader, v reflect.Value, tag byte) {
