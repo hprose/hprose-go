@@ -12,7 +12,7 @@
  *                                                        *
  * hprose Reader Test for Go.                             *
  *                                                        *
- * LastModified: Sep 9, 2016                              *
+ * LastModified: Sep 10, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -1318,6 +1318,46 @@ func TestUnserializeIntPtrPtr(t *testing.T) {
 	reader.Unserialize(&p)
 	if **p != i {
 		t.Error(**p, i)
+	}
+	w.Close()
+}
+
+func TestUnserializeNilPtr(t *testing.T) {
+	w := NewWriter(false)
+	w.Serialize(nil)
+	w.Serialize(nil)
+	reader := NewReader(w.Bytes(), false)
+	var p *int
+	reader.Unserialize(&p)
+	if p != nil {
+		t.Error(p, nil)
+	}
+	var pb *[]byte
+	reader.Unserialize(&pb)
+	if pb != nil {
+		t.Error(pb, nil)
+	}
+	w.Close()
+}
+
+func TestUnserializeBigInt(t *testing.T) {
+	w := NewWriter(false)
+	w.Serialize(nil)
+	w.Serialize(0)
+	w.Serialize(1)
+	reader := NewReader(w.Bytes(), false)
+	var p *big.Int
+	reader.Unserialize(&p)
+	if p != nil {
+		t.Error(p, nil)
+	}
+	reader.Unserialize(&p)
+	if p.Cmp(big.NewInt(0)) != 0 {
+		t.Error(p, 0)
+	}
+	reader.Unserialize(&p)
+	if p.Cmp(big.NewInt(1)) != 0 {
+		t.Error(p, 1)
 	}
 	w.Close()
 }

@@ -12,7 +12,7 @@
  *                                                        *
  * hprose bool decoder for Go.                            *
  *                                                        *
- * LastModified: Sep 6, 2016                              *
+ * LastModified: Sep 10, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -104,6 +104,11 @@ var boolDecoders = [256]func(r *Reader) bool{
 	TagRef:      readRefAsBool,
 }
 
-func boolDecoder(r *Reader, v reflect.Value) {
-	v.SetBool(r.ReadBool())
+func boolDecoder(r *Reader, v reflect.Value, tag byte) {
+	decoder := boolDecoders[tag]
+	if decoder != nil {
+		v.SetBool(decoder(r))
+		return
+	}
+	castError(tag, "bool")
 }

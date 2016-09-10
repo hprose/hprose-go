@@ -12,7 +12,7 @@
  *                                                        *
  * hprose interface decoder for Go.                       *
  *                                                        *
- * LastModified: Sep 9, 2016                              *
+ * LastModified: Sep 10, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -27,18 +27,18 @@ import (
 
 func readInterfaceSlice(r *Reader) interface{} {
 	var slice []interface{}
-	readListAsSlice(r, reflect.ValueOf(&slice).Elem())
+	readListAsSlice(r, reflect.ValueOf(&slice).Elem(), TagList)
 	return slice
 }
 
 func readInterfaceMap(r *Reader) interface{} {
 	if r.JSONCompatible {
 		var m map[string]interface{}
-		readMap(r, reflect.ValueOf(&m).Elem())
+		readMap(r, reflect.ValueOf(&m).Elem(), TagMap)
 		return m
 	}
 	var m map[interface{}]interface{}
-	readMap(r, reflect.ValueOf(&m).Elem())
+	readMap(r, reflect.ValueOf(&m).Elem(), TagMap)
 	return m
 }
 
@@ -75,8 +75,12 @@ var interfaceDecoders = [256]func(r *Reader) interface{}{
 	TagRef:      func(r *Reader) interface{} { return r.ReadRef() },
 }
 
-func interfaceDecoder(r *Reader, v reflect.Value) {
-	p := r.ReadInterface()
+func interfaceDecoder(r *Reader, v reflect.Value, tag byte) {
+	decoder := interfaceDecoders[tag]
+	if decoder == nil {
+		castError(tag, "interface{}")
+	}
+	p := decoder(r)
 	t := v.Type()
 	rv := reflect.ValueOf(&p).Elem()
 	rt := rv.Type()

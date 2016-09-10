@@ -12,7 +12,7 @@
  *                                                        *
  * hprose reader for Go.                                  *
  *                                                        *
- * LastModified: Sep 7, 2016                              *
+ * LastModified: Sep 10, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -57,10 +57,9 @@ func (r *Reader) Unserialize(p interface{}) {
 
 // ReadValue from the reader
 func (r *Reader) ReadValue(v reflect.Value) {
+	tag := r.readByte()
 	decoder := valueDecoders[v.Kind()]
-	if decoder != nil {
-		decoder(r, v)
-	}
+	decoder(r, v, tag)
 }
 
 // CheckTag the next byte in reader is the expected tag or not

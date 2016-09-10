@@ -42,7 +42,7 @@ func setIntKey(kind reflect.Kind, k reflect.Value, i int) {
 	}
 }
 
-func readListAsMap(r *Reader, v reflect.Value) {
+func readListAsMap(r *Reader, v reflect.Value, tag byte) {
 	if v.IsNil() {
 		v.Set(reflect.MakeMap(v.Type()))
 	}
@@ -63,7 +63,7 @@ func readListAsMap(r *Reader, v reflect.Value) {
 	r.readByte()
 }
 
-func readMap(r *Reader, v reflect.Value) {
+func readMap(r *Reader, v reflect.Value, tag byte) {
 	if v.IsNil() {
 		v.Set(reflect.MakeMap(v.Type()))
 	}
@@ -84,7 +84,7 @@ func readMap(r *Reader, v reflect.Value) {
 	r.readByte()
 }
 
-func readRefAsMap(r *Reader, v reflect.Value) {
+func readRefAsMap(r *Reader, v reflect.Value, tag byte) {
 	ref := r.ReadRef()
 	if m, ok := ref.(reflect.Value); ok {
 		if m.Kind() == reflect.Map {
@@ -97,7 +97,7 @@ func readRefAsMap(r *Reader, v reflect.Value) {
 		" cannot be converted to type map"))
 }
 
-var mapDecoders = [256]func(r *Reader, v reflect.Value){
+var mapDecoders = [256]func(r *Reader, v reflect.Value, tag byte){
 	TagNull:  nilDecoder,
 	TagEmpty: nilDecoder,
 	TagList:  readListAsMap,
@@ -105,11 +105,10 @@ var mapDecoders = [256]func(r *Reader, v reflect.Value){
 	TagRef:   readRefAsMap,
 }
 
-func mapDecoder(r *Reader, v reflect.Value) {
-	tag := r.readByte()
+func mapDecoder(r *Reader, v reflect.Value, tag byte) {
 	decoder := mapDecoders[tag]
 	if decoder != nil {
-		decoder(r, v)
+		decoder(r, v, tag)
 		return
 	}
 	castError(tag, "map")

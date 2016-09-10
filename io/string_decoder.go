@@ -12,7 +12,7 @@
  *                                                        *
  * hprose string decoder for Go.                          *
  *                                                        *
- * LastModified: Sep 9, 2016                              *
+ * LastModified: Sep 10, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -110,6 +110,11 @@ var stringDecoders = [256]func(r *Reader) string{
 	TagRef:      readRefAsString,
 }
 
-func stringDecoder(r *Reader, v reflect.Value) {
-	v.SetString(r.ReadString())
+func stringDecoder(r *Reader, v reflect.Value, tag byte) {
+	decoder := stringDecoders[tag]
+	if decoder != nil {
+		v.SetString(decoder(r))
+		return
+	}
+	castError(tag, "string")
 }

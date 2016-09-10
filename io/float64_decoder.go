@@ -12,7 +12,7 @@
  *                                                        *
  * hprose float64 decoder for Go.                         *
  *                                                        *
- * LastModified: Sep 7, 2016                              *
+ * LastModified: Sep 10, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -103,6 +103,11 @@ var float64Decoders = [256]func(r *Reader) float64{
 	TagRef:      readRefAsFloat64,
 }
 
-func float64Decoder(r *Reader, v reflect.Value) {
-	v.SetFloat(r.ReadFloat64())
+func float64Decoder(r *Reader, v reflect.Value, tag byte) {
+	decoder := float64Decoders[tag]
+	if decoder != nil {
+		v.SetFloat(decoder(r))
+		return
+	}
+	castError(tag, "float64")
 }

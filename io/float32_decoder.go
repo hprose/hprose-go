@@ -12,7 +12,7 @@
  *                                                        *
  * hprose float32 decoder for Go.                         *
  *                                                        *
- * LastModified: Sep 7, 2016                              *
+ * LastModified: Sep 10, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -103,6 +103,11 @@ var float32Decoders = [256]func(r *Reader) float32{
 	TagRef:      readRefAsFloat32,
 }
 
-func float32Decoder(r *Reader, v reflect.Value) {
-	v.SetFloat(float64(r.ReadFloat32()))
+func float32Decoder(r *Reader, v reflect.Value, tag byte) {
+	decoder := float32Decoders[tag]
+	if decoder != nil {
+		v.SetFloat(float64(decoder(r)))
+		return
+	}
+	castError(tag, "float32")
 }

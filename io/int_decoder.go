@@ -12,7 +12,7 @@
  *                                                        *
  * hprose int decoder for Go.                             *
  *                                                        *
- * LastModified: Sep 6, 2016                              *
+ * LastModified: Sep 10, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -68,7 +68,7 @@ func readRefAsInt(r *Reader) int64 {
 	}
 	panic(errors.New("value of type " +
 		reflect.TypeOf(ref).String() +
-		" cannot be converted to type int"))
+		" cannot be converted to type int64"))
 }
 
 var intDecoders = [256]func(r *Reader) int64{
@@ -96,6 +96,11 @@ var intDecoders = [256]func(r *Reader) int64{
 	TagRef:      readRefAsInt,
 }
 
-func intDecoder(r *Reader, v reflect.Value) {
-	v.SetInt(r.ReadInt())
+func intDecoder(r *Reader, v reflect.Value, tag byte) {
+	decoder := intDecoders[tag]
+	if decoder != nil {
+		v.SetInt(decoder(r))
+		return
+	}
+	castError(tag, "int64")
 }

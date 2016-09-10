@@ -12,7 +12,7 @@
  *                                                        *
  * hprose slice decoder for Go.                           *
  *                                                        *
- * LastModified: Sep 9, 2016                              *
+ * LastModified: Sep 10, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -24,7 +24,7 @@ import (
 	"reflect"
 )
 
-func readBytesAsSlice(r *Reader, v reflect.Value) {
+func readBytesAsSlice(r *Reader, v reflect.Value, tag byte) {
 	if v.Type().Elem().Kind() != reflect.Uint8 {
 		panic(errors.New("cannot be converted []byte to " + v.Type().String()))
 	}
@@ -47,7 +47,7 @@ func readBytesAsSlice(r *Reader, v reflect.Value) {
 	r.readByte()
 }
 
-func readListAsSlice(r *Reader, v reflect.Value) {
+func readListAsSlice(r *Reader, v reflect.Value, tag byte) {
 	n := v.Cap()
 	l := readCount(&r.ByteReader)
 	if n >= l {
@@ -64,7 +64,7 @@ func readListAsSlice(r *Reader, v reflect.Value) {
 	r.readByte()
 }
 
-func readRefAsSlice(r *Reader, v reflect.Value) {
+func readRefAsSlice(r *Reader, v reflect.Value, tag byte) {
 	ref := r.ReadRef()
 	if b, ok := ref.([]byte); ok {
 		reflect.Copy(v, reflect.ValueOf(b))
@@ -83,7 +83,7 @@ func readRefAsSlice(r *Reader, v reflect.Value) {
 		" cannot be converted to type slice"))
 }
 
-var sliceDecoders = [256]func(r *Reader, v reflect.Value){
+var sliceDecoders = [256]func(r *Reader, v reflect.Value, tag byte){
 	TagNull:  nilDecoder,
 	TagEmpty: nilDecoder,
 	TagBytes: readBytesAsSlice,
@@ -91,11 +91,10 @@ var sliceDecoders = [256]func(r *Reader, v reflect.Value){
 	TagRef:   readRefAsSlice,
 }
 
-func sliceDecoder(r *Reader, v reflect.Value) {
-	tag := r.readByte()
+func sliceDecoder(r *Reader, v reflect.Value, tag byte) {
 	decoder := sliceDecoders[tag]
 	if decoder != nil {
-		decoder(r, v)
+		decoder(r, v, tag)
 		return
 	}
 	castError(tag, "slice")

@@ -12,7 +12,7 @@
  *                                                        *
  * hprose encoder for Go.                                 *
  *                                                        *
- * LastModified: Sep 6, 2016                              *
+ * LastModified: Sep 10, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -142,15 +142,15 @@ func stringPtrEncoder(w *Writer, v reflect.Value, ptr unsafe.Pointer) {
 
 func structPtrEncoder(w *Writer, v reflect.Value, ptr unsafe.Pointer) {
 	switch *(*uintptr)(unsafe.Pointer(&v)) {
-	case bigIntType:
+	case bigIntPtrType:
 		w.WriteBigInt((*big.Int)(ptr))
-	case bigRatType:
+	case bigRatPtrType:
 		w.WriteBigRat((*big.Rat)(ptr))
-	case bigFloatType:
+	case bigFloatPtrType:
 		w.WriteBigFloat((*big.Float)(ptr))
-	case timeType:
+	case timePtrType:
 		w.WriteTime((*time.Time)(ptr))
-	case listType:
+	case listPtrType:
 		w.WriteList((*list.List)(ptr))
 	default:
 		if !writeRef(w, ptr) {

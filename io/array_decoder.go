@@ -12,7 +12,7 @@
  *                                                        *
  * hprose array decoder for Go.                           *
  *                                                        *
- * LastModified: Sep 9, 2016                              *
+ * LastModified: Sep 10, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -25,7 +25,7 @@ import (
 	"unsafe"
 )
 
-func readBytesAsArray(r *Reader, v reflect.Value) {
+func readBytesAsArray(r *Reader, v reflect.Value, tag byte) {
 	if !r.Simple {
 		setReaderRef(r, v)
 	}
@@ -50,7 +50,7 @@ func readBytesAsArray(r *Reader, v reflect.Value) {
 	r.readByte()
 }
 
-func readListAsArray(r *Reader, v reflect.Value) {
+func readListAsArray(r *Reader, v reflect.Value, tag byte) {
 	n := v.Len()
 	l := readCount(&r.ByteReader)
 	if !r.Simple {
@@ -69,7 +69,7 @@ func readListAsArray(r *Reader, v reflect.Value) {
 	r.readByte()
 }
 
-func readRefAsArray(r *Reader, v reflect.Value) {
+func readRefAsArray(r *Reader, v reflect.Value, tag byte) {
 	ref := r.ReadRef()
 	if b, ok := ref.([]byte); ok {
 		reflect.Copy(v, reflect.ValueOf(b))
@@ -84,7 +84,7 @@ func readRefAsArray(r *Reader, v reflect.Value) {
 		" cannot be converted to type array"))
 }
 
-var arrayDecoders = [256]func(r *Reader, v reflect.Value){
+var arrayDecoders = [256]func(r *Reader, v reflect.Value, tag byte){
 	TagNull:  nilDecoder,
 	TagEmpty: nilDecoder,
 	TagBytes: readBytesAsArray,
@@ -92,11 +92,10 @@ var arrayDecoders = [256]func(r *Reader, v reflect.Value){
 	TagRef:   readRefAsArray,
 }
 
-func arrayDecoder(r *Reader, v reflect.Value) {
-	tag := r.readByte()
+func arrayDecoder(r *Reader, v reflect.Value, tag byte) {
 	decoder := arrayDecoders[tag]
 	if decoder != nil {
-		decoder(r, v)
+		decoder(r, v, tag)
 		return
 	}
 	castError(tag, "array")

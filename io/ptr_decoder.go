@@ -19,11 +19,23 @@
 
 package io
 
-import "reflect"
+import (
+	"reflect"
+	"unsafe"
+)
 
-func ptrDecoder(r *Reader, v reflect.Value) {
+func ptrDecoder(r *Reader, v reflect.Value, tag byte) {
+	if tag == TagNull {
+		if v.IsNil() {
+			return
+		}
+		(*reflectValue)(unsafe.Pointer(&v)).ptr = unsafe.Pointer(nil)
+		return
+	}
 	if v.IsNil() {
 		v.Set(reflect.New(v.Type().Elem()))
 	}
-	r.ReadValue(v.Elem())
+	e := v.Elem()
+	decoder := valueDecoders[e.Kind()]
+	decoder(r, e, tag)
 }

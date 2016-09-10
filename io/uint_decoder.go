@@ -12,7 +12,7 @@
  *                                                        *
  * hprose uint decoder for Go.                            *
  *                                                        *
- * LastModified: Sep 7, 2016                              *
+ * LastModified: Sep 10, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -68,7 +68,7 @@ func readRefAsUint(r *Reader) uint64 {
 	}
 	panic(errors.New("value of type " +
 		reflect.TypeOf(ref).String() +
-		" cannot be converted to type uint"))
+		" cannot be converted to type uint64"))
 }
 
 var uintDecoders = [256]func(r *Reader) uint64{
@@ -96,6 +96,11 @@ var uintDecoders = [256]func(r *Reader) uint64{
 	TagRef:      readRefAsUint,
 }
 
-func uintDecoder(r *Reader, v reflect.Value) {
-	v.SetUint(r.ReadUint())
+func uintDecoder(r *Reader, v reflect.Value, tag byte) {
+	decoder := uintDecoders[tag]
+	if decoder != nil {
+		v.SetUint(decoder(r))
+		return
+	}
+	castError(tag, "uint64")
 }

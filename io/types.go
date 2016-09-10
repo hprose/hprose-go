@@ -41,9 +41,15 @@ func getType(v interface{}) uintptr {
 	return *(*uintptr)(unsafe.Pointer(&v))
 }
 
-var bigIntType = getType((*big.Int)(nil))
-var bigRatType = getType((*big.Rat)(nil))
-var bigFloatType = getType((*big.Float)(nil))
-var timeType = getType((*time.Time)(nil))
-var listType = getType((*list.List)(nil))
+var bigIntPtrType = getType((*big.Int)(nil))
+var bigRatPtrType = getType((*big.Rat)(nil))
+var bigFloatPtrType = getType((*big.Float)(nil))
+var timePtrType = getType((*time.Time)(nil))
+var listPtrType = getType((*list.List)(nil))
 var bytesType = getType(([]byte)(nil))
+
+var bigIntType = getType(big.Int{})
+var bigRatType = getType(big.Rat{})
+var bigFloatType = getType(big.Float{})
+var timeType = getType(time.Time{})
+var listType = getType(list.List{})
