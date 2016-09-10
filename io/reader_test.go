@@ -1342,9 +1342,21 @@ func TestUnserializeNilPtr(t *testing.T) {
 
 func TestUnserializeBigInt(t *testing.T) {
 	w := NewWriter(false)
+	bi, _ := new(big.Int).SetString("1234567890987654321234567890987654321", 10)
+	data := []*big.Int{
+		big.NewInt(0),
+		big.NewInt(1),
+		big.NewInt(10),
+		big.NewInt(100),
+		big.NewInt(math.MaxInt64),
+		big.NewInt(math.MinInt64),
+		bi,
+	}
 	w.Serialize(nil)
-	w.Serialize(0)
-	w.Serialize(1)
+	w.Serialize("1234567890987654321234567890987654321")
+	for _, v := range data {
+		w.Serialize(v)
+	}
 	reader := NewReader(w.Bytes(), false)
 	var p *big.Int
 	reader.Unserialize(&p)
@@ -1352,12 +1364,74 @@ func TestUnserializeBigInt(t *testing.T) {
 		t.Error(p, nil)
 	}
 	reader.Unserialize(&p)
-	if p.Cmp(big.NewInt(0)) != 0 {
-		t.Error(p, 0)
+	if p.Cmp(bi) != 0 {
+		t.Error(p, bi)
 	}
-	reader.Unserialize(&p)
-	if p.Cmp(big.NewInt(1)) != 0 {
-		t.Error(p, 1)
+	for _, v := range data {
+		reader.Unserialize(&p)
+		if p.Cmp(v) != 0 {
+			t.Error(p, v)
+		}
+	}
+	w.Close()
+}
+
+func BenchmarkUnserializeNilInterface(b *testing.B) {
+	w := NewWriter(true)
+	w.Serialize(nil)
+	bytes := w.Bytes()
+	var p interface{}
+	for i := 0; i < b.N; i++ {
+		reader := NewReader(bytes, true)
+		reader.Unserialize(&p)
+	}
+	w.Close()
+}
+
+func BenchmarkUnserializeNilPtr(b *testing.B) {
+	w := NewWriter(true)
+	w.Serialize(nil)
+	bytes := w.Bytes()
+	var p *interface{}
+	for i := 0; i < b.N; i++ {
+		reader := NewReader(bytes, true)
+		reader.Unserialize(&p)
+	}
+	w.Close()
+}
+
+func BenchmarkUnserializeIntInterface(b *testing.B) {
+	w := NewWriter(true)
+	w.Serialize(123)
+	bytes := w.Bytes()
+	var p interface{}
+	for i := 0; i < b.N; i++ {
+		reader := NewReader(bytes, true)
+		reader.Unserialize(&p)
+	}
+	w.Close()
+}
+
+func BenchmarkUnserializeIntPtr(b *testing.B) {
+	w := NewWriter(true)
+	w.Serialize(123)
+	bytes := w.Bytes()
+	var p *int
+	for i := 0; i < b.N; i++ {
+		reader := NewReader(bytes, true)
+		reader.Unserialize(&p)
+	}
+	w.Close()
+}
+
+func BenchmarkUnserializeBigInt(b *testing.B) {
+	w := NewWriter(true)
+	w.Serialize(123)
+	bytes := w.Bytes()
+	var p *big.Int
+	for i := 0; i < b.N; i++ {
+		reader := NewReader(bytes, true)
+		reader.Unserialize(&p)
 	}
 	w.Close()
 }

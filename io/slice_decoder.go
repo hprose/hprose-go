@@ -97,5 +97,5 @@ func sliceDecoder(r *Reader, v reflect.Value, tag byte) {
 		decoder(r, v, tag)
 		return
 	}
-	castError(tag, "slice")
+	castError(tag, v.Type().String())
 }

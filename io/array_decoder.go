@@ -98,5 +98,5 @@ func arrayDecoder(r *Reader, v reflect.Value, tag byte) {
 		decoder(r, v, tag)
 		return
 	}
-	castError(tag, "array")
+	castError(tag, v.Type().String())
 }
