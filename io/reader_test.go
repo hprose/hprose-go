@@ -1435,3 +1435,39 @@ func BenchmarkUnserializeBigInt(b *testing.B) {
 	}
 	w.Close()
 }
+
+func TestUnserializeBigRat(t *testing.T) {
+	w := NewWriter(false)
+	br, _ := new(big.Rat).SetString("1234567890987654321234567/890987654321")
+	data := []*big.Rat{
+		big.NewRat(0, 1),
+		big.NewRat(1, 2),
+		big.NewRat(10, 3),
+		big.NewRat(100, 4),
+		big.NewRat(math.MaxInt64, 1),
+		big.NewRat(math.MinInt64, 4),
+		br,
+	}
+	w.Serialize(nil)
+	w.Serialize("1234567890987654321234567/890987654321")
+	for _, v := range data {
+		w.Serialize(v)
+	}
+	reader := NewReader(w.Bytes(), false)
+	var p *big.Rat
+	reader.Unserialize(&p)
+	if p != nil {
+		t.Error(p, nil)
+	}
+	reader.Unserialize(&p)
+	if p.Cmp(br) != 0 {
+		t.Error(p, br)
+	}
+	for _, v := range data {
+		reader.Unserialize(&p)
+		if p.Cmp(v) != 0 {
+			t.Error(p, v)
+		}
+	}
+	w.Close()
+}
