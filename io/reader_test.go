@@ -1367,11 +1367,11 @@ func TestUnserializeBigInt(t *testing.T) {
 	}
 	reader.Unserialize(&p)
 	if p.Cmp(big.NewInt(0)) != 0 {
-		t.Error(p, bi)
+		t.Error(p, big.NewInt(0))
 	}
 	reader.Unserialize(&p)
 	if p.Cmp(big.NewInt(10)) != 0 {
-		t.Error(p, bi)
+		t.Error(p, big.NewInt(10))
 	}
 	reader.Unserialize(&p)
 	if p.Cmp(bi) != 0 {
@@ -1459,6 +1459,8 @@ func TestUnserializeBigRat(t *testing.T) {
 		br,
 	}
 	w.Serialize(nil)
+	w.Serialize(0)
+	w.Serialize(10)
 	w.Serialize("1234567890987654321234567/890987654321")
 	for _, v := range data {
 		w.Serialize(v)
@@ -1468,6 +1470,14 @@ func TestUnserializeBigRat(t *testing.T) {
 	reader.Unserialize(&p)
 	if p != nil {
 		t.Error(p, nil)
+	}
+	reader.Unserialize(&p)
+	if p.Cmp(big.NewRat(0, 1)) != 0 {
+		t.Error(p, big.NewRat(0, 1))
+	}
+	reader.Unserialize(&p)
+	if p.Cmp(big.NewRat(10, 1)) != 0 {
+		t.Error(p, big.NewRat(10, 1))
 	}
 	reader.Unserialize(&p)
 	if p.Cmp(br) != 0 {
