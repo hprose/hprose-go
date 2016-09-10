@@ -1353,6 +1353,8 @@ func TestUnserializeBigInt(t *testing.T) {
 		bi,
 	}
 	w.Serialize(nil)
+	w.Serialize(0)
+	w.Serialize(10)
 	w.Serialize("1234567890987654321234567890987654321")
 	for _, v := range data {
 		w.Serialize(v)
@@ -1362,6 +1364,14 @@ func TestUnserializeBigInt(t *testing.T) {
 	reader.Unserialize(&p)
 	if p != nil {
 		t.Error(p, nil)
+	}
+	reader.Unserialize(&p)
+	if p.Cmp(big.NewInt(0)) != 0 {
+		t.Error(p, bi)
+	}
+	reader.Unserialize(&p)
+	if p.Cmp(big.NewInt(10)) != 0 {
+		t.Error(p, bi)
 	}
 	reader.Unserialize(&p)
 	if p.Cmp(bi) != 0 {
