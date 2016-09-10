@@ -19,7 +19,13 @@
 
 package io
 
-import "testing"
+import (
+	"encoding/json"
+	"fmt"
+	"math/rand"
+	"testing"
+	"time"
+)
 
 func TestFormat(t *testing.T) {
 	var i int
@@ -29,18 +35,160 @@ func TestFormat(t *testing.T) {
 	}
 }
 
-func BenchmarkMarshal(b *testing.B) {
+func randString(l int) string {
+	buf := make([]byte, l)
+	for i := 0; i < (l+1)/2; i++ {
+		buf[i] = byte(rand.Intn(256))
+	}
+	return fmt.Sprintf("%x", buf)[:l]
+}
+
+func BenchmarkHproseMarshal(b *testing.B) {
+	b.StopTimer()
+	type A struct {
+		Name     string
+		BirthDay time.Time
+		Phone    string
+		Siblings int
+		Spouse   bool
+		Money    float64
+	}
+	var a interface{} = A{
+		Name:     randString(16),
+		BirthDay: time.Now(),
+		Phone:    randString(10),
+		Siblings: rand.Intn(5),
+		Spouse:   rand.Intn(2) == 1,
+		Money:    rand.Float64(),
+	}
+	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		buf := Marshal(123)
-		Recycle(buf)
+		Recycle(Marshal(a))
 	}
 }
 
-func BenchmarkUnmarshal(b *testing.B) {
-	buf := Marshal(123)
-	var x int
+func BenchmarkHproseUnmarshal(b *testing.B) {
+	b.StopTimer()
+	type A struct {
+		Name     string
+		BirthDay time.Time
+		Phone    string
+		Siblings int
+		Spouse   bool
+		Money    float64
+	}
+	var a interface{} = A{
+		Name:     randString(16),
+		BirthDay: time.Now(),
+		Phone:    randString(10),
+		Siblings: rand.Intn(5),
+		Spouse:   rand.Intn(2) == 1,
+		Money:    rand.Float64(),
+	}
+	buf := Marshal(a)
+	var x A
+	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		Unmarshal(buf, &x)
 	}
-	Recycle(buf)
+}
+
+func BenchmarkHproseSerialize(b *testing.B) {
+	b.StopTimer()
+	type A struct {
+		Name     string
+		BirthDay time.Time
+		Phone    string
+		Siblings int
+		Spouse   bool
+		Money    float64
+	}
+	var a interface{} = A{
+		Name:     randString(16),
+		BirthDay: time.Now(),
+		Phone:    randString(10),
+		Siblings: rand.Intn(5),
+		Spouse:   rand.Intn(2) == 1,
+		Money:    rand.Float64(),
+	}
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		Recycle(Serialize(a, false))
+	}
+}
+
+func BenchmarkHproseUnserialize(b *testing.B) {
+	b.StopTimer()
+	type A struct {
+		Name     string
+		BirthDay time.Time
+		Phone    string
+		Siblings int
+		Spouse   bool
+		Money    float64
+	}
+	var a interface{} = A{
+		Name:     randString(16),
+		BirthDay: time.Now(),
+		Phone:    randString(10),
+		Siblings: rand.Intn(5),
+		Spouse:   rand.Intn(2) == 1,
+		Money:    rand.Float64(),
+	}
+	buf := Marshal(a)
+	var x A
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		Unserialize(buf, &x, false)
+	}
+}
+
+func BenchmarkJSONMarshal(b *testing.B) {
+	b.StopTimer()
+	type A struct {
+		Name     string
+		BirthDay time.Time
+		Phone    string
+		Siblings int
+		Spouse   bool
+		Money    float64
+	}
+	var a interface{} = A{
+		Name:     randString(16),
+		BirthDay: time.Now(),
+		Phone:    randString(10),
+		Siblings: rand.Intn(5),
+		Spouse:   rand.Intn(2) == 1,
+		Money:    rand.Float64(),
+	}
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		json.Marshal(a)
+	}
+}
+
+func BenchmarkJSONUnmarshal(b *testing.B) {
+	b.StopTimer()
+	type A struct {
+		Name     string
+		BirthDay time.Time
+		Phone    string
+		Siblings int
+		Spouse   bool
+		Money    float64
+	}
+	var a interface{} = A{
+		Name:     randString(16),
+		BirthDay: time.Now(),
+		Phone:    randString(10),
+		Siblings: rand.Intn(5),
+		Spouse:   rand.Intn(2) == 1,
+		Money:    rand.Float64(),
+	}
+	buf, _ := json.Marshal(a)
+	var x A
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		json.Unmarshal(buf, &x)
+	}
 }
