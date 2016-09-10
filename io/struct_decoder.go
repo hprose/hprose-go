@@ -22,6 +22,8 @@ package io
 import (
 	"math/big"
 	"reflect"
+	"strconv"
+	"time"
 	"unsafe"
 )
 
@@ -34,6 +36,8 @@ func readDigitAsStruct(r *Reader, v reflect.Value, tag byte) {
 		v.Set(reflect.ValueOf(*big.NewRat(int64(tag-'0'), 1)))
 	case bigFloatType:
 		v.Set(reflect.ValueOf(*big.NewFloat(float64(tag - '0'))))
+	case timeType:
+		v.Set(reflect.ValueOf(time.Unix(int64(tag-'0'), 0)))
 	default:
 		castError(tag, v.Type().String())
 	}
@@ -49,6 +53,8 @@ func readIntAsStruct(r *Reader, v reflect.Value, tag byte) {
 		v.Set(reflect.ValueOf(*big.NewRat(i, 1)))
 	case bigFloatType:
 		v.Set(reflect.ValueOf(*big.NewFloat(float64(i))))
+	case timeType:
+		v.Set(reflect.ValueOf(time.Unix(i, 0)))
 	default:
 		castError(tag, v.Type().String())
 	}
@@ -72,6 +78,12 @@ func readLongAsStruct(r *Reader, v reflect.Value, tag byte) {
 		} else {
 			panic(err)
 		}
+	case timeType:
+		if unix, err := strconv.ParseInt(i, 10, 64); err == nil {
+			v.Set(reflect.ValueOf(time.Unix(unix, 0)))
+		} else {
+			panic(err)
+		}
 	default:
 		castError(tag, v.Type().String())
 	}
@@ -87,10 +99,20 @@ func readDoubleAsStruct(r *Reader, v reflect.Value, tag byte) {
 		} else {
 			panic(err)
 		}
+	case timeType:
+		if unix, err := strconv.ParseFloat(f, 10); err == nil {
+			sec := int64(unix)
+			nsec := int64((unix - float64(sec)) * 1000000000)
+			v.Set(reflect.ValueOf(time.Unix(sec, nsec)))
+		} else {
+			panic(err)
+		}
 	default:
 		castError(tag, v.Type().String())
 	}
 }
+
+const timeStringFormat = "2006-01-02 15:04:05.999999999 -0700 MST"
 
 func readStringAsStruct(r *Reader, v reflect.Value, tag byte) {
 	str := r.ReadStringWithoutTag()
@@ -110,9 +132,42 @@ func readStringAsStruct(r *Reader, v reflect.Value, tag byte) {
 		} else {
 			panic(err)
 		}
+	case timeType:
+		if t, err := time.Parse(timeStringFormat, str); err == nil {
+			v.Set(reflect.ValueOf(t))
+		} else {
+			panic(err)
+		}
 	default:
 		castError(tag, v.Type().String())
 	}
+}
+
+func readTimeAsStruct(t time.Time, v reflect.Value, tag byte) {
+	typ := (*reflectValue)(unsafe.Pointer(&v)).typ
+	switch typ {
+	case bigIntType:
+		v.Set(reflect.ValueOf(*new(big.Int).SetInt64(t.Unix())))
+	case bigRatType:
+		v.Set(reflect.ValueOf(*new(big.Rat).SetInt64(t.Unix())))
+	case bigFloatType:
+		ft := float64(t.Unix()) + float64(t.Nanosecond())/1000000000
+		v.Set(reflect.ValueOf(*new(big.Float).SetFloat64(ft)))
+	case timeType:
+		v.Set(reflect.ValueOf(t))
+	default:
+		castError(tag, v.Type().String())
+	}
+}
+func readDateTimeStruct(r *Reader, v reflect.Value, tag byte) {
+	readTimeAsStruct(r.ReadDateTimeWithoutTag(), v, tag)
+}
+
+func readTimeStruct(r *Reader, v reflect.Value, tag byte) {
+	readTimeAsStruct(r.ReadTimeWithoutTag(), v, tag)
+}
+
+func readListAsStruct(r *Reader, v reflect.Value, tag byte) {
 }
 
 func readMapAsStruct(r *Reader, v reflect.Value, tag byte) {
@@ -143,6 +198,9 @@ var structDecoders = [256]func(r *Reader, v reflect.Value, tag byte){
 	TagLong:    readLongAsStruct,
 	TagDouble:  readDoubleAsStruct,
 	TagString:  readStringAsStruct,
+	TagDate:    readDateTimeStruct,
+	TagTime:    readTimeStruct,
+	TagList:    readListAsStruct,
 	TagMap:     readMapAsStruct,
 	TagClass:   readStructMeta,
 	TagObject:  readStructData,

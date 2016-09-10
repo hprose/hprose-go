@@ -1353,7 +1353,7 @@ func TestUnserializeBigInt(t *testing.T) {
 		bi,
 	}
 	w.Serialize(nil)
-	w.Serialize(0)
+	w.Serialize(1)
 	w.Serialize(10)
 	w.Serialize("1234567890987654321234567890987654321")
 	for _, v := range data {
@@ -1366,8 +1366,8 @@ func TestUnserializeBigInt(t *testing.T) {
 		t.Error(p, nil)
 	}
 	reader.Unserialize(&p)
-	if p.Cmp(big.NewInt(0)) != 0 {
-		t.Error(p, big.NewInt(0))
+	if p.Cmp(big.NewInt(1)) != 0 {
+		t.Error(p, big.NewInt(1))
 	}
 	reader.Unserialize(&p)
 	if p.Cmp(big.NewInt(10)) != 0 {
@@ -1459,7 +1459,7 @@ func TestUnserializeBigRat(t *testing.T) {
 		br,
 	}
 	w.Serialize(nil)
-	w.Serialize(0)
+	w.Serialize(1)
 	w.Serialize(10)
 	w.Serialize("1234567890987654321234567/890987654321")
 	for _, v := range data {
@@ -1472,8 +1472,8 @@ func TestUnserializeBigRat(t *testing.T) {
 		t.Error(p, nil)
 	}
 	reader.Unserialize(&p)
-	if p.Cmp(big.NewRat(0, 1)) != 0 {
-		t.Error(p, big.NewRat(0, 1))
+	if p.Cmp(big.NewRat(1, 1)) != 0 {
+		t.Error(p, big.NewRat(1, 1))
 	}
 	reader.Unserialize(&p)
 	if p.Cmp(big.NewRat(10, 1)) != 0 {
@@ -1497,7 +1497,7 @@ func TestUnserializeBigFloat(t *testing.T) {
 	bl, _, _ := new(big.Float).Parse(strconv.Itoa(math.MaxInt64), 10)
 	bf, _, _ := new(big.Float).Parse("1234567890987654321234567.890987654321", 10)
 	w.Serialize(nil)
-	w.Serialize(0)
+	w.Serialize(1)
 	w.Serialize(10)
 	w.Serialize(math.MaxInt64)
 	w.Serialize(bf)
@@ -1509,8 +1509,8 @@ func TestUnserializeBigFloat(t *testing.T) {
 		t.Error(p, nil)
 	}
 	reader.Unserialize(&p)
-	if p.Cmp(big.NewFloat(0)) != 0 {
-		t.Error(p, big.NewFloat(0))
+	if p.Cmp(big.NewFloat(1)) != 0 {
+		t.Error(p, big.NewFloat(1))
 	}
 	reader.Unserialize(&p)
 	if p.Cmp(big.NewFloat(10)) != 0 {
@@ -1527,6 +1527,56 @@ func TestUnserializeBigFloat(t *testing.T) {
 	reader.Unserialize(&p)
 	if p.Cmp(bf) != 0 {
 		t.Error(p, bf)
+	}
+	w.Close()
+}
+
+func TestUnserializeTime(t *testing.T) {
+	t1 := time.Date(1980, 12, 1, 12, 34, 56, 123456789, time.UTC)
+	t2 := time.Date(1970, 1, 1, 12, 34, 56, 123456789, time.UTC)
+	w := NewWriter(false)
+	w.Serialize(nil)
+	w.Serialize(1)
+	w.Serialize(10)
+	w.Serialize(math.MaxInt64)
+	w.Serialize(t1)
+	w.Serialize(t2)
+	reader := NewReader(w.Bytes(), false)
+	var p *time.Time
+	reader.Unserialize(&p)
+	if p != nil {
+		t.Error(p, nil)
+	}
+	reader.Unserialize(&p)
+	if !reflect.DeepEqual(*p, time.Unix(1, 0)) {
+		t.Error(p, time.Unix(1, 0))
+	}
+	reader.Unserialize(&p)
+	if !reflect.DeepEqual(*p, time.Unix(10, 0)) {
+		t.Error(p, time.Unix(10, 0))
+	}
+	reader.Unserialize(&p)
+	if !reflect.DeepEqual(*p, time.Unix(math.MaxInt64, 0)) {
+		t.Error(p, time.Unix(math.MaxInt64, 0))
+	}
+	reader.Unserialize(&p)
+	if !reflect.DeepEqual(*p, t1) {
+		t.Error(p, t1)
+	}
+	reader.Unserialize(&p)
+	if !reflect.DeepEqual(*p, t2) {
+		t.Error(p, t2)
+	}
+}
+
+func BenchmarkUnserializeTime(b *testing.B) {
+	w := NewWriter(true)
+	w.Serialize(123)
+	bytes := w.Bytes()
+	var p time.Time
+	for i := 0; i < b.N; i++ {
+		reader := NewReader(bytes, true)
+		reader.Unserialize(&p)
 	}
 	w.Close()
 }
