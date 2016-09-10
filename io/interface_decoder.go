@@ -25,72 +25,146 @@ import (
 	"reflect"
 )
 
-func readInterfaceSlice(r *Reader) interface{} {
-	var slice []interface{}
-	readListAsSlice(r, reflect.ValueOf(&slice).Elem(), TagList)
-	return slice
+func readDigitAsInterface(r *Reader, v reflect.Value, tag byte) {
+	v.Set(reflect.ValueOf(int(tag - '0')))
 }
 
-func readInterfaceMap(r *Reader) interface{} {
+func readNilAsInterface(r *Reader, v reflect.Value, tag byte) {
+	if v.IsNil() {
+		return
+	}
+	v.Set(reflect.Zero(v.Type()))
+}
+
+func readEmptyAsInterface(r *Reader, v reflect.Value, tag byte) {
+	v.Set(reflect.ValueOf(""))
+}
+
+func readFalseAsInterface(r *Reader, v reflect.Value, tag byte) {
+	v.Set(reflect.ValueOf(false))
+}
+
+func readTrueAsInterface(r *Reader, v reflect.Value, tag byte) {
+	v.Set(reflect.ValueOf(true))
+}
+
+func readNaNAsInterface(r *Reader, v reflect.Value, tag byte) {
+	v.Set(reflect.ValueOf(math.NaN()))
+}
+
+func readInfAsInterface(r *Reader, v reflect.Value, tag byte) {
+	v.Set(reflect.ValueOf(readInf(&r.ByteReader)))
+}
+
+func readIntAsInterface(r *Reader, v reflect.Value, tag byte) {
+	v.Set(reflect.ValueOf(readInt(&r.ByteReader)))
+}
+
+func readLongAsInterface(r *Reader, v reflect.Value, tag byte) {
+	v.Set(reflect.ValueOf(r.ReadBigIntWithoutTag()))
+}
+
+func readFloatAsInterface(r *Reader, v reflect.Value, tag byte) {
+	v.Set(reflect.ValueOf(readFloat64(&r.ByteReader)))
+}
+
+func readUTF8CharAsInterface(r *Reader, v reflect.Value, tag byte) {
+	v.Set(reflect.ValueOf(readUTF8CharAsString(r)))
+}
+
+func readStringAsInterface(r *Reader, v reflect.Value, tag byte) {
+	v.Set(reflect.ValueOf(r.ReadStringWithoutTag()))
+}
+
+func readBytesAsInterface(r *Reader, v reflect.Value, tag byte) {
+	v.Set(reflect.ValueOf(r.ReadBytesWithoutTag()))
+}
+
+func readGUIDAsInterface(r *Reader, v reflect.Value, tag byte) {
+	v.Set(reflect.ValueOf(readGUIDAsString(r)))
+}
+
+func readDateTimeAsInterface(r *Reader, v reflect.Value, tag byte) {
+	v.Set(reflect.ValueOf(r.ReadDateTimeWithoutTag()))
+}
+
+func readTimeAsInterface(r *Reader, v reflect.Value, tag byte) {
+	v.Set(reflect.ValueOf(r.ReadTimeWithoutTag()))
+}
+
+func readListAsInterface(r *Reader, v reflect.Value, tag byte) {
+	var slice []interface{}
+	sv := reflect.ValueOf(&slice).Elem()
+	readListAsSlice(r, sv, TagList)
+	v.Set(sv)
+}
+
+func readMapAsInterface(r *Reader, v reflect.Value, tag byte) {
+	var mv reflect.Value
 	if r.JSONCompatible {
 		var m map[string]interface{}
-		readMap(r, reflect.ValueOf(&m).Elem(), TagMap)
-		return m
+		mv = reflect.ValueOf(&m).Elem()
+	} else {
+		var m map[interface{}]interface{}
+		mv = reflect.ValueOf(&m).Elem()
 	}
-	var m map[interface{}]interface{}
-	readMap(r, reflect.ValueOf(&m).Elem(), TagMap)
-	return m
+	readMap(r, mv, TagMap)
+	v.Set(mv)
 }
 
-var interfaceDecoders = [256]func(r *Reader) interface{}{
-	'0':         func(r *Reader) interface{} { return 0 },
-	'1':         func(r *Reader) interface{} { return 1 },
-	'2':         func(r *Reader) interface{} { return 2 },
-	'3':         func(r *Reader) interface{} { return 3 },
-	'4':         func(r *Reader) interface{} { return 4 },
-	'5':         func(r *Reader) interface{} { return 5 },
-	'6':         func(r *Reader) interface{} { return 6 },
-	'7':         func(r *Reader) interface{} { return 7 },
-	'8':         func(r *Reader) interface{} { return 8 },
-	'9':         func(r *Reader) interface{} { return 9 },
-	TagNull:     func(r *Reader) interface{} { return nil },
-	TagEmpty:    func(r *Reader) interface{} { return "" },
-	TagFalse:    func(r *Reader) interface{} { return false },
-	TagTrue:     func(r *Reader) interface{} { return true },
-	TagNaN:      func(r *Reader) interface{} { return math.NaN() },
-	TagInfinity: func(r *Reader) interface{} { return readInf(&r.ByteReader) },
-	TagInteger:  func(r *Reader) interface{} { return readInt(&r.ByteReader) },
-	TagLong:     func(r *Reader) interface{} { return r.ReadBigIntWithoutTag() },
-	TagDouble:   func(r *Reader) interface{} { return readFloat64(&r.ByteReader) },
-	TagUTF8Char: func(r *Reader) interface{} { return readUTF8CharAsString(r) },
-	TagString:   func(r *Reader) interface{} { return r.ReadStringWithoutTag() },
-	TagBytes:    func(r *Reader) interface{} { return r.ReadBytesWithoutTag() },
-	TagGUID:     func(r *Reader) interface{} { return readGUIDAsString(r) },
-	TagDate:     func(r *Reader) interface{} { return r.ReadDateTimeWithoutTag() },
-	TagTime:     func(r *Reader) interface{} { return r.ReadTimeWithoutTag() },
-	TagList:     readInterfaceSlice,
-	TagMap:      readInterfaceMap,
-	TagClass:    func(r *Reader) interface{} { panic("TODO") },
-	TagObject:   func(r *Reader) interface{} { panic("TODO") },
-	TagRef:      func(r *Reader) interface{} { return r.ReadRef() },
+func readRefAsInterface(r *Reader, v reflect.Value, tag byte) {
+	iv := reflect.ValueOf(r.ReadRef())
+	t := v.Type()
+	it := iv.Type()
+	if it.AssignableTo(t) {
+		v.Set(iv)
+	} else if it.ConvertibleTo(t) {
+		v.Set(iv.Convert(t))
+	} else {
+		panic(errors.New(it.String() +
+			" cannot be converted to type" +
+			t.String()))
+	}
+}
+
+var interfaceDecoders = [256]func(r *Reader, v reflect.Value, tag byte){
+	'0':         readDigitAsInterface,
+	'1':         readDigitAsInterface,
+	'2':         readDigitAsInterface,
+	'3':         readDigitAsInterface,
+	'4':         readDigitAsInterface,
+	'5':         readDigitAsInterface,
+	'6':         readDigitAsInterface,
+	'7':         readDigitAsInterface,
+	'8':         readDigitAsInterface,
+	'9':         readDigitAsInterface,
+	TagNull:     readNilAsInterface,
+	TagEmpty:    readEmptyAsInterface,
+	TagFalse:    readFalseAsInterface,
+	TagTrue:     readTrueAsInterface,
+	TagNaN:      readNaNAsInterface,
+	TagInfinity: readInfAsInterface,
+	TagInteger:  readIntAsInterface,
+	TagLong:     readLongAsInterface,
+	TagDouble:   readFloatAsInterface,
+	TagUTF8Char: readUTF8CharAsInterface,
+	TagString:   readStringAsInterface,
+	TagBytes:    readBytesAsInterface,
+	TagGUID:     readGUIDAsInterface,
+	TagDate:     readDateTimeAsInterface,
+	TagTime:     readTimeAsInterface,
+	TagList:     readListAsInterface,
+	TagMap:      readMapAsInterface,
+	TagClass:    func(r *Reader, v reflect.Value, tag byte) { panic("TODO") },
+	TagObject:   func(r *Reader, v reflect.Value, tag byte) { panic("TODO") },
+	TagRef:      readRefAsInterface,
 }
 
 func interfaceDecoder(r *Reader, v reflect.Value, tag byte) {
 	decoder := interfaceDecoders[tag]
-	if decoder == nil {
-		castError(tag, "interface{}")
+	if decoder != nil {
+		decoder(r, v, tag)
+		return
 	}
-	p := decoder(r)
-	t := v.Type()
-	rv := reflect.ValueOf(&p).Elem()
-	rt := rv.Type()
-	if rt.AssignableTo(t) {
-		v.Set(rv)
-	} else if rt.ConvertibleTo(t) {
-		v.Set(rv.Convert(t))
-	} else {
-		panic(errors.New(rt.String() +
-			" cannot be converted to type" +
-			t.String()))
-	}
+	castError(tag, "interface{}")
 }

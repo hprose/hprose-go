@@ -12,7 +12,7 @@
  *                                                        *
  * hprose map decoder for Go.                             *
  *                                                        *
- * LastModified: Sep 9, 2016                              *
+ * LastModified: Sep 10, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -98,11 +98,13 @@ func readRefAsMap(r *Reader, v reflect.Value, tag byte) {
 }
 
 var mapDecoders = [256]func(r *Reader, v reflect.Value, tag byte){
-	TagNull:  nilDecoder,
-	TagEmpty: nilDecoder,
-	TagList:  readListAsMap,
-	TagMap:   readMap,
-	TagRef:   readRefAsMap,
+	TagNull:   nilDecoder,
+	TagEmpty:  nilDecoder,
+	TagList:   readListAsMap,
+	TagMap:    readMap,
+	TagClass:  func(r *Reader, v reflect.Value, tag byte) { panic("TODO") },
+	TagObject: func(r *Reader, v reflect.Value, tag byte) { panic("TODO") },
+	TagRef:    readRefAsMap,
 }
 
 func mapDecoder(r *Reader, v reflect.Value, tag byte) {

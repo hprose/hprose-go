@@ -239,17 +239,6 @@ func (r *Reader) ReadBigIntWithoutTag() *big.Int {
 	return i
 }
 
-// ReadInterface from the reader
-func (r *Reader) ReadInterface() interface{} {
-	tag := r.readByte()
-	decoder := interfaceDecoders[tag]
-	if decoder != nil {
-		return decoder(r)
-	}
-	castError(tag, "interface{}")
-	return nil
-}
-
 // ReadRef from the reader
 func (r *Reader) ReadRef() interface{} {
 	if r.Simple {
