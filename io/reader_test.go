@@ -1494,10 +1494,12 @@ func TestUnserializeBigRat(t *testing.T) {
 
 func TestUnserializeBigFloat(t *testing.T) {
 	w := NewWriter(false)
+	bl, _, _ := new(big.Float).Parse(strconv.Itoa(math.MaxInt64), 10)
 	bf, _, _ := new(big.Float).Parse("1234567890987654321234567.890987654321", 10)
 	w.Serialize(nil)
 	w.Serialize(0)
 	w.Serialize(10)
+	w.Serialize(math.MaxInt64)
 	w.Serialize(bf)
 	w.Serialize("1234567890987654321234567.890987654321")
 	reader := NewReader(w.Bytes(), false)
@@ -1513,6 +1515,10 @@ func TestUnserializeBigFloat(t *testing.T) {
 	reader.Unserialize(&p)
 	if p.Cmp(big.NewFloat(10)) != 0 {
 		t.Error(p, big.NewFloat(10))
+	}
+	reader.Unserialize(&p)
+	if p.Cmp(bl) != 0 {
+		t.Error(p, bl)
 	}
 	reader.Unserialize(&p)
 	if p.Cmp(bf) != 0 {
