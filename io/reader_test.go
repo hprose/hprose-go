@@ -1173,3 +1173,151 @@ func TestUnserializeInterface(t *testing.T) {
 	}
 	w.Close()
 }
+
+func TestUnserializeIntPtr(t *testing.T) {
+	i := 123
+	w := NewWriter(false)
+	w.Serialize(&i)
+	w.Serialize(&i)
+	reader := NewReader(w.Bytes(), false)
+	var p *int
+	reader.Unserialize(&p)
+	if *p != i {
+		t.Error(*p, i)
+	}
+	reader.Unserialize(&p)
+	if *p != i {
+		t.Error(*p, i)
+	}
+	w.Close()
+}
+
+func TestUnserializeFloatPtr(t *testing.T) {
+	f := 3.14159
+	w := NewWriter(false)
+	w.Serialize(&f)
+	w.Serialize(&f)
+	reader := NewReader(w.Bytes(), false)
+	var p *float64
+	reader.Unserialize(&p)
+	if *p != f {
+		t.Error(*p, f)
+	}
+	reader.Unserialize(&p)
+	if *p != f {
+		t.Error(*p, f)
+	}
+	w.Close()
+}
+
+func TestUnserializeStringPtr(t *testing.T) {
+	str := "你好，🇨🇳"
+	w := NewWriter(false)
+	w.Serialize(&str)
+	w.Serialize(&str)
+	reader := NewReader(w.Bytes(), false)
+	var p *string
+	reader.Unserialize(&p)
+	if *p != str {
+		t.Error(*p, str)
+	}
+	reader.Unserialize(&p)
+	if *p != str {
+		t.Error(*p, str)
+	}
+	w.Close()
+}
+
+func TestUnserializeBoolPtr(t *testing.T) {
+	b := true
+	w := NewWriter(false)
+	w.Serialize(&b)
+	w.Serialize(&b)
+	reader := NewReader(w.Bytes(), false)
+	var p *bool
+	reader.Unserialize(&p)
+	if *p != b {
+		t.Error(*p, b)
+	}
+	reader.Unserialize(&p)
+	if *p != b {
+		t.Error(*p, b)
+	}
+	w.Close()
+}
+
+func TestUnserializeArrayPtr(t *testing.T) {
+	a := [5]int{1, 2, 3, 4, 5}
+	w := NewWriter(false)
+	w.Serialize(&a)
+	w.Serialize(&a)
+	reader := NewReader(w.Bytes(), false)
+	var p *[5]int
+	reader.Unserialize(&p)
+	if !reflect.DeepEqual(*p, a) {
+		t.Error(*p, a)
+	}
+	reader.Unserialize(&p)
+	if !reflect.DeepEqual(*p, a) {
+		t.Error(*p, a)
+	}
+	w.Close()
+}
+
+func TestUnserializeSlicePtr(t *testing.T) {
+	slice := []int{1, 2, 3, 4, 5}
+	w := NewWriter(false)
+	w.Serialize(&slice)
+	w.Serialize(&slice)
+	reader := NewReader(w.Bytes(), false)
+	var p *[]int
+	reader.Unserialize(&p)
+	if !reflect.DeepEqual(*p, slice) {
+		t.Error(*p, slice)
+	}
+	reader.Unserialize(&p)
+	if !reflect.DeepEqual(*p, slice) {
+		t.Error(*p, slice)
+	}
+	w.Close()
+}
+
+func TestUnserializeMapPtr(t *testing.T) {
+	m := map[string]interface{}{
+		"name": "小明",
+		"age":  14,
+	}
+	w := NewWriter(false)
+	w.Serialize(&m)
+	w.Serialize(&m)
+	reader := NewReader(w.Bytes(), false)
+	var p *map[string]interface{}
+	reader.Unserialize(&p)
+	if !reflect.DeepEqual(*p, m) {
+		t.Error(*p, m)
+	}
+	reader.Unserialize(&p)
+	if !reflect.DeepEqual(*p, m) {
+		t.Error(*p, m)
+	}
+	w.Close()
+}
+
+func TestUnserializeIntPtrPtr(t *testing.T) {
+	i := 123
+	ip := &i
+	w := NewWriter(false)
+	w.Serialize(&ip)
+	w.Serialize(&ip)
+	reader := NewReader(w.Bytes(), false)
+	var p **int
+	reader.Unserialize(&p)
+	if **p != i {
+		t.Error(**p, i)
+	}
+	reader.Unserialize(&p)
+	if **p != i {
+		t.Error(**p, i)
+	}
+	w.Close()
+}

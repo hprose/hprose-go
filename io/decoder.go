@@ -12,7 +12,7 @@
  *                                                        *
  * hprose decoder for Go.                                 *
  *                                                        *
- * LastModified: Sep 9, 2016                              *
+ * LastModified: Sep 10, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -60,10 +60,10 @@ func init() {
 		reflect.Func:       invalidDecoder,
 		reflect.Interface:  interfaceDecoder,
 		reflect.Map:        mapDecoder,
-		// reflect.Ptr:           ptrDecoder,
-		reflect.Slice:  sliceDecoder,
-		reflect.String: stringDecoder,
-		// reflect.Struct:        structDecoder,
+		reflect.Ptr:        ptrDecoder,
+		reflect.Slice:      sliceDecoder,
+		reflect.String:     stringDecoder,
+		//reflect.Struct:        structDecoder,
 		reflect.UnsafePointer: invalidDecoder,
 	}
 }
