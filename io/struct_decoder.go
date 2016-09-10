@@ -188,6 +188,23 @@ func readListAsStruct(r *Reader, v reflect.Value, tag byte) {
 }
 
 func readMapAsStruct(r *Reader, v reflect.Value, tag byte) {
+	structCache := getStructCache(v.Type())
+	fieldMap := structCache.FieldMap
+	l := readCount(&r.ByteReader)
+	if !r.Simple {
+		setReaderRef(r, v)
+	}
+	for i := 0; i < l; i++ {
+		key := r.ReadString()
+		if field, ok := fieldMap[key]; ok {
+			f := v.FieldByIndex(field.Index)
+			r.ReadValue(f)
+		} else {
+			var x interface{}
+			r.Unserialize(&x)
+		}
+	}
+	r.readByte()
 }
 
 func readStructMeta(r *Reader, v reflect.Value, tag byte) {

@@ -12,7 +12,7 @@
  *                                                        *
  * hprose struct encoder for Go.                          *
  *                                                        *
- * LastModified: Sep 1, 2015                              *
+ * LastModified: Sep 10, 2015                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -36,10 +36,11 @@ type fieldCache struct {
 }
 
 type structCache struct {
-	Alias  string
-	Tag    string
-	Fields []*fieldCache
-	Data   []byte
+	Alias    string
+	Tag      string
+	Fields   []*fieldCache
+	FieldMap map[string]*fieldCache
+	Data     []byte
 }
 
 var structTypeCache = map[uintptr]*structCache{}
@@ -113,6 +114,7 @@ func initStructCacheData(cache *structCache) {
 	w := &ByteWriter{}
 	fields := cache.Fields
 	count := len(fields)
+	cache.FieldMap = make(map[string]*fieldCache, count)
 	w.writeByte(TagClass)
 	var buf [20]byte
 	w.write(getIntBytes(buf[:], int64(utf16Length(cache.Alias))))
@@ -124,6 +126,7 @@ func initStructCacheData(cache *structCache) {
 	}
 	w.writeByte(TagOpenbrace)
 	for _, field := range fields {
+		cache.FieldMap[strings.ToLower(field.Alias)] = field
 		w.writeByte(TagString)
 		w.write(getIntBytes(buf[:], int64(utf16Length(field.Alias))))
 		w.writeByte(TagQuote)
