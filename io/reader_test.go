@@ -1660,3 +1660,79 @@ func BenchmarkUnserializeMapAsStruct(b *testing.B) {
 	}
 	w.Close()
 }
+
+func TestUnserializeStructAsMap(t *testing.T) {
+	type Test struct {
+		Name string
+		Age  int
+		Male bool
+	}
+	test := Test{"Tom", 36, true}
+	w := NewWriter(true)
+	w.Serialize(test)
+	reader := NewReader(w.Bytes(), false)
+	m := make(map[string]interface{})
+	m["name"] = "Tom"
+	m["age"] = 36
+	m["male"] = true
+	var p map[string]interface{}
+	reader.Unserialize(&p)
+	if !reflect.DeepEqual(p, m) {
+		t.Error(p, m)
+	}
+	w.Close()
+}
+
+func BenchmarkUnserializeStructAsMap(b *testing.B) {
+	type Test struct {
+		Name string
+		Age  int
+		Male bool
+	}
+	test := Test{"Tom", 36, true}
+	w := NewWriter(true)
+	w.Serialize(test)
+	bytes := w.Bytes()
+	var p map[string]interface{}
+	for i := 0; i < b.N; i++ {
+		reader := NewReader(bytes, true)
+		reader.Unserialize(&p)
+	}
+	w.Close()
+}
+
+func TestUnserializeStruct(t *testing.T) {
+	type Test struct {
+		Name string
+		Age  int
+		Male bool
+	}
+	test := Test{"Tom", 36, true}
+	w := NewWriter(true)
+	w.Serialize(test)
+	reader := NewReader(w.Bytes(), false)
+	var p Test
+	reader.Unserialize(&p)
+	if !reflect.DeepEqual(p, test) {
+		t.Error(p, test)
+	}
+	w.Close()
+}
+
+func BenchmarkUnserializeStruct(b *testing.B) {
+	type Test struct {
+		Name string
+		Age  int
+		Male bool
+	}
+	test := Test{"Tom", 36, true}
+	w := NewWriter(true)
+	w.Serialize(test)
+	bytes := w.Bytes()
+	var p Test
+	for i := 0; i < b.N; i++ {
+		reader := NewReader(bytes, true)
+		reader.Unserialize(&p)
+	}
+	w.Close()
+}

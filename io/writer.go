@@ -723,7 +723,7 @@ func writeStruct(w *Writer, v reflect.Value) {
 	for _, field := range fields {
 		var f reflect.Value
 		fp := (*reflectValue)(unsafe.Pointer(&f))
-		fp.typ = field.Type
+		fp.typ = (*emptyInterface)(unsafe.Pointer(&field.Type)).ptr
 		fp.ptr = unsafe.Pointer(uintptr(val.ptr) + field.Offset)
 		fp.flag = uintptr(field.Kind)
 		if field.Kind == reflect.Ptr || field.Kind == reflect.Map {

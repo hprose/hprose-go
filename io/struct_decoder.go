@@ -21,6 +21,7 @@ package io
 
 import (
 	"container/list"
+	"errors"
 	"math/big"
 	"reflect"
 	"strconv"
@@ -115,8 +116,7 @@ func readDoubleAsStruct(r *Reader, v reflect.Value, tag byte) {
 
 const timeStringFormat = "2006-01-02 15:04:05.999999999 -0700 MST"
 
-func readStringAsStruct(r *Reader, v reflect.Value, tag byte) {
-	str := r.ReadStringWithoutTag()
+func readStringAsStruct(str string, v reflect.Value, tag byte) {
 	typ := (*reflectValue)(unsafe.Pointer(&v)).typ
 	switch typ {
 	case bigIntType:
@@ -144,6 +144,10 @@ func readStringAsStruct(r *Reader, v reflect.Value, tag byte) {
 	}
 }
 
+func readStringStruct(r *Reader, v reflect.Value, tag byte) {
+	readStringAsStruct(r.ReadStringWithoutTag(), v, tag)
+}
+
 func readTimeAsStruct(t time.Time, v reflect.Value, tag byte) {
 	typ := (*reflectValue)(unsafe.Pointer(&v)).typ
 	switch typ {
@@ -160,6 +164,7 @@ func readTimeAsStruct(t time.Time, v reflect.Value, tag byte) {
 		castError(tag, v.Type().String())
 	}
 }
+
 func readDateTimeStruct(r *Reader, v reflect.Value, tag byte) {
 	readTimeAsStruct(r.ReadDateTimeWithoutTag(), v, tag)
 }
@@ -208,12 +213,63 @@ func readMapAsStruct(r *Reader, v reflect.Value, tag byte) {
 }
 
 func readStructMeta(r *Reader, v reflect.Value, tag byte) {
+	structName := readString(&r.ByteReader)
+	structType := v.Type()
+	if structType.Kind() != reflect.Struct {
+		structType = GetStructType(structName)
+	}
+	if structType == nil {
+		panic(errors.New("cannot convert " + structName +
+			" to type " + v.Type().String()))
+	}
+	structCache := getStructCache(structType)
+	fieldMap := structCache.FieldMap
+	count := readCount(&r.ByteReader)
+	fields := make([]*fieldCache, count)
+	for i := 0; i < count; i++ {
+		fields[i] = fieldMap[r.ReadString()]
+	}
+	r.fieldsRef = append(r.fieldsRef, fields)
+	r.readByte()
+	r.ReadValue(v)
 }
 
 func readStructData(r *Reader, v reflect.Value, tag byte) {
+	index := readCount(&r.ByteReader)
+	fields := r.fieldsRef[index]
+	count := len(fields)
+	if !r.Simple {
+		setReaderRef(r, v)
+	}
+	for i := 0; i < count; i++ {
+		if field := fields[i]; field != nil {
+			f := v.FieldByIndex(field.Index)
+			r.ReadValue(f)
+		} else {
+			var x interface{}
+			r.Unserialize(&x)
+		}
+	}
+	r.readByte()
 }
 
 func readRefAsStruct(r *Reader, v reflect.Value, tag byte) {
+	ref := r.ReadRef()
+	if str, ok := ref.(string); ok {
+		readStringAsStruct(str, v, tag)
+		return
+	}
+	if t, ok := ref.(*time.Time); ok {
+		readTimeAsStruct(*t, v, tag)
+		return
+	}
+	if r, ok := ref.(reflect.Value); ok {
+		v.Set(r)
+		return
+	}
+	panic(errors.New("value of type " +
+		reflect.TypeOf(ref).String() +
+		" cannot be converted to type map"))
 }
 
 var structDecoders = [256]func(r *Reader, v reflect.Value, tag byte){
@@ -231,7 +287,7 @@ var structDecoders = [256]func(r *Reader, v reflect.Value, tag byte){
 	TagInteger: readIntAsStruct,
 	TagLong:    readLongAsStruct,
 	TagDouble:  readDoubleAsStruct,
-	TagString:  readStringAsStruct,
+	TagString:  readStringStruct,
 	TagDate:    readDateTimeStruct,
 	TagTime:    readTimeStruct,
 	TagList:    readListAsStruct,

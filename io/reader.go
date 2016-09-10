@@ -32,8 +32,7 @@ import (
 type Reader struct {
 	RawReader
 	Simple         bool
-	structRef      []interface{}
-	fieldsRef      [][]string
+	fieldsRef      [][]*fieldCache
 	ref            []interface{}
 	JSONCompatible bool
 }
@@ -250,9 +249,6 @@ func (r *Reader) ReadRef() interface{} {
 // private function
 
 func setReaderRef(r *Reader, o interface{}) {
-	if r.ref == nil {
-		r.ref = make([]interface{}, 0, 64)
-	}
 	r.ref = append(r.ref, o)
 }
 

@@ -84,6 +84,30 @@ func readMap(r *Reader, v reflect.Value, tag byte) {
 	r.readByte()
 }
 
+func readStructAsMap(r *Reader, v reflect.Value, tag byte) {
+	if v.IsNil() {
+		v.Set(reflect.MakeMap(v.Type()))
+	}
+	index := readCount(&r.ByteReader)
+	fields := r.fieldsRef[index]
+	count := len(fields)
+	if !r.Simple {
+		setReaderRef(r, v)
+	}
+	for i := 0; i < count; i++ {
+		if field := fields[i]; field != nil {
+			key := reflect.ValueOf(field.Alias)
+			val := reflect.New(field.Type).Elem()
+			r.ReadValue(val)
+			v.SetMapIndex(key, val)
+		} else {
+			var x interface{}
+			r.Unserialize(&x)
+		}
+	}
+	r.readByte()
+}
+
 func readRefAsMap(r *Reader, v reflect.Value, tag byte) {
 	ref := r.ReadRef()
 	if m, ok := ref.(reflect.Value); ok {
@@ -102,8 +126,8 @@ var mapDecoders = [256]func(r *Reader, v reflect.Value, tag byte){
 	TagEmpty:  nilDecoder,
 	TagList:   readListAsMap,
 	TagMap:    readMap,
-	TagClass:  func(r *Reader, v reflect.Value, tag byte) { panic("TODO") },
-	TagObject: func(r *Reader, v reflect.Value, tag byte) { panic("TODO") },
+	TagClass:  readStructMeta,
+	TagObject: readStructAsMap,
 	TagRef:    readRefAsMap,
 }
 

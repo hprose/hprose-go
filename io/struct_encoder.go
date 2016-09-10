@@ -31,7 +31,7 @@ type fieldCache struct {
 	Alias  string
 	Index  []int
 	Offset uintptr
-	Type   uintptr
+	Type   reflect.Type
 	Kind   reflect.Kind
 }
 
@@ -101,7 +101,7 @@ func getFields(t reflect.Type, tag string) []*fieldCache {
 		field := fieldCache{}
 		field.Name = f.Name
 		field.Alias = alias
-		field.Type = (*emptyInterface)(unsafe.Pointer(&ft)).ptr
+		field.Type = ft
 		field.Kind = fkind
 		field.Offset = f.Offset
 		field.Index = f.Index
@@ -126,7 +126,7 @@ func initStructCacheData(cache *structCache) {
 	}
 	w.writeByte(TagOpenbrace)
 	for _, field := range fields {
-		cache.FieldMap[strings.ToLower(field.Alias)] = field
+		cache.FieldMap[field.Alias] = field
 		w.writeByte(TagString)
 		w.write(getIntBytes(buf[:], int64(utf16Length(field.Alias))))
 		w.writeByte(TagQuote)
@@ -151,6 +151,9 @@ func getStructCache(structType reflect.Type) *structCache {
 			cache.Fields = getFields(structType, "")
 			initStructCacheData(cache)
 			structTypeCache[typ] = cache
+			structTypesLocker.Lock()
+			structTypes[cache.Alias] = structType
+			structTypesLocker.Unlock()
 		}
 		structTypeCacheLocker.Unlock()
 	} else {
