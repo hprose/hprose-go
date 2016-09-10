@@ -42,20 +42,17 @@ type Writer struct {
 func NewWriter(simple bool) (w *Writer) {
 	w = new(Writer)
 	w.Simple = simple
-	w.structRef = map[uintptr]int{}
-	if !simple {
-		w.ref = map[uintptr]int{}
-	}
 	return
 }
 
 // Serialize a data v to the writer
-func (w *Writer) Serialize(v interface{}) {
+func (w *Writer) Serialize(v interface{}) *Writer {
 	if v == nil {
 		w.WriteNil()
 	} else {
 		w.WriteValue(reflect.ValueOf(v))
 	}
+	return w
 }
 
 // WriteValue to the writer
@@ -506,15 +503,19 @@ func (w *Writer) WriteBytesSlice(slice [][]byte) {
 
 // Reset the reference counter
 func (w *Writer) Reset() {
-	for k := range w.structRef {
-		delete(w.structRef, k)
+	if w.structRef != nil {
+		for k := range w.structRef {
+			delete(w.structRef, k)
+		}
 	}
 	if w.Simple {
 		return
 	}
 	w.refCount = 0
-	for k := range w.ref {
-		delete(w.ref, k)
+	if w.ref != nil {
+		for k := range w.ref {
+			delete(w.ref, k)
+		}
 	}
 }
 
@@ -523,6 +524,9 @@ func (w *Writer) Reset() {
 func writeRef(w *Writer, ref unsafe.Pointer) bool {
 	if w.Simple {
 		return false
+	}
+	if w.ref == nil {
+		w.ref = map[uintptr]int{}
 	}
 	n, found := w.ref[uintptr(ref)]
 	if found {
@@ -534,14 +538,17 @@ func writeRef(w *Writer, ref unsafe.Pointer) bool {
 	return found
 }
 
-func setWriterRef(writer *Writer, ref unsafe.Pointer) {
-	if writer.Simple {
+func setWriterRef(w *Writer, ref unsafe.Pointer) {
+	if w.Simple {
 		return
 	}
 	if ref != nil {
-		writer.ref[uintptr(ref)] = writer.refCount
+		if w.ref == nil {
+			w.ref = map[uintptr]int{}
+		}
+		w.ref[uintptr(ref)] = w.refCount
 	}
-	writer.refCount++
+	w.refCount++
 }
 
 func writeString(w *Writer, str string, length int) {
@@ -705,6 +712,9 @@ func writeMapPtr(w *Writer, v reflect.Value) {
 func writeStruct(w *Writer, v reflect.Value) {
 	val := (*reflectValue)(unsafe.Pointer(&v))
 	cache := getStructCache(v.Type().Elem())
+	if w.structRef == nil {
+		w.structRef = map[uintptr]int{}
+	}
 	index, found := w.structRef[val.typ]
 	if !found {
 		w.write(cache.Data)
