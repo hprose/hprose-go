@@ -28,6 +28,8 @@ import (
 	"strconv"
 	"testing"
 	"time"
+
+	"github.com/hprose/hprose-golang/promise"
 )
 
 func TestSerializeNil(t *testing.T) {
@@ -1281,6 +1283,27 @@ func BenchmarkSerializeStruct(b *testing.B) {
 	w := NewWriter(false)
 	for i := 0; i < b.N; i++ {
 		w.Serialize(st)
+	}
+	w.Close()
+}
+
+func TestSerializePromise(t *testing.T) {
+	w := NewWriter(true)
+	lst := list.New()
+	w.WriteList(lst)
+	if w.String() != "a{}" {
+		t.Error(w.String())
+	}
+	w.Clear()
+	lst.PushBack(1)
+	lst.PushBack("hello")
+	lst.PushBack(nil)
+	lst.PushBack(3.14159)
+	p := promise.New()
+	p.Resolve(lst)
+	w.Serialize(p)
+	if w.String() != `a4{1s5"hello"nd3.14159;}` {
+		t.Error(w.String())
 	}
 	w.Close()
 }

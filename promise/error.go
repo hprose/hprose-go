@@ -23,7 +23,7 @@ import (
 	"fmt"
 	"runtime"
 
-	"github.com/hprose/hprose-golang/io"
+	"github.com/hprose/hprose-golang/pool"
 )
 
 // IllegalArgumentError represents an error when a function/method has been
@@ -59,14 +59,14 @@ type PanicError struct {
 
 func stack() []byte {
 	size := 1024
-	buf := io.Alloc(size)
+	buf := pool.Alloc(size)
 	for {
 		n := runtime.Stack(buf, false)
 		if n < size {
 			return buf[:n]
 		}
-		io.Recycle(buf)
-		buf = io.Alloc(2 * size)
+		pool.Recycle(buf)
+		buf = pool.Alloc(2 * size)
 	}
 }
 

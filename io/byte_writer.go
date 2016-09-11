@@ -19,6 +19,8 @@
 
 package io
 
+import "github.com/hprose/hprose-golang/pool"
+
 // ByteWriter implements the io.Writer and io.ByteWriter interfaces by writing
 // to a byte slice
 type ByteWriter struct {
@@ -64,11 +66,11 @@ func (w *ByteWriter) grow(n int) int {
 	if l > c {
 		var buf []byte
 		if w.buf == nil {
-			buf = Alloc(n)
+			buf = pool.Alloc(n)
 		} else {
-			buf = Alloc(c<<1 + n)
+			buf = pool.Alloc(c<<1 + n)
 			copy(buf, w.buf)
-			Recycle(w.buf)
+			pool.Recycle(w.buf)
 		}
 		w.buf = buf
 	}
@@ -98,7 +100,7 @@ func (w *ByteWriter) Write(b []byte) (int, error) {
 
 // Close the writer and put the buf to []byte pool
 func (w *ByteWriter) Close() {
-	Recycle(w.buf)
+	pool.Recycle(w.buf)
 }
 
 func (w *ByteWriter) writeByte(c byte) {

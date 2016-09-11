@@ -22,6 +22,8 @@ package io
 import (
 	"testing"
 	"time"
+
+	"github.com/hprose/hprose-golang/pool"
 )
 
 func TestRawReaderTag(t *testing.T) {
@@ -140,6 +142,6 @@ func BenchmarkRawReaderReadUTF8String(b *testing.B) {
 	data := w.Bytes()
 	for i := 0; i < b.N; i++ {
 		rawReader := NewRawReader(data)
-		Recycle(rawReader.ReadRaw())
+		pool.Recycle(rawReader.ReadRaw())
 	}
 }
