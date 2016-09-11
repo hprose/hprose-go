@@ -32,23 +32,23 @@ type MethodOptions struct {
 	NameSpace string
 }
 
-// Method is the published service method
-type Method struct {
+// serviceMethod is the published service method
+type serviceMethod struct {
 	Function reflect.Value
 	MethodOptions
 }
 
-// Methods is the published service methods
-type Methods struct {
+// methods is the published service methods
+type serviceMethods struct {
 	MethodNames   []string
-	RemoteMethods map[string]Method
+	RemoteMethods map[string]serviceMethod
 }
 
-// NewMethods is the constructor for Methods
-func NewMethods() (methods *Methods) {
-	methods = new(Methods)
+// newServiceMethods is the constructor for Methods
+func newServiceMethods() (methods *serviceMethods) {
+	methods = new(serviceMethods)
 	methods.MethodNames = make([]string, 0, 64)
-	methods.RemoteMethods = make(map[string]Method)
+	methods.RemoteMethods = make(map[string]serviceMethod)
 	return
 }
 
@@ -56,7 +56,7 @@ func NewMethods() (methods *Methods) {
 // name is the method name
 // function is a func or bound method
 // options includes Mode, Simple, Oneway and NameSpace
-func (methods *Methods) AddFunction(
+func (methods *serviceMethods) AddFunction(
 	name string, function interface{}, options MethodOptions) {
 	if name == "" {
 		panic("name can't be empty")
@@ -75,11 +75,11 @@ func (methods *Methods) AddFunction(
 		name = options.NameSpace + "_" + name
 	}
 	methods.MethodNames = append(methods.MethodNames, name)
-	methods.RemoteMethods[strings.ToLower(name)] = Method{f, options}
+	methods.RemoteMethods[strings.ToLower(name)] = serviceMethod{f, options}
 }
 
 // AddFunctions is used for batch publishing service method
-func (methods *Methods) AddFunctions(
+func (methods *serviceMethods) AddFunctions(
 	names []string, functions []interface{}, options MethodOptions) {
 	count := len(names)
 	if count != len(functions) {
@@ -91,7 +91,7 @@ func (methods *Methods) AddFunctions(
 }
 
 // AddMethod is used for publishing a method on the obj with an alias
-func (methods *Methods) AddMethod(
+func (methods *serviceMethods) AddMethod(
 	name string, obj interface{}, options MethodOptions, alias ...string) {
 	if obj == nil {
 		panic("obj can't be nil")
@@ -106,7 +106,7 @@ func (methods *Methods) AddMethod(
 }
 
 // AddMethods is used for batch publishing methods on the obj with aliases
-func (methods *Methods) AddMethods(
+func (methods *serviceMethods) AddMethods(
 	names []string, obj interface{}, options MethodOptions, aliases ...[]string) {
 	if obj == nil {
 		panic("obj can't be nil")
@@ -126,7 +126,7 @@ func (methods *Methods) AddMethods(
 	}
 }
 
-func (methods *Methods) addInstanceMethods(
+func (methods *serviceMethods) addMethods(
 	v reflect.Value, t reflect.Type, options MethodOptions) {
 	n := t.NumMethod()
 	for i := 0; i < n; i++ {
@@ -145,80 +145,84 @@ func getPtrTo(v reflect.Value, t reflect.Type) (reflect.Value, reflect.Type) {
 	return v, t
 }
 
-func (methods *Methods) addFuncField(
+func (methods *serviceMethods) addFuncField(
 	v reflect.Value, t reflect.Type, i int, options MethodOptions) {
 	f := v.Field(i)
 	name := t.Field(i).Name
-	if f.CanInterface() && f.IsValid() {
-		f, _ = getPtrTo(f, f.Type())
-		if !f.IsNil() && f.Kind() == reflect.Func {
-			methods.AddFunction(name, f, options)
-		}
+	if !f.CanInterface() || !f.IsValid() {
+		return
+	}
+	f, _ = getPtrTo(f, f.Type())
+	if !f.IsNil() && f.Kind() == reflect.Func {
+		methods.AddFunction(name, f, options)
 	}
 }
 
-// AddInstanceMethods is used for publishing all the public methods and func fields with options.
-func (methods *Methods) AddInstanceMethods(
-	obj interface{}, options MethodOptions) {
+func (methods *serviceMethods) recursiveAddFuncFields(
+	v reflect.Value, t reflect.Type, i int, options MethodOptions) {
+	f := v.Field(i)
+	fs := t.Field(i)
+	name := fs.Name
+	if !f.CanInterface() || !f.IsValid() {
+		return
+	}
+	f, _ = getPtrTo(f, f.Type())
+	if !f.IsNil() && f.Kind() == reflect.Func {
+		methods.AddFunction(name, f, options)
+		return
+	}
+	if f.Kind() != reflect.Struct {
+		return
+	}
+	if fs.Anonymous {
+		methods.AddAllMethods(f.Interface(), options)
+	} else {
+		newOptions := options
+		if newOptions.NameSpace == "" {
+			newOptions.NameSpace = name
+		} else {
+			newOptions.NameSpace += "_" + name
+		}
+		methods.AddAllMethods(f.Interface(), newOptions)
+	}
+}
+
+type addFuncFunc func(
+	v reflect.Value,
+	t reflect.Type,
+	i int,
+	options MethodOptions)
+
+func (methods *serviceMethods) addInstanceMethods(
+	obj interface{}, options MethodOptions, addFunc addFuncFunc) {
 	if obj == nil {
 		panic("obj can't be nil")
 	}
 	v := reflect.ValueOf(obj)
 	t := v.Type()
-	methods.addInstanceMethods(v, t, options)
+	methods.addMethods(v, t, options)
 	v, t = getPtrTo(v, t)
 	if t.Kind() == reflect.Struct {
 		n := t.NumField()
 		for i := 0; i < n; i++ {
-			methods.addFuncField(v, t, i, options)
+			addFunc(v, t, i, options)
 		}
 	}
 }
 
-func (methods *Methods) recursiveAddFuncFields(
-	v reflect.Value, t reflect.Type, i int, options MethodOptions) {
-	f := v.Field(i)
-	fs := t.Field(i)
-	name := fs.Name
-	if f.CanInterface() && f.IsValid() {
-		f, _ = getPtrTo(f, f.Type())
-		if !f.IsNil() && f.Kind() == reflect.Func {
-			methods.AddFunction(name, f, options)
-		} else if f.Kind() == reflect.Struct {
-			if fs.Anonymous {
-				methods.AddAllMethods(f.Interface(), options)
-			} else {
-				newOptions := options
-				if newOptions.NameSpace == "" {
-					newOptions.NameSpace = name
-				} else {
-					newOptions.NameSpace += "_" + name
-				}
-				methods.AddAllMethods(f.Interface(), newOptions)
-			}
-		}
-	}
+// AddInstanceMethods is used for publishing all the public methods and func fields with options.
+func (methods *serviceMethods) AddInstanceMethods(
+	obj interface{}, options MethodOptions) {
+	methods.addInstanceMethods(obj, options, methods.addFuncField)
 }
 
 // AddAllMethods will publish all methods and non-nil function fields on the
 // obj self and on its anonymous or non-anonymous struct fields (or pointer to
 // pointer ... to pointer struct fields). This is a recursive operation.
 // So it's a pit, if you do not know what you are doing, do not step on.
-func (methods *Methods) AddAllMethods(
+func (methods *serviceMethods) AddAllMethods(
 	obj interface{}, options MethodOptions) {
-	if obj == nil {
-		panic("obj can't be nil")
-	}
-	v := reflect.ValueOf(obj)
-	t := v.Type()
-	methods.addInstanceMethods(v, t, options)
-	v, t = getPtrTo(v, t)
-	if t.Kind() == reflect.Struct {
-		n := t.NumField()
-		for i := 0; i < n; i++ {
-			methods.recursiveAddFuncFields(v, t, i, options)
-		}
-	}
+	methods.addInstanceMethods(obj, options, methods.recursiveAddFuncFields)
 }
 
 // MissingMethod is missing method
@@ -226,7 +230,7 @@ type MissingMethod func(name string, args []reflect.Value) (result []reflect.Val
 
 // AddMissingMethod is used for publishing a method,
 // all methods not explicitly published will be redirected to this method.
-func (methods *Methods) AddMissingMethod(
+func (methods *serviceMethods) AddMissingMethod(
 	method MissingMethod, options MethodOptions) {
 	methods.AddFunction("*", method, options)
 }
