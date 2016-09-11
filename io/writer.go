@@ -12,7 +12,7 @@
  *                                                        *
  * hprose writer for Go.                                  *
  *                                                        *
- * LastModified: Sep 6, 2016                              *
+ * LastModified: Sep 11, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -39,8 +39,9 @@ type Writer struct {
 }
 
 // NewWriter is the constructor for Hprose Writer
-func NewWriter(simple bool) (w *Writer) {
+func NewWriter(simple bool, buf ...byte) (w *Writer) {
 	w = new(Writer)
+	w.buf = buf
 	w.Simple = simple
 	return
 }
