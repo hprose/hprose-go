@@ -28,7 +28,7 @@ type beforeInvokeEvent interface {
 	OnBeforeInvoke(name string, args []reflect.Value, byref bool, context Context)
 }
 
-type beforeInvoke2Event interface {
+type beforeInvokeEvent2 interface {
 	OnBeforeInvoke(name string, args []reflect.Value, byref bool, context Context) error
 }
 
@@ -36,7 +36,7 @@ type afterInvokeEvent interface {
 	OnAfterInvoke(name string, args []reflect.Value, byref bool, result []reflect.Value, context Context)
 }
 
-type afterInvoke2Event interface {
+type afterInvokeEvent2 interface {
 	OnAfterInvoke(name string, args []reflect.Value, byref bool, result []reflect.Value, context Context) error
 }
 
@@ -44,7 +44,7 @@ type sendErrorEvent interface {
 	OnSendError(err error, context Context)
 }
 
-type sendError2Event interface {
+type sendErrorEvent2 interface {
 	OnSendError(err error, context Context) error
 }
 
