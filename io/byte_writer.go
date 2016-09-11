@@ -25,6 +25,13 @@ type ByteWriter struct {
 	buf []byte
 }
 
+// NewByteWriter create a ByteWriter in append mode
+func NewByteWriter(buf []byte) (w *ByteWriter) {
+	w = new(ByteWriter)
+	w.buf = buf
+	return w
+}
+
 // Len return the number of byte of this writer.
 func (w *ByteWriter) Len() int {
 	return len(w.buf)
