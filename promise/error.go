@@ -22,6 +22,8 @@ package promise
 import (
 	"fmt"
 	"runtime"
+
+	"github.com/hprose/hprose-golang/io"
 )
 
 // IllegalArgumentError represents an error when a function/method has been
@@ -56,13 +58,15 @@ type PanicError struct {
 }
 
 func stack() []byte {
-	buf := make([]byte, 1024)
+	size := 1024
+	buf := io.Alloc(size)
 	for {
 		n := runtime.Stack(buf, false)
-		if n < len(buf) {
+		if n < size {
 			return buf[:n]
 		}
-		buf = make([]byte, 2*len(buf))
+		io.Recycle(buf)
+		buf = io.Alloc(2 * size)
 	}
 }
 
