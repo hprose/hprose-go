@@ -226,11 +226,24 @@ func (methods *serviceMethods) AddAllMethods(
 }
 
 // MissingMethod is missing method
-type MissingMethod func(name string, args []reflect.Value) (result []reflect.Value)
+type MissingMethod func(name string, args []reflect.Value, context Context) (result []reflect.Value)
 
 // AddMissingMethod is used for publishing a method,
 // all methods not explicitly published will be redirected to this method.
 func (methods *serviceMethods) AddMissingMethod(
 	method MissingMethod, options MethodOptions) {
 	methods.AddFunction("*", method, options)
+}
+
+// Remove the published func or method by name
+func (methods *serviceMethods) Remove(name string) {
+	name = strings.ToLower(name)
+	n := len(methods.MethodNames)
+	for i := 0; i < n; i++ {
+		if strings.ToLower(methods.MethodNames[i]) == name {
+			methods.MethodNames = append(methods.MethodNames[:i], methods.MethodNames[i+1:]...)
+			break
+		}
+	}
+	delete(methods.RemoteMethods, name)
 }
