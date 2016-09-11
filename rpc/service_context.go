@@ -8,9 +8,9 @@
 \**********************************************************/
 /**********************************************************\
  *                                                        *
- * rpc/args_fixer.go                                      *
+ * rpc/service_context.go                                 *
  *                                                        *
- * hprose args fixer for Go.                              *
+ * hprose service context for Go.                         *
  *                                                        *
  * LastModified: Sep 11, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
@@ -19,19 +19,20 @@
 
 package rpc
 
-import (
-	"reflect"
-	"unsafe"
-)
-
-type argsFixer interface {
-	FixArgs(args []reflect.Value, lastParamType reflect.Type, context Context) []reflect.Value
+// ServiceContext is the hprose base context
+type ServiceContext struct {
+	*BaseContext
+	method        *serviceMethod
+	methods       *serviceMethods
+	missingMethod bool
+	byref         bool
+	Clients
 }
 
-func fixArgs(args []reflect.Value, lastParamType reflect.Type, context Context) []reflect.Value {
-	typ := (*emptyInterface)(unsafe.Pointer(&lastParamType)).ptr
-	if typ == interfaceType || typ == contextType {
-		args = append(args, reflect.ValueOf(context))
-	}
-	return args
+// NewServiceContext is the constructor of ServiceContext
+func NewServiceContext(clients Clients) (context *ServiceContext) {
+	context = new(ServiceContext)
+	context.BaseContext = NewBaseContext()
+	context.Clients = clients
+	return
 }
