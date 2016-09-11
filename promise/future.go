@@ -12,7 +12,7 @@
  *                                                        *
  * future promise implementation for Go.                  *
  *                                                        *
- * LastModified: Aug 18, 2016                             *
+ * LastModified: Sep 11, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -85,9 +85,9 @@ func (p *future) Complete(onCompleted OnCompleted) Promise {
 }
 
 func (p *future) WhenComplete(action func()) Promise {
-	return p.Then(func(v interface{}) (interface{}, error) {
+	return p.Then(func(v interface{}) interface{} {
 		action()
-		return v, nil
+		return v
 	}, func(e error) (interface{}, error) {
 		action()
 		return nil, e

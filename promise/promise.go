@@ -12,7 +12,7 @@
  *                                                        *
  * promise interface for Go.                              *
  *                                                        *
- * LastModified: Aug 14, 2016                             *
+ * LastModified: Sep 11, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -27,10 +27,14 @@ import "time"
 //
 // The function type can be the following form:
 //
-//     func() (interface{}, error)
 //     func()
-//     func(interface{}) (interface{}, error)
-//     func(interface{})
+//     func() R
+//     func() (R, error)
+//     func(T)
+//     func(T) R
+//     func(T) (R, error)
+//
+// T and R can be any type, and they are can be the same or different.
 type OnFulfilled interface{}
 
 // OnRejected is a function called when the Promise is rejected.
@@ -39,12 +43,15 @@ type OnFulfilled interface{}
 //
 // The function type can be the following form:
 //
-//     func() (interface{}, error)
 //     func()
-//     func(interface{}) (interface{}, error)
-//     func(interface{})
-//     func(error) (interface{}, error)
-//     func(error)
+//     func() T
+//     func() (T, error)
+//     func(E)
+//     func(E) T
+//     func(E) (T, error)
+//
+// E is error type or interface{}.
+// T can be any type.
 type OnRejected interface{}
 
 // OnCompleted is a function called when the Promise is completed.
@@ -54,11 +61,28 @@ type OnRejected interface{}
 //
 // The function type can be the following form:
 //
-//     func() (interface{}, error)
 //     func()
-//     func(interface{}) (interface{}, error)
+//     func() T
+//     func() (T, error)
 //     func(interface{})
+//     func(interface{}) T
+//     func(interface{}) (T, error)
+//
+// T can be any type.
 type OnCompleted interface{}
+
+// Computation is a function for Promise Create.
+//
+// This function has no argument.
+//
+// The function type can be the following form:
+//
+//     func()
+//     func() T
+//     func() (T, error)
+//
+// T can be any type.
+type Computation interface{}
 
 // Promise is an interface of the JS Promise/A+ spec
 // (https://promisesaplus.com/).

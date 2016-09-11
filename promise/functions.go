@@ -12,7 +12,7 @@
  *                                                        *
  * some functions of promise for Go.                      *
  *                                                        *
- * LastModified: Aug 20, 2016                             *
+ * LastModified: Sep 11, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -21,6 +21,7 @@ package promise
 
 import (
 	"errors"
+	"reflect"
 	"sync/atomic"
 	"time"
 )
@@ -37,9 +38,9 @@ import (
 //
 // If calling computation returns a non-Promise value, the returned Promise is
 // completed with that value.
-func Create(computation func() (interface{}, error)) Promise {
+func Create(computation Computation) Promise {
 	promise := New()
-	go call(promise, computation)
+	go call(promise, reflect.ValueOf(computation), reflect.Value{})
 	return promise
 }
 
@@ -55,9 +56,9 @@ func Create(computation func() (interface{}, error)) Promise {
 //
 // If calling computation returns a non-Promise value, the returned Promise is
 // completed with that value.
-func Sync(computation func() (interface{}, error)) Promise {
+func Sync(computation Computation) Promise {
 	promise := New()
-	call(promise, computation)
+	call(promise, reflect.ValueOf(computation), reflect.Value{})
 	return promise
 }
 
@@ -69,12 +70,10 @@ func Delayed(duration time.Duration, value interface{}) Promise {
 	promise := New()
 	go func() {
 		time.Sleep(duration)
-		switch computation := value.(type) {
-		case func() (interface{}, error):
-			call(promise, computation)
-		case func():
-			call1(promise, computation)
-		default:
+		computation := reflect.ValueOf(value)
+		if computation.Kind() == reflect.Func {
+			call(promise, computation, reflect.Value{})
+		} else {
 			promise.Resolve(value)
 		}
 	}()
@@ -193,11 +192,11 @@ func each(callback func(interface{}), iterable []interface{}) {
 //
 // If iterable is empty, The returned promise will fulfill with true.
 func Every(callback func(interface{}) bool, iterable ...interface{}) Promise {
-	return All(iterable...).Then(func(a interface{}) (interface{}, error) {
+	return All(iterable...).Then(func(a interface{}) bool {
 		if a == nil {
-			return true, nil
+			return true
 		}
-		return every(callback, a.([]interface{})), nil
+		return every(callback, a.([]interface{}))
 	})
 }
 
@@ -229,11 +228,11 @@ func every(callback func(interface{}) bool, iterable []interface{}) bool {
 //
 // If iterable is empty, The returned promise will fulfill with false.
 func Some(callback func(interface{}) bool, iterable ...interface{}) Promise {
-	return All(iterable...).Then(func(a interface{}) (interface{}, error) {
+	return All(iterable...).Then(func(a interface{}) bool {
 		if a == nil {
-			return false, nil
+			return false
 		}
-		return some(callback, a.([]interface{})), nil
+		return some(callback, a.([]interface{}))
 	})
 }
 
@@ -259,11 +258,11 @@ func some(callback func(interface{}) bool, iterable []interface{}) bool {
 // executed. the returned promise will be rejected with the rejection reason
 // of the first promise that was rejected.
 func Filter(callback func(interface{}) bool, iterable ...interface{}) Promise {
-	return All(iterable...).Then(func(a interface{}) (interface{}, error) {
+	return All(iterable...).Then(func(a interface{}) []interface{} {
 		if a == nil {
-			return nil, nil
+			return nil
 		}
-		return filter(callback, a.([]interface{})), nil
+		return filter(callback, a.([]interface{}))
 	})
 }
 
@@ -290,16 +289,16 @@ func filter(callback func(interface{}) bool, iterable []interface{}) []interface
 // executed. the returned promise will be rejected with the rejection reason
 // of the first promise that was rejected.
 func Map(callback func(interface{}) interface{}, iterable ...interface{}) Promise {
-	return All(iterable...).Then(func(a interface{}) (interface{}, error) {
+	return All(iterable...).Then(func(a interface{}) []interface{} {
 		if a == nil {
-			return nil, nil
+			return nil
 		}
 		iterable := a.([]interface{})
 		result := make([]interface{}, len(iterable))
 		for index, value := range iterable {
 			result[index] = callback(value)
 		}
-		return result, nil
+		return result
 	})
 }
 
