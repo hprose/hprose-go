@@ -145,6 +145,18 @@ func getPtrTo(v reflect.Value, t reflect.Type) (reflect.Value, reflect.Type) {
 	return v, t
 }
 
+func (methods *Methods) addFuncField(
+	v reflect.Value, t reflect.Type, i int, options MethodOptions) {
+	f := v.Field(i)
+	name := t.Field(i).Name
+	if f.CanInterface() && f.IsValid() {
+		f, _ = getPtrTo(f, f.Type())
+		if !f.IsNil() && f.Kind() == reflect.Func {
+			methods.AddFunction(name, f, options)
+		}
+	}
+}
+
 // AddInstanceMethods is used for publishing all the public methods and func fields with options.
 func (methods *Methods) AddInstanceMethods(
 	obj interface{}, options MethodOptions) {
@@ -158,13 +170,31 @@ func (methods *Methods) AddInstanceMethods(
 	if t.Kind() == reflect.Struct {
 		n := t.NumField()
 		for i := 0; i < n; i++ {
-			f := v.Field(i)
-			name := t.Field(i).Name
-			if f.CanInterface() && f.IsValid() {
-				f, _ = getPtrTo(f, f.Type())
-				if !f.IsNil() && f.Kind() == reflect.Func {
-					methods.AddFunction(name, f, options)
+			methods.addFuncField(v, t, i, options)
+		}
+	}
+}
+
+func (methods *Methods) recursiveAddFuncFields(
+	v reflect.Value, t reflect.Type, i int, options MethodOptions) {
+	f := v.Field(i)
+	fs := t.Field(i)
+	name := fs.Name
+	if f.CanInterface() && f.IsValid() {
+		f, _ = getPtrTo(f, f.Type())
+		if !f.IsNil() && f.Kind() == reflect.Func {
+			methods.AddFunction(name, f, options)
+		} else if f.Kind() == reflect.Struct {
+			if fs.Anonymous {
+				methods.AddAllMethods(f.Interface(), options)
+			} else {
+				newOptions := options
+				if newOptions.NameSpace == "" {
+					newOptions.NameSpace = name
+				} else {
+					newOptions.NameSpace += "_" + name
 				}
+				methods.AddAllMethods(f.Interface(), newOptions)
 			}
 		}
 	}
@@ -186,27 +216,7 @@ func (methods *Methods) AddAllMethods(
 	if t.Kind() == reflect.Struct {
 		n := t.NumField()
 		for i := 0; i < n; i++ {
-			f := v.Field(i)
-			fs := t.Field(i)
-			name := fs.Name
-			if f.CanInterface() && f.IsValid() {
-				f, _ = getPtrTo(f, f.Type())
-				if !f.IsNil() && f.Kind() == reflect.Func {
-					methods.AddFunction(name, f, options)
-				} else if f.Kind() == reflect.Struct {
-					if fs.Anonymous {
-						methods.AddAllMethods(f.Interface(), options)
-					} else {
-						newOptions := options
-						if newOptions.NameSpace == "" {
-							newOptions.NameSpace = name
-						} else {
-							newOptions.NameSpace += "_" + name
-						}
-						methods.AddAllMethods(f.Interface(), newOptions)
-					}
-				}
-			}
+			methods.recursiveAddFuncFields(v, t, i, options)
 		}
 	}
 }
