@@ -8,16 +8,16 @@
 \**********************************************************/
 /**********************************************************\
  *                                                        *
- * io/byte_pool.go                                        *
+ * pool/byte_pool.go                                      *
  *                                                        *
  * byte pool for Go.                                      *
  *                                                        *
- * LastModified: Sep 1, 2016                              *
+ * LastModified: Sep 11, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 
-package io
+package pool
 
 import (
 	"sync"
@@ -39,6 +39,27 @@ var bytePool = struct {
 	timer *time.Timer
 	d     time.Duration
 }{}
+
+func pow2roundup(x int) int {
+	x--
+	x |= x >> 1
+	x |= x >> 2
+	x |= x >> 4
+	x |= x >> 8
+	x |= x >> 16
+	return x + 1
+}
+
+var debruijn = []int{
+	0, 1, 28, 2, 29, 14, 24, 3,
+	30, 22, 20, 15, 25, 17, 4, 8,
+	31, 27, 13, 23, 21, 19, 16, 7,
+	26, 12, 18, 6, 11, 5, 10, 9,
+}
+
+func log2(x int) int {
+	return debruijn[uint32(x*0x077CB531)>>27]
+}
 
 func init() {
 	bytePool.d = time.Second << 2
