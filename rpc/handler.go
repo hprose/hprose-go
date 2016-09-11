@@ -8,7 +8,7 @@
 \**********************************************************/
 /**********************************************************\
  *                                                        *
- * rpc/handler_manager.go                                 *
+ * rpc/handler.go                                         *
  *                                                        *
  * hprose handler manager for Go.                         *
  *                                                        *
@@ -39,8 +39,8 @@ type NextFilterHandler func(request []byte, context Context) promise.Promise
 // The result type is promise.Promise<[]byte>
 type FilterHandler func(request []byte, context Context, next NextFilterHandler) promise.Promise
 
-// HandlerManager is the hprose handler manager
-type HandlerManager struct {
+// handlerManager is the hprose handler manager
+type handlerManager struct {
 	invokeHandlers             []InvokeHandler
 	beforeFilterHandlers       []FilterHandler
 	afterFilterHandlers        []FilterHandler
@@ -50,8 +50,6 @@ type HandlerManager struct {
 	invokeHandler              NextInvokeHandler
 	beforeFilterHandler        NextFilterHandler
 	afterFilterHandler         NextFilterHandler
-	BeforeFilter               *FilterHandlerMangager
-	AfterFilter                *FilterHandlerMangager
 	override                   struct {
 		invokeHandler       NextInvokeHandler
 		beforeFilterHandler NextFilterHandler
@@ -59,22 +57,9 @@ type HandlerManager struct {
 	}
 }
 
-// FilterHandlerMangager is the hprose filter handler manager
-type FilterHandlerMangager struct {
-	addFilterHandler func(handler FilterHandler)
-}
-
-// Use is the same as AddBeforeFilterHandler/AddAfterFilterHandler
-// but it can be called by a chain
-func (fhm *FilterHandlerMangager) Use(
-	handler FilterHandler) *FilterHandlerMangager {
-	fhm.addFilterHandler(handler)
-	return fhm
-}
-
-// NewHandlerManager is the constructor of HandlerManager
-func NewHandlerManager() (hm *HandlerManager) {
-	hm = new(HandlerManager)
+// newHandlerManager is the constructor of HandlerManager
+func newHandlerManager() (hm *handlerManager) {
+	hm = new(handlerManager)
 	hm.defaultInvokeHandler = func(name string, args []reflect.Value, context Context) promise.Promise {
 		return hm.override.invokeHandler(name, args, context)
 	}
@@ -87,8 +72,6 @@ func NewHandlerManager() (hm *HandlerManager) {
 	hm.invokeHandler = hm.defaultInvokeHandler
 	hm.beforeFilterHandler = hm.defaultBeforeFilterHandler
 	hm.afterFilterHandler = hm.defaultAfterFilterHandler
-	hm.BeforeFilter = &FilterHandlerMangager{hm.AddBeforeFilterHandler}
-	hm.AfterFilter = &FilterHandlerMangager{hm.AddAfterFilterHandler}
 	return
 }
 
@@ -117,7 +100,7 @@ func getNextFilterHandler(
 }
 
 // AddInvokeHandler add the invoke handler
-func (hm *HandlerManager) AddInvokeHandler(handler InvokeHandler) {
+func (hm *handlerManager) AddInvokeHandler(handler InvokeHandler) {
 	if handler == nil {
 		return
 	}
@@ -130,7 +113,7 @@ func (hm *HandlerManager) AddInvokeHandler(handler InvokeHandler) {
 }
 
 // AddBeforeFilterHandler add the filter handler before filters
-func (hm *HandlerManager) AddBeforeFilterHandler(handler FilterHandler) {
+func (hm *handlerManager) AddBeforeFilterHandler(handler FilterHandler) {
 	if handler == nil {
 		return
 	}
@@ -143,7 +126,7 @@ func (hm *HandlerManager) AddBeforeFilterHandler(handler FilterHandler) {
 }
 
 // AddAfterFilterHandler add the filter handler after filters
-func (hm *HandlerManager) AddAfterFilterHandler(handler FilterHandler) {
+func (hm *handlerManager) AddAfterFilterHandler(handler FilterHandler) {
 	if handler == nil {
 		return
 	}
@@ -153,10 +136,4 @@ func (hm *HandlerManager) AddAfterFilterHandler(handler FilterHandler) {
 		next = getNextFilterHandler(next, hm.afterFilterHandlers[i])
 	}
 	hm.afterFilterHandler = next
-}
-
-// Use is the same as AddInvokeHandler, but it can be called by a chain
-func (hm *HandlerManager) Use(handler InvokeHandler) *HandlerManager {
-	hm.AddInvokeHandler(handler)
-	return hm
 }
