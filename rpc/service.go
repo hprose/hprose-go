@@ -19,7 +19,16 @@
 
 package rpc
 
-import "time"
+import (
+	"crypto/rand"
+	"fmt"
+	"reflect"
+	"time"
+	"unsafe"
+
+	"github.com/hprose/hprose-golang/io"
+	"github.com/hprose/hprose-golang/promise"
+)
 
 // Service interface
 type Service interface {
@@ -30,6 +39,7 @@ type Service interface {
 	AddInstanceMethods(obj interface{}, options MethodOptions) Service
 	AddAllMethods(obj interface{}, options MethodOptions) Service
 	AddMissingMethod(method MissingMethod, options MethodOptions) Service
+	Remove(name string) Service
 	Filter() Filter
 	FilterByIndex(index int) Filter
 	SetFilter(filter ...Filter) Service
@@ -39,6 +49,18 @@ type Service interface {
 	AddInvokeHandler(handler InvokeHandler) Service
 	AddBeforeFilterHandler(handler FilterHandler) Service
 	AddAfterFilterHandler(handler FilterHandler) Service
+}
+
+type fixer interface {
+	FixArguments(args []reflect.Value, lastParamType reflect.Type, context Context) []reflect.Value
+}
+
+func fixArguments(args []reflect.Value, lastParamType reflect.Type, context Context) []reflect.Value {
+	typ := (*emptyInterface)(unsafe.Pointer(&lastParamType)).ptr
+	if typ == interfaceType || typ == contextType {
+		args = append(args, reflect.ValueOf(context))
+	}
+	return args
 }
 
 // BaseService is the hprose base service
@@ -53,7 +75,7 @@ type BaseService struct {
 	handlerManager *handlerManager
 	filterManager  *filterManager
 	allTopics      map[string]map[string]*topic
-	argsFixer
+	fixer
 }
 
 // NewBaseService is the constructor for BaseService
@@ -66,6 +88,7 @@ func NewBaseService() (service *BaseService) {
 	service.Heartbeat = 3 * 1000 * 1000
 	service.ErrorDelay = 10 * 1000 * 1000
 	service.allTopics = make(map[string]map[string]*topic)
+	service.AddFunction("#", service.GetNextID, MethodOptions{Simple: true})
 	return service
 }
 
@@ -115,6 +138,12 @@ func (service *BaseService) AddAllMethods(obj interface{}, options MethodOptions
 // all methods not explicitly published will be redirected to this method.
 func (service *BaseService) AddMissingMethod(method MissingMethod, options MethodOptions) Service {
 	service.methods.AddMissingMethod(method, options)
+	return service
+}
+
+// Remove the published func or method by name
+func (service *BaseService) Remove(name string) Service {
+	service.methods.Remove(name)
 	return service
 }
 
@@ -168,4 +197,66 @@ func (service *BaseService) AddBeforeFilterHandler(handler FilterHandler) Servic
 func (service *BaseService) AddAfterFilterHandler(handler FilterHandler) Service {
 	service.handlerManager.AddAfterFilterHandler(handler)
 	return service
+}
+
+// GetNextID is the default method for client uid
+func (service *BaseService) GetNextID() (uid string) {
+	u := make([]byte, 16)
+	rand.Read(u)
+	u[6] = (u[6] & 0x0f) | 0x40
+	u[8] = (u[8] & 0x3f) | 0x80
+	uid = fmt.Sprintf("%x-%x-%x-%x-%x", u[0:4], u[4:6], u[6:8], u[8:10], u[10:])
+	return
+}
+
+func (service *BaseService) callService(
+	name string, args []reflect.Value, context ServiceContext) []reflect.Value {
+	remoteMethod := context.method
+	function := remoteMethod.Function
+	if context.missingMethod {
+		missingMethod := function.Interface().(MissingMethod)
+		return missingMethod(name, args, context)
+	}
+	ft := function.Type()
+	n := len(args)
+	if ft.IsVariadic() {
+		return function.CallSlice(args)
+	}
+	if ft.NumIn() == n+1 {
+		args = service.FixArguments(args, ft.In(n), context)
+	}
+	return function.Call(args)
+}
+
+func (service *BaseService) getErrorMessage(err error) string {
+	if panicError, ok := err.(*promise.PanicError); ok {
+		if service.Debug {
+			return fmt.Sprintf("%v\r\n%s", panicError.Panic, panicError.Stack)
+		}
+		return panicError.Error()
+	}
+	return err.Error()
+}
+
+func (service *BaseService) fireErrorEvent(err error, context Context) error {
+	defer func() {
+		if e := recover(); e != nil {
+			err = promise.NewPanicError(e)
+		}
+	}()
+	switch event := service.ServiceEvent.(type) {
+	case sendErrorEvent:
+		event.OnSendError(err, context)
+	case sendErrorEvent2:
+		err = event.OnSendError(err, context)
+	}
+	return err
+}
+
+func (service *BaseService) sendError(err error, context Context) []byte {
+	err = service.fireErrorEvent(err, context)
+	w := io.NewWriter(true)
+	w.WriteByte(io.TagError)
+	w.WriteString(service.getErrorMessage(err))
+	return w.Bytes()
 }
