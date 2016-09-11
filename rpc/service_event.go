@@ -47,3 +47,11 @@ type sendErrorEvent interface {
 type sendError2Event interface {
 	OnSendError(err error, context Context) error
 }
+
+type subscribeEvent interface {
+	OnSubscribe(topic string, id string, service Service)
+}
+
+type unsubscribeEvent interface {
+	OnUnsubscribe(topic string, id string, service Service)
+}
