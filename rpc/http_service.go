@@ -29,6 +29,8 @@ import (
 	"strings"
 	"time"
 	"unsafe"
+
+	"github.com/hprose/hprose-golang/pool"
 )
 
 // HTTPContext is the hprose http context
@@ -272,8 +274,11 @@ func (service *HTTPService) Serve(
 		resp, err := service.Handle(data, context.ServiceContext).Get()
 		if err != nil {
 			response.Write(service.endError(err, context))
+		} else if data, ok := resp.([]byte); ok {
+			response.Write(data)
+			pool.Recycle(data)
 		} else {
-			response.Write(resp.([]byte))
+			response.WriteHeader(500)
 		}
 	}
 }
