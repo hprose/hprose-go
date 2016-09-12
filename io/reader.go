@@ -12,7 +12,7 @@
  *                                                        *
  * hprose reader for Go.                                  *
  *                                                        *
- * LastModified: Sep 10, 2016                             *
+ * LastModified: Sep 12, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -246,6 +246,19 @@ func (r *Reader) ReadRef() interface{} {
 	return readRef(r, readInt(&r.ByteReader))
 }
 
+// Reset the reference counter
+func (r *Reader) Reset() {
+	if r.fieldsRef != nil {
+		r.fieldsRef = r.fieldsRef[:0]
+	}
+	if r.Simple {
+		return
+	}
+	if r.ref != nil {
+		r.ref = r.ref[:0]
+	}
+}
+
 // private function
 
 func setReaderRef(r *Reader, o interface{}) {
@@ -254,12 +267,6 @@ func setReaderRef(r *Reader, o interface{}) {
 
 func readRef(r *Reader, i int) interface{} {
 	return r.ref[i]
-}
-
-func resetReaderRef(r *Reader) {
-	if r.ref != nil {
-		r.ref = r.ref[:0]
-	}
 }
 
 func readSliceWithoutTag(r *Reader, t reflect.Type) (slice reflect.Value) {
