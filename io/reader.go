@@ -238,18 +238,33 @@ func (r *Reader) ReadBigIntWithoutTag() *big.Int {
 	return i
 }
 
+var interfaceType = reflect.TypeOf((interface{})(nil))
+
 // ReadSliceWithoutTag from the reader
 func (r *Reader) ReadSliceWithoutTag() []reflect.Value {
 	l := r.ReadCount()
-	v := make([]reflect.Value, l, l+1)
+	v := make([]reflect.Value, l)
 	if !r.Simple {
-		setReaderRef(r, v)
+		setReaderRef(r, nil)
+	}
+	for i := 0; i < l; i++ {
+		v[i] = reflect.New(interfaceType).Elem()
+		r.ReadValue(v[i])
+	}
+	r.readByte()
+	return v
+}
+
+// ReadSlice from the reader
+func (r *Reader) ReadSlice(v []reflect.Value) {
+	l := len(v)
+	if !r.Simple {
+		setReaderRef(r, nil)
 	}
 	for i := 0; i < l; i++ {
 		r.ReadValue(v[i])
 	}
 	r.readByte()
-	return v
 }
 
 // ReadCount of array, slice, map or struct field
