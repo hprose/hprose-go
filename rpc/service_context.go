@@ -23,7 +23,6 @@ package rpc
 type ServiceContext struct {
 	*BaseContext
 	*Method
-	*methodManager
 	IsMissingMethod bool
 	ByRef           bool
 	Clients
