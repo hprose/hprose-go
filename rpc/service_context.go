@@ -12,7 +12,7 @@
  *                                                        *
  * hprose service context for Go.                         *
  *                                                        *
- * LastModified: Sep 11, 2016                             *
+ * LastModified: Sep 12, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -22,10 +22,10 @@ package rpc
 // ServiceContext is the hprose base context
 type ServiceContext struct {
 	*BaseContext
-	method        *serviceMethod
-	methods       *serviceMethods
-	missingMethod bool
-	byref         bool
+	*Method
+	*methodManager
+	IsMissingMethod bool
+	ByRef           bool
 	Clients
 }
 
