@@ -12,7 +12,7 @@
  *                                                        *
  * hprose map decoder for Go.                             *
  *                                                        *
- * LastModified: Sep 10, 2016                             *
+ * LastModified: Sep 12, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -46,7 +46,7 @@ func readListAsMap(r *Reader, v reflect.Value, tag byte) {
 	if v.IsNil() {
 		v.Set(reflect.MakeMap(v.Type()))
 	}
-	l := readCount(&r.ByteReader)
+	l := r.ReadCount()
 	if !r.Simple {
 		setReaderRef(r, v)
 	}
@@ -67,7 +67,7 @@ func readMap(r *Reader, v reflect.Value, tag byte) {
 	if v.IsNil() {
 		v.Set(reflect.MakeMap(v.Type()))
 	}
-	l := readCount(&r.ByteReader)
+	l := r.ReadCount()
 	if !r.Simple {
 		setReaderRef(r, v)
 	}
@@ -88,7 +88,7 @@ func readStructAsMap(r *Reader, v reflect.Value, tag byte) {
 	if v.IsNil() {
 		v.Set(reflect.MakeMap(v.Type()))
 	}
-	index := readCount(&r.ByteReader)
+	index := r.ReadCount()
 	fields := r.fieldsRef[index]
 	count := len(fields)
 	if !r.Simple {

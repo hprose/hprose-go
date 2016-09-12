@@ -12,7 +12,7 @@
  *                                                        *
  * byte reader for Go.                                    *
  *                                                        *
- * LastModified: Sep 6, 2016                              *
+ * LastModified: Sep 12, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -178,10 +178,6 @@ func readInt(r *ByteReader) int {
 
 func readLength(r *ByteReader) int {
 	return int(ReadInt64(r, TagQuote))
-}
-
-func readCount(r *ByteReader) int {
-	return int(ReadInt64(r, TagOpenbrace))
 }
 
 func readUntil(r *ByteReader, tag byte) (result []byte) {

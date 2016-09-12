@@ -12,7 +12,7 @@
  *                                                        *
  * hprose struct decoder for Go.                          *
  *                                                        *
- * LastModified: Sep 10, 2016                             *
+ * LastModified: Sep 12, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -179,7 +179,7 @@ func readListAsStruct(r *Reader, v reflect.Value, tag byte) {
 		castError(tag, v.Type().String())
 	}
 	lst := list.New()
-	l := readCount(&r.ByteReader)
+	l := r.ReadCount()
 	if !r.Simple {
 		setReaderRef(r, v)
 	}
@@ -195,7 +195,7 @@ func readListAsStruct(r *Reader, v reflect.Value, tag byte) {
 func readMapAsStruct(r *Reader, v reflect.Value, tag byte) {
 	structCache := getStructCache(v.Type())
 	fieldMap := structCache.FieldMap
-	l := readCount(&r.ByteReader)
+	l := r.ReadCount()
 	if !r.Simple {
 		setReaderRef(r, v)
 	}
@@ -224,7 +224,7 @@ func readStructMeta(r *Reader, v reflect.Value, tag byte) {
 	}
 	structCache := getStructCache(structType)
 	fieldMap := structCache.FieldMap
-	count := readCount(&r.ByteReader)
+	count := r.ReadCount()
 	fields := make([]*fieldCache, count)
 	for i := 0; i < count; i++ {
 		fields[i] = fieldMap[r.ReadString()]
@@ -235,7 +235,7 @@ func readStructMeta(r *Reader, v reflect.Value, tag byte) {
 }
 
 func readStructData(r *Reader, v reflect.Value, tag byte) {
-	index := readCount(&r.ByteReader)
+	index := r.ReadCount()
 	fields := r.fieldsRef[index]
 	count := len(fields)
 	if !r.Simple {
