@@ -12,7 +12,7 @@
  *                                                        *
  * hprose handler manager for Go.                         *
  *                                                        *
- * LastModified: Sep 11, 2016                             *
+ * LastModified: Sep 12, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -60,13 +60,16 @@ type handlerManager struct {
 // newHandlerManager is the constructor of HandlerManager
 func newHandlerManager() (hm *handlerManager) {
 	hm = new(handlerManager)
-	hm.defaultInvokeHandler = func(name string, args []reflect.Value, context Context) promise.Promise {
+	hm.defaultInvokeHandler = func(
+		name string, args []reflect.Value, context Context) promise.Promise {
 		return hm.override.invokeHandler(name, args, context)
 	}
-	hm.defaultBeforeFilterHandler = func(request []byte, context Context) promise.Promise {
+	hm.defaultBeforeFilterHandler = func(
+		request []byte, context Context) promise.Promise {
 		return hm.override.beforeFilterHandler(request, context)
 	}
-	hm.defaultAfterFilterHandler = func(request []byte, context Context) promise.Promise {
+	hm.defaultAfterFilterHandler = func(
+		request []byte, context Context) promise.Promise {
 		return hm.override.afterFilterHandler(request, context)
 	}
 	hm.invokeHandler = hm.defaultInvokeHandler
