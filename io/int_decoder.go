@@ -59,7 +59,7 @@ func readTimeAsInt(r *Reader) int64 {
 }
 
 func readRefAsInt(r *Reader) int64 {
-	ref := r.ReadRef()
+	ref := r.readRef()
 	if str, ok := ref.(string); ok {
 		return stringToInt(str)
 	}

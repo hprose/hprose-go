@@ -49,7 +49,7 @@ func readBytesAsSlice(r *Reader, v reflect.Value, tag byte) {
 
 func readListAsSlice(r *Reader, v reflect.Value, tag byte) {
 	n := v.Cap()
-	l := r.ReadCount()
+	l := r.readCount()
 	if n >= l {
 		v.SetLen(l)
 	} else {
@@ -65,7 +65,7 @@ func readListAsSlice(r *Reader, v reflect.Value, tag byte) {
 }
 
 func readRefAsSlice(r *Reader, v reflect.Value, tag byte) {
-	ref := r.ReadRef()
+	ref := r.readRef()
 	if b, ok := ref.([]byte); ok {
 		reflect.Copy(v, reflect.ValueOf(b))
 		return

@@ -64,7 +64,7 @@ func readTimeAsFloat64(r *Reader) float64 {
 }
 
 func readRefAsFloat64(r *Reader) float64 {
-	ref := r.ReadRef()
+	ref := r.readRef()
 	if str, ok := ref.(string); ok {
 		return stringToFloat64(str)
 	}

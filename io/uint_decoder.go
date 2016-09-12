@@ -59,7 +59,7 @@ func readTimeAsUint(r *Reader) uint64 {
 }
 
 func readRefAsUint(r *Reader) uint64 {
-	ref := r.ReadRef()
+	ref := r.readRef()
 	if str, ok := ref.(string); ok {
 		return stringToUint(str)
 	}

@@ -66,7 +66,7 @@ func readStringAsBool(r *Reader) bool {
 }
 
 func readRefAsBool(r *Reader) bool {
-	ref := r.ReadRef()
+	ref := r.readRef()
 	if str, ok := ref.(string); ok {
 		b, err := strconv.ParseBool(str)
 		if err != nil {

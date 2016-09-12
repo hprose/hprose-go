@@ -238,17 +238,18 @@ func (r *Reader) ReadBigIntWithoutTag() *big.Int {
 	return i
 }
 
-// ReadCount of array, slice, map or struct field
-func (r *Reader) ReadCount() int {
-	return int(ReadInt64(&r.ByteReader, TagOpenbrace))
-}
-
-// ReadRef from the reader
-func (r *Reader) ReadRef() interface{} {
-	if r.Simple {
-		panic(errors.New("reference unserialization can't support in simple mode"))
+// ReadSliceWithoutTag from the reader
+func (r *Reader) ReadSliceWithoutTag() []reflect.Value {
+	l := r.readCount()
+	v := make([]reflect.Value, l, l+1)
+	if !r.Simple {
+		setReaderRef(r, v)
 	}
-	return readRef(r, readInt(&r.ByteReader))
+	for i := 0; i < l; i++ {
+		r.ReadValue(v[i])
+	}
+	r.readByte()
+	return v
 }
 
 // Reset the reference counter
@@ -264,7 +265,18 @@ func (r *Reader) Reset() {
 	}
 }
 
-// private function
+// private methods & functions
+
+func (r *Reader) readCount() int {
+	return int(ReadInt64(&r.ByteReader, TagOpenbrace))
+}
+
+func (r *Reader) readRef() interface{} {
+	if r.Simple {
+		panic(errors.New("reference unserialization can't support in simple mode"))
+	}
+	return readRef(r, readInt(&r.ByteReader))
+}
 
 func setReaderRef(r *Reader, o interface{}) {
 	r.ref = append(r.ref, o)
@@ -272,19 +284,6 @@ func setReaderRef(r *Reader, o interface{}) {
 
 func readRef(r *Reader, i int) interface{} {
 	return r.ref[i]
-}
-
-func readSliceWithoutTag(r *Reader, t reflect.Type) (slice reflect.Value) {
-	l := r.ReadCount()
-	slice = reflect.MakeSlice(t, l, l)
-	if !r.Simple {
-		setReaderRef(r, slice)
-	}
-	for i := 0; i < l; i++ {
-		r.ReadValue(slice.Index(i))
-	}
-	r.readByte()
-	return
 }
 
 var tagStringMap = map[byte]string{

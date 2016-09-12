@@ -179,7 +179,7 @@ func readListAsStruct(r *Reader, v reflect.Value, tag byte) {
 		castError(tag, v.Type().String())
 	}
 	lst := list.New()
-	l := r.ReadCount()
+	l := r.readCount()
 	if !r.Simple {
 		setReaderRef(r, v)
 	}
@@ -195,7 +195,7 @@ func readListAsStruct(r *Reader, v reflect.Value, tag byte) {
 func readMapAsStruct(r *Reader, v reflect.Value, tag byte) {
 	structCache := getStructCache(v.Type())
 	fieldMap := structCache.FieldMap
-	l := r.ReadCount()
+	l := r.readCount()
 	if !r.Simple {
 		setReaderRef(r, v)
 	}
@@ -224,7 +224,7 @@ func readStructMeta(r *Reader, v reflect.Value, tag byte) {
 	}
 	structCache := getStructCache(structType)
 	fieldMap := structCache.FieldMap
-	count := r.ReadCount()
+	count := r.readCount()
 	fields := make([]*fieldCache, count)
 	for i := 0; i < count; i++ {
 		fields[i] = fieldMap[r.ReadString()]
@@ -235,7 +235,7 @@ func readStructMeta(r *Reader, v reflect.Value, tag byte) {
 }
 
 func readStructData(r *Reader, v reflect.Value, tag byte) {
-	index := r.ReadCount()
+	index := r.readCount()
 	fields := r.fieldsRef[index]
 	count := len(fields)
 	if !r.Simple {
@@ -254,7 +254,7 @@ func readStructData(r *Reader, v reflect.Value, tag byte) {
 }
 
 func readRefAsStruct(r *Reader, v reflect.Value, tag byte) {
-	ref := r.ReadRef()
+	ref := r.readRef()
 	if str, ok := ref.(string); ok {
 		readStringAsStruct(str, v, tag)
 		return

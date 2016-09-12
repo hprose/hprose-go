@@ -57,7 +57,7 @@ func readListAsComplex64(r *Reader) complex64 {
 }
 
 func readRefAsComplex64(r *Reader) complex64 {
-	ref := r.ReadRef()
+	ref := r.readRef()
 	if str, ok := ref.(string); ok {
 		return stringToComplex64(str)
 	}

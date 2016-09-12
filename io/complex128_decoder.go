@@ -57,7 +57,7 @@ func readListAsComplex128(r *Reader) complex128 {
 }
 
 func readRefAsComplex128(r *Reader) complex128 {
-	ref := r.ReadRef()
+	ref := r.readRef()
 	if str, ok := ref.(string); ok {
 		return stringToComplex128(str)
 	}

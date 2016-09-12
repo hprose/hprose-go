@@ -46,7 +46,7 @@ func readListAsMap(r *Reader, v reflect.Value, tag byte) {
 	if v.IsNil() {
 		v.Set(reflect.MakeMap(v.Type()))
 	}
-	l := r.ReadCount()
+	l := r.readCount()
 	if !r.Simple {
 		setReaderRef(r, v)
 	}
@@ -67,7 +67,7 @@ func readMap(r *Reader, v reflect.Value, tag byte) {
 	if v.IsNil() {
 		v.Set(reflect.MakeMap(v.Type()))
 	}
-	l := r.ReadCount()
+	l := r.readCount()
 	if !r.Simple {
 		setReaderRef(r, v)
 	}
@@ -88,7 +88,7 @@ func readStructAsMap(r *Reader, v reflect.Value, tag byte) {
 	if v.IsNil() {
 		v.Set(reflect.MakeMap(v.Type()))
 	}
-	index := r.ReadCount()
+	index := r.readCount()
 	fields := r.fieldsRef[index]
 	count := len(fields)
 	if !r.Simple {
@@ -109,7 +109,7 @@ func readStructAsMap(r *Reader, v reflect.Value, tag byte) {
 }
 
 func readRefAsMap(r *Reader, v reflect.Value, tag byte) {
-	ref := r.ReadRef()
+	ref := r.readRef()
 	if m, ok := ref.(reflect.Value); ok {
 		if m.Kind() == reflect.Map {
 			v.Set(m)

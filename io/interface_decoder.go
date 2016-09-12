@@ -113,7 +113,7 @@ func readMapAsInterface(r *Reader, v reflect.Value, tag byte) {
 }
 
 func readRefAsInterface(r *Reader, v reflect.Value, tag byte) {
-	iv := reflect.ValueOf(r.ReadRef())
+	iv := reflect.ValueOf(r.readRef())
 	t := v.Type()
 	it := iv.Type()
 	if it.AssignableTo(t) {

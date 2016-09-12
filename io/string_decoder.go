@@ -69,7 +69,7 @@ func readTimeAsString(r *Reader) string {
 }
 
 func readRefAsString(r *Reader) string {
-	ref := r.ReadRef()
+	ref := r.readRef()
 	if str, ok := ref.(string); ok {
 		return str
 	}
