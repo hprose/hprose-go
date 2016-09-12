@@ -387,8 +387,6 @@ func max(a, b int) int {
 	return b
 }
 
-var interfaceType = reflect.TypeOf((interface{})(nil))
-
 func (service *BaseService) readArguments(
 	reader *io.Reader,
 	method *Method,
@@ -408,10 +406,13 @@ func (service *BaseService) readArguments(
 		args[i] = reflect.New(ft.In(i)).Elem()
 	}
 	if n < count {
-		for i := n; i < count; i++ {
-			if ft.IsVariadic() {
+		if ft.IsVariadic() {
+			for i := n; i < count; i++ {
 				args[i] = reflect.New(ft.In(n)).Elem()
-			} else {
+			}
+		} else {
+			interfaceType := reflect.TypeOf((interface{})(nil))
+			for i := n; i < count; i++ {
 				args[i] = reflect.New(interfaceType).Elem()
 			}
 		}
@@ -520,5 +521,30 @@ func (service *BaseService) beforeFilter(
 
 func (service *BaseService) handler(
 	request []byte, context ServiceContext) promise.Promise {
-	return service.beforeFilterHandler(request, context)
+	return service.beforeFilterHandler(request, context).
+		WhenComplete(func() {
+			pool.Recycle(request)
+		})
+}
+
+func (service *BaseService) getTopics(topic string) (topics map[string]*topic) {
+	topics = service.allTopics[topic]
+	if topics == nil {
+		panic(errors.New("topic \"" + topic + "\" is not published."))
+	}
+	return
+}
+
+func (service *BaseService) delTimer(topics map[string]*topic, id string) {
+	t := topics[id]
+	if t != nil && t.Timer != nil {
+		t.Timer.Stop()
+		t.Timer = nil
+	}
+}
+
+func (service *BaseService) offline(
+	topics map[string]*topic, topic string, id string) {
+	service.delTimer(topics, id)
+
 }
