@@ -12,7 +12,7 @@
  *                                                        *
  * hprose service for Go.                                 *
  *                                                        *
- * LastModified: Sep 11, 2016                             *
+ * LastModified: Sep 12, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -66,22 +66,22 @@ func fixArguments(args []reflect.Value, lastParamType reflect.Type, context Cont
 // BaseService is the hprose base service
 type BaseService struct {
 	ServiceEvent
-	Debug          bool
-	Simple         bool
-	Timeout        time.Duration
-	Heartbeat      time.Duration
-	ErrorDelay     time.Duration
-	methods        *serviceMethods
-	handlerManager *handlerManager
-	filterManager  *filterManager
-	allTopics      map[string]map[string]*topic
+	*methodManager
+	*handlerManager
+	*filterManager
+	Debug      bool
+	Simple     bool
+	Timeout    time.Duration
+	Heartbeat  time.Duration
+	ErrorDelay time.Duration
+	allTopics  map[string]map[string]*topic
 	fixer
 }
 
 // NewBaseService is the constructor for BaseService
 func NewBaseService() (service *BaseService) {
 	service = new(BaseService)
-	service.methods = newServiceMethods()
+	service.methodManager = newMethodManager()
 	service.handlerManager = newHandlerManager()
 	service.filterManager = &filterManager{}
 	service.Timeout = 120 * 1000 * 1000
@@ -97,31 +97,31 @@ func NewBaseService() (service *BaseService) {
 // function is a func or bound method
 // options includes Mode, Simple, Oneway and NameSpace
 func (service *BaseService) AddFunction(name string, function interface{}, options MethodOptions) Service {
-	service.methods.AddFunction(name, function, options)
+	service.methodManager.AddFunction(name, function, options)
 	return service
 }
 
 // AddFunctions is used for batch publishing service method
 func (service *BaseService) AddFunctions(names []string, functions []interface{}, options MethodOptions) Service {
-	service.methods.AddFunctions(names, functions, options)
+	service.methodManager.AddFunctions(names, functions, options)
 	return service
 }
 
 // AddMethod is used for publishing a method on the obj with an alias
 func (service *BaseService) AddMethod(name string, obj interface{}, options MethodOptions, alias ...string) Service {
-	service.methods.AddMethod(name, obj, options, alias...)
+	service.methodManager.AddMethod(name, obj, options, alias...)
 	return service
 }
 
 // AddMethods is used for batch publishing methods on the obj with aliases
 func (service *BaseService) AddMethods(names []string, obj interface{}, options MethodOptions, aliases ...[]string) Service {
-	service.methods.AddMethods(names, obj, options, aliases...)
+	service.methodManager.AddMethods(names, obj, options, aliases...)
 	return service
 }
 
 // AddInstanceMethods is used for publishing all the public methods and func fields with options.
 func (service *BaseService) AddInstanceMethods(obj interface{}, options MethodOptions) Service {
-	service.methods.AddInstanceMethods(obj, options)
+	service.methodManager.AddInstanceMethods(obj, options)
 	return service
 }
 
@@ -130,20 +130,20 @@ func (service *BaseService) AddInstanceMethods(obj interface{}, options MethodOp
 // pointer ... to pointer struct fields). This is a recursive operation.
 // So it's a pit, if you do not know what you are doing, do not step on.
 func (service *BaseService) AddAllMethods(obj interface{}, options MethodOptions) Service {
-	service.methods.AddAllMethods(obj, options)
+	service.methodManager.AddAllMethods(obj, options)
 	return service
 }
 
 // AddMissingMethod is used for publishing a method,
 // all methods not explicitly published will be redirected to this method.
 func (service *BaseService) AddMissingMethod(method MissingMethod, options MethodOptions) Service {
-	service.methods.AddMissingMethod(method, options)
+	service.methodManager.AddMissingMethod(method, options)
 	return service
 }
 
 // Remove the published func or method by name
 func (service *BaseService) Remove(name string) Service {
-	service.methods.Remove(name)
+	service.methodManager.Remove(name)
 	return service
 }
 
@@ -211,9 +211,9 @@ func (service *BaseService) GetNextID() (uid string) {
 
 func (service *BaseService) callService(
 	name string, args []reflect.Value, context ServiceContext) []reflect.Value {
-	remoteMethod := context.method
+	remoteMethod := context.Method
 	function := remoteMethod.Function
-	if context.missingMethod {
+	if context.IsMissingMethod {
 		missingMethod := function.Interface().(MissingMethod)
 		return missingMethod(name, args, context)
 	}
@@ -258,5 +258,45 @@ func (service *BaseService) sendError(err error, context Context) []byte {
 	w := io.NewWriter(true)
 	w.WriteByte(io.TagError)
 	w.WriteString(service.getErrorMessage(err))
+	return w.Bytes()
+}
+
+func (service *BaseService) endError(err error, context Context) []byte {
+	w := io.NewByteWriter(service.sendError(err, context))
+	w.WriteByte(io.TagEnd)
+	return w.Bytes()
+}
+
+func (service *BaseService) doOutput(
+	args []reflect.Value,
+	results []reflect.Value,
+	context ServiceContext) []byte {
+	method := context.Method
+	w := io.NewWriter(method.Simple)
+	switch method.Mode {
+	case RawWithEndTag:
+		return results[0].Bytes()
+	case Raw:
+		w.Write(results[0].Bytes())
+	default:
+		w.WriteByte(io.TagResult)
+		if method.Mode == Serialized {
+			w.Write(results[0].Bytes())
+		} else {
+			switch len(results) {
+			case 0:
+				w.WriteNil()
+			case 1:
+				w.WriteValue(results[0])
+			default:
+				w.WriteSlice(results)
+			}
+		}
+		if context.ByRef {
+			w.WriteByte(io.TagArgument)
+			w.Reset()
+			w.WriteSlice(args)
+		}
+	}
 	return w.Bytes()
 }
