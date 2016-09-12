@@ -66,7 +66,8 @@ func stack() []byte {
 			return buf[:n]
 		}
 		pool.Recycle(buf)
-		buf = pool.Alloc(2 * size)
+		size <<= 1
+		buf = pool.Alloc(size)
 	}
 }
 
