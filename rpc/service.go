@@ -65,17 +65,27 @@ func fixArguments(args []reflect.Value, lastParamType reflect.Type, context Cont
 
 // BaseService is the hprose base service
 type BaseService struct {
-	ServiceEvent
 	*methodManager
 	*handlerManager
 	*filterManager
+	fixer
+	Event      ServiceEvent
 	Debug      bool
 	Simple     bool
 	Timeout    time.Duration
 	Heartbeat  time.Duration
 	ErrorDelay time.Duration
 	allTopics  map[string]map[string]*topic
-	fixer
+}
+
+// GetNextID is the default method for client uid
+func GetNextID() (uid string) {
+	u := make([]byte, 16)
+	rand.Read(u)
+	u[6] = (u[6] & 0x0f) | 0x40
+	u[8] = (u[8] & 0x3f) | 0x80
+	uid = fmt.Sprintf("%x-%x-%x-%x-%x", u[0:4], u[4:6], u[6:8], u[8:10], u[10:])
+	return
 }
 
 // NewBaseService is the constructor for BaseService
@@ -88,7 +98,7 @@ func NewBaseService() (service *BaseService) {
 	service.Heartbeat = 3 * 1000 * 1000
 	service.ErrorDelay = 10 * 1000 * 1000
 	service.allTopics = make(map[string]map[string]*topic)
-	service.AddFunction("#", service.GetNextID, MethodOptions{Simple: true})
+	service.AddFunction("#", GetNextID, MethodOptions{Simple: true})
 	return service
 }
 
@@ -199,16 +209,6 @@ func (service *BaseService) AddAfterFilterHandler(handler FilterHandler) Service
 	return service
 }
 
-// GetNextID is the default method for client uid
-func (service *BaseService) GetNextID() (uid string) {
-	u := make([]byte, 16)
-	rand.Read(u)
-	u[6] = (u[6] & 0x0f) | 0x40
-	u[8] = (u[8] & 0x3f) | 0x80
-	uid = fmt.Sprintf("%x-%x-%x-%x-%x", u[0:4], u[4:6], u[6:8], u[8:10], u[10:])
-	return
-}
-
 func (service *BaseService) callService(
 	name string, args []reflect.Value, context ServiceContext) []reflect.Value {
 	remoteMethod := context.Method
@@ -244,7 +244,7 @@ func (service *BaseService) fireErrorEvent(err error, context Context) error {
 			err = promise.NewPanicError(e)
 		}
 	}()
-	switch event := service.ServiceEvent.(type) {
+	switch event := service.Event.(type) {
 	case sendErrorEvent:
 		event.OnSendError(err, context)
 	case sendErrorEvent2:
@@ -267,7 +267,7 @@ func (service *BaseService) endError(err error, context Context) []byte {
 	return w.Bytes()
 }
 
-func (service *BaseService) doOutput(
+func doOutput(
 	args []reflect.Value,
 	results []reflect.Value,
 	context ServiceContext) []byte {
@@ -299,4 +299,64 @@ func (service *BaseService) doOutput(
 		}
 	}
 	return w.Bytes()
+}
+
+func (service *BaseService) fireBeforeInvokeEvent(
+	name string, args []reflect.Value, context ServiceContext) error {
+	switch event := service.Event.(type) {
+	case beforeInvokeEvent:
+		event.OnBeforeInvoke(name, args, context.ByRef, context)
+	case beforeInvokeEvent2:
+		return event.OnBeforeInvoke(name, args, context.ByRef, context)
+	}
+	return nil
+}
+
+func (service *BaseService) fireAfterInvokeEvent(
+	name string, args []reflect.Value, results []reflect.Value, context ServiceContext) error {
+	switch event := service.Event.(type) {
+	case afterInvokeEvent:
+		event.OnAfterInvoke(name, args, context.ByRef, results, context)
+	case afterInvokeEvent2:
+		return event.OnAfterInvoke(name, args, context.ByRef, results, context)
+	}
+	return nil
+}
+
+func (service *BaseService) beforeInvoke(
+	name string, args []reflect.Value, context ServiceContext) promise.Promise {
+	return promise.Sync(func() error {
+		return service.fireBeforeInvokeEvent(name, args, context)
+	}).Then(func() promise.Promise {
+		return service.handlerManager.invokeHandler(name, args, context)
+	}).Then(func(results []reflect.Value) ([]byte, error) {
+		err := service.fireAfterInvokeEvent(name, args, results, context)
+		if err != nil {
+			return nil, err
+		}
+		return doOutput(args, results, context), nil
+	})
+}
+
+func (service *BaseService) invokeHandler(
+	name string, args []reflect.Value, context ServiceContext) promise.Promise {
+	if context.Oneway {
+		go func() {
+			defer recover()
+			service.callService(name, args, context)
+		}()
+		return promise.Resolve(nil)
+	}
+	return promise.Sync(func() ([]reflect.Value, error) {
+		results := service.callService(name, args, context)
+		n := len(results)
+		if n == 0 {
+			return results, nil
+		}
+		err, ok := results[n-1].Interface().(error)
+		if ok {
+			results = results[:n-1]
+		}
+		return results, err
+	})
 }
