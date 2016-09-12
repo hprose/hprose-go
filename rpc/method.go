@@ -41,14 +41,14 @@ type Method struct {
 // methodManager manages published service methods
 type methodManager struct {
 	MethodNames   []string
-	RemoteMethods map[string]Method
+	RemoteMethods map[string]*Method
 }
 
 // newMethodManager is the constructor for methodManager
 func newMethodManager() (methods *methodManager) {
 	methods = new(methodManager)
 	methods.MethodNames = make([]string, 0, 64)
-	methods.RemoteMethods = make(map[string]Method)
+	methods.RemoteMethods = make(map[string]*Method)
 	return
 }
 
@@ -75,7 +75,7 @@ func (mm *methodManager) AddFunction(
 		name = options.NameSpace + "_" + name
 	}
 	mm.MethodNames = append(mm.MethodNames, name)
-	mm.RemoteMethods[strings.ToLower(name)] = Method{f, options}
+	mm.RemoteMethods[strings.ToLower(name)] = &Method{f, options}
 }
 
 // AddFunctions is used for batch publishing service method
