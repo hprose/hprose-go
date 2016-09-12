@@ -275,6 +275,7 @@ func (service *HTTPService) Serve(
 		if err != nil {
 			response.Write(service.endError(err, context))
 		} else if data, ok := resp.([]byte); ok {
+			response.Header().Set("Content-Length", strconv.Itoa(len(data)))
 			response.Write(data)
 			pool.Recycle(data)
 		} else {
