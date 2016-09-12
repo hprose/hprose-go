@@ -55,14 +55,14 @@ type Service interface {
 }
 
 type fixer interface {
-	FixArguments(args []reflect.Value, context Context)
+	FixArguments(args []reflect.Value, context *ServiceContext)
 }
 
-func fixArguments(args []reflect.Value, context Context) {
+func fixArguments(args []reflect.Value, context *ServiceContext) {
 	i := len(args) - 1
 	lastParamType := args[i].Type()
 	typ := (*emptyInterface)(unsafe.Pointer(&lastParamType)).ptr
-	if typ == interfaceType || typ == contextType {
+	if typ == interfaceType || typ == contextType || typ == serviceContextType {
 		args[i] = reflect.ValueOf(context)
 	}
 }
@@ -105,15 +105,15 @@ func NewBaseService() (service *BaseService) {
 	service.AddFunction("#", GetNextID, MethodOptions{Simple: true})
 	service.override.invokeHandler = func(
 		name string, args []reflect.Value, context Context) promise.Promise {
-		return service.invoke(name, args, context.(ServiceContext))
+		return service.invoke(name, args, context.(*ServiceContext))
 	}
 	service.override.beforeFilterHandler = func(
 		request []byte, context Context) promise.Promise {
-		return service.beforeFilter(request, context.(ServiceContext))
+		return service.beforeFilter(request, context.(*ServiceContext))
 	}
 	service.override.afterFilterHandler = func(
 		request []byte, context Context) promise.Promise {
-		return service.afterFilter(request, context.(ServiceContext))
+		return service.afterFilter(request, context.(*ServiceContext))
 	}
 	return service
 }
@@ -226,7 +226,7 @@ func (service *BaseService) AddAfterFilterHandler(handler FilterHandler) Service
 }
 
 func (service *BaseService) callService(
-	name string, args []reflect.Value, context ServiceContext) []reflect.Value {
+	name string, args []reflect.Value, context *ServiceContext) []reflect.Value {
 	remoteMethod := context.Method
 	function := remoteMethod.Function
 	if context.IsMissingMethod {
@@ -289,7 +289,7 @@ func (service *BaseService) endError(err error, context Context) []byte {
 func doOutput(
 	args []reflect.Value,
 	results []reflect.Value,
-	context ServiceContext) []byte {
+	context *ServiceContext) []byte {
 	method := context.Method
 	writer := io.NewWriter(method.Simple)
 	switch method.Mode {
@@ -321,7 +321,7 @@ func doOutput(
 }
 
 func (service *BaseService) fireBeforeInvokeEvent(
-	name string, args []reflect.Value, context ServiceContext) error {
+	name string, args []reflect.Value, context *ServiceContext) error {
 	switch event := service.Event.(type) {
 	case beforeInvokeEvent:
 		event.OnBeforeInvoke(name, args, context.ByRef, context)
@@ -332,7 +332,7 @@ func (service *BaseService) fireBeforeInvokeEvent(
 }
 
 func (service *BaseService) fireAfterInvokeEvent(
-	name string, args []reflect.Value, results []reflect.Value, context ServiceContext) error {
+	name string, args []reflect.Value, results []reflect.Value, context *ServiceContext) error {
 	switch event := service.Event.(type) {
 	case afterInvokeEvent:
 		event.OnAfterInvoke(name, args, context.ByRef, results, context)
@@ -343,7 +343,7 @@ func (service *BaseService) fireAfterInvokeEvent(
 }
 
 func (service *BaseService) beforeInvoke(
-	name string, args []reflect.Value, context ServiceContext) promise.Promise {
+	name string, args []reflect.Value, context *ServiceContext) promise.Promise {
 	return promise.Sync(func() error {
 		return service.fireBeforeInvokeEvent(name, args, context)
 	}).Then(func() promise.Promise {
@@ -358,7 +358,7 @@ func (service *BaseService) beforeInvoke(
 }
 
 func (service *BaseService) invoke(
-	name string, args []reflect.Value, context ServiceContext) promise.Promise {
+	name string, args []reflect.Value, context *ServiceContext) promise.Promise {
 	if context.Oneway {
 		go func() {
 			defer recover()
@@ -390,7 +390,7 @@ func max(a, b int) int {
 func (service *BaseService) readArguments(
 	reader *io.Reader,
 	method *Method,
-	context ServiceContext) (args []reflect.Value) {
+	context *ServiceContext) (args []reflect.Value) {
 	if method == nil {
 		return reader.ReadSliceWithoutTag()
 	}
@@ -425,7 +425,7 @@ func (service *BaseService) readArguments(
 }
 
 func (service *BaseService) doInvoke(
-	reader *io.Reader, context ServiceContext) promise.Promise {
+	reader *io.Reader, context *ServiceContext) promise.Promise {
 	var results []interface{}
 	for {
 		reader.Reset()
@@ -471,7 +471,7 @@ func (service *BaseService) doInvoke(
 	})
 }
 
-func (service *BaseService) doFunctionList(context ServiceContext) []byte {
+func (service *BaseService) doFunctionList(context *ServiceContext) []byte {
 	writer := io.NewWriter(true)
 	writer.WriteByte(io.TagFunctions)
 	writer.WriteStringSlice(service.MethodNames)
@@ -480,7 +480,7 @@ func (service *BaseService) doFunctionList(context ServiceContext) []byte {
 }
 
 func (service *BaseService) afterFilter(
-	request []byte, context ServiceContext) promise.Promise {
+	request []byte, context *ServiceContext) promise.Promise {
 	reader := io.NewReader(request, false)
 	tag, err := reader.ReadByte()
 	if err != nil {
@@ -496,7 +496,8 @@ func (service *BaseService) afterFilter(
 	}
 }
 
-func (service *BaseService) delayError(err error, context ServiceContext) promise.Promise {
+func (service *BaseService) delayError(
+	err error, context *ServiceContext) promise.Promise {
 	e := service.endError(err, context)
 	if service.ErrorDelay > 0 {
 		return promise.Delayed(service.ErrorDelay, e)
@@ -505,7 +506,7 @@ func (service *BaseService) delayError(err error, context ServiceContext) promis
 }
 
 func (service *BaseService) beforeFilter(
-	request []byte, context ServiceContext) promise.Promise {
+	request []byte, context *ServiceContext) promise.Promise {
 	return promise.
 		Sync(func() promise.Promise {
 			request = service.inputFilter(request, context)
@@ -519,32 +520,33 @@ func (service *BaseService) beforeFilter(
 		})
 }
 
-func (service *BaseService) handler(
-	request []byte, context ServiceContext) promise.Promise {
+// Handle the hprose request and return the hprose response
+func (service *BaseService) Handle(
+	request []byte, context *ServiceContext) promise.Promise {
 	return service.beforeFilterHandler(request, context).
 		WhenComplete(func() {
 			pool.Recycle(request)
 		})
 }
 
-func (service *BaseService) getTopics(topic string) (topics map[string]*topic) {
-	topics = service.allTopics[topic]
-	if topics == nil {
-		panic(errors.New("topic \"" + topic + "\" is not published."))
-	}
-	return
-}
+// func (service *BaseService) getTopics(topic string) (topics map[string]*topic) {
+// 	topics = service.allTopics[topic]
+// 	if topics == nil {
+// 		panic(errors.New("topic \"" + topic + "\" is not published."))
+// 	}
+// 	return
+// }
 
-func (service *BaseService) delTimer(topics map[string]*topic, id string) {
-	t := topics[id]
-	if t != nil && t.Timer != nil {
-		t.Timer.Stop()
-		t.Timer = nil
-	}
-}
+// func (service *BaseService) delTimer(topics map[string]*topic, id string) {
+// 	t := topics[id]
+// 	if t != nil && t.Timer != nil {
+// 		t.Timer.Stop()
+// 		t.Timer = nil
+// 	}
+// }
 
-func (service *BaseService) offline(
-	topics map[string]*topic, topic string, id string) {
-	service.delTimer(topics, id)
+// func (service *BaseService) offline(
+// 	topics map[string]*topic, topic string, id string) {
+// 	service.delTimer(topics, id)
 
-}
+// }

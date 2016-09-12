@@ -26,14 +26,14 @@ import (
 )
 
 type message struct {
-	Detector promise.Promise
+	Detector chan bool
 	Result   interface{}
 }
 
 type topic struct {
 	*time.Timer
 	Request   promise.Promise
-	Messages  []message
+	Messages  chan *message
 	Count     int64
 	Heartbeat time.Duration
 }

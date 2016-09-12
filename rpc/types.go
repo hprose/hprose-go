@@ -19,7 +19,10 @@
 
 package rpc
 
-import "unsafe"
+import (
+	"net/http"
+	"unsafe"
+)
 
 type emptyInterface struct {
 	typ uintptr
@@ -32,3 +35,6 @@ func getType(v interface{}) uintptr {
 
 var interfaceType = getType((interface{})(nil))
 var contextType = getType((Context)(nil))
+var serviceContextType = getType((*ServiceContext)(nil))
+var httpContextType = getType((*HTTPContext)(nil))
+var httpRequestType = getType((*http.Request)(nil))

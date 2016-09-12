@@ -19,13 +19,14 @@
 
 package rpc
 
-// ServiceContext is the hprose base context
+// ServiceContext is the hprose service context
 type ServiceContext struct {
 	*BaseContext
 	*Method
-	IsMissingMethod bool
-	ByRef           bool
 	Clients
+	TransportContext Context
+	IsMissingMethod  bool
+	ByRef            bool
 }
 
 // NewServiceContext is the constructor of ServiceContext
