@@ -52,7 +52,7 @@ func readBytesAsArray(r *Reader, v reflect.Value, tag byte) {
 
 func readListAsArray(r *Reader, v reflect.Value, tag byte) {
 	n := v.Len()
-	l := r.readCount()
+	l := r.ReadCount()
 	if !r.Simple {
 		setReaderRef(r, v)
 	}

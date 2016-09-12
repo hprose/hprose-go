@@ -240,7 +240,7 @@ func (r *Reader) ReadBigIntWithoutTag() *big.Int {
 
 // ReadSliceWithoutTag from the reader
 func (r *Reader) ReadSliceWithoutTag() []reflect.Value {
-	l := r.readCount()
+	l := r.ReadCount()
 	v := make([]reflect.Value, l, l+1)
 	if !r.Simple {
 		setReaderRef(r, v)
@@ -250,6 +250,11 @@ func (r *Reader) ReadSliceWithoutTag() []reflect.Value {
 	}
 	r.readByte()
 	return v
+}
+
+// ReadCount of array, slice, map or struct field
+func (r *Reader) ReadCount() int {
+	return int(ReadInt64(&r.ByteReader, TagOpenbrace))
 }
 
 // Reset the reference counter
@@ -266,10 +271,6 @@ func (r *Reader) Reset() {
 }
 
 // private methods & functions
-
-func (r *Reader) readCount() int {
-	return int(ReadInt64(&r.ByteReader, TagOpenbrace))
-}
 
 func (r *Reader) readRef() interface{} {
 	if r.Simple {
