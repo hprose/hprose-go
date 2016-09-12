@@ -12,7 +12,7 @@
  *                                                        *
  * some internal type & functions.                        *
  *                                                        *
- * LastModified: Sep 12, 2016                             *
+ * LastModified: Sep 13, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -39,14 +39,14 @@ func afterCall(promise Promise, results []reflect.Value) {
 			promise.Resolve(nil)
 		} else {
 			result := results[0].Interface()
-			if reason := result.(error); reason != nil {
+			if reason, ok := result.(error); ok && reason != nil {
 				promise.Reject(reason)
 			} else {
 				promise.Resolve(result)
 			}
 		}
 	case 2:
-		if reason := results[1].Interface().(error); reason != nil {
+		if reason, ok := results[1].Interface().(error); ok && reason != nil {
 			promise.Reject(reason)
 		} else if results[0].IsNil() {
 			promise.Resolve(nil)
