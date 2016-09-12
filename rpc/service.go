@@ -21,12 +21,15 @@ package rpc
 
 import (
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"reflect"
+	"strings"
 	"time"
 	"unsafe"
 
 	"github.com/hprose/hprose-golang/io"
+	"github.com/hprose/hprose-golang/pool"
 	"github.com/hprose/hprose-golang/promise"
 )
 
@@ -52,15 +55,16 @@ type Service interface {
 }
 
 type fixer interface {
-	FixArguments(args []reflect.Value, lastParamType reflect.Type, context Context) []reflect.Value
+	FixArguments(args []reflect.Value, context Context)
 }
 
-func fixArguments(args []reflect.Value, lastParamType reflect.Type, context Context) []reflect.Value {
+func fixArguments(args []reflect.Value, context Context) {
+	i := len(args) - 1
+	lastParamType := args[i].Type()
 	typ := (*emptyInterface)(unsafe.Pointer(&lastParamType)).ptr
 	if typ == interfaceType || typ == contextType {
-		args = append(args, reflect.ValueOf(context))
+		args[i] = reflect.ValueOf(context)
 	}
-	return args
 }
 
 // BaseService is the hprose base service
@@ -99,6 +103,18 @@ func NewBaseService() (service *BaseService) {
 	service.ErrorDelay = 10 * 1000 * 1000
 	service.allTopics = make(map[string]map[string]*topic)
 	service.AddFunction("#", GetNextID, MethodOptions{Simple: true})
+	service.override.invokeHandler = func(
+		name string, args []reflect.Value, context Context) promise.Promise {
+		return service.invoke(name, args, context.(ServiceContext))
+	}
+	service.override.beforeFilterHandler = func(
+		request []byte, context Context) promise.Promise {
+		return service.beforeFilter(request, context.(ServiceContext))
+	}
+	service.override.afterFilterHandler = func(
+		request []byte, context Context) promise.Promise {
+		return service.afterFilter(request, context.(ServiceContext))
+	}
 	return service
 }
 
@@ -218,12 +234,13 @@ func (service *BaseService) callService(
 		return missingMethod(name, args, context)
 	}
 	ft := function.Type()
-	n := len(args)
 	if ft.IsVariadic() {
 		return function.CallSlice(args)
 	}
-	if ft.NumIn() == n+1 {
-		args = service.FixArguments(args, ft.In(n), context)
+	count := len(args)
+	n := ft.NumIn()
+	if n < count {
+		args = args[:n]
 	}
 	return function.Call(args)
 }
@@ -238,12 +255,14 @@ func (service *BaseService) getErrorMessage(err error) string {
 	return err.Error()
 }
 
-func (service *BaseService) fireErrorEvent(err error, context Context) error {
+func (service *BaseService) fireErrorEvent(
+	e error, context Context) (err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			err = promise.NewPanicError(e)
 		}
 	}()
+	err = e
 	switch event := service.Event.(type) {
 	case sendErrorEvent:
 		event.OnSendError(err, context)
@@ -272,33 +291,33 @@ func doOutput(
 	results []reflect.Value,
 	context ServiceContext) []byte {
 	method := context.Method
-	w := io.NewWriter(method.Simple)
+	writer := io.NewWriter(method.Simple)
 	switch method.Mode {
 	case RawWithEndTag:
 		return results[0].Bytes()
 	case Raw:
-		w.Write(results[0].Bytes())
+		writer.Write(results[0].Bytes())
 	default:
-		w.WriteByte(io.TagResult)
+		writer.WriteByte(io.TagResult)
 		if method.Mode == Serialized {
-			w.Write(results[0].Bytes())
+			writer.Write(results[0].Bytes())
 		} else {
 			switch len(results) {
 			case 0:
-				w.WriteNil()
+				writer.WriteNil()
 			case 1:
-				w.WriteValue(results[0])
+				writer.WriteValue(results[0])
 			default:
-				w.WriteSlice(results)
+				writer.WriteSlice(results)
 			}
 		}
 		if context.ByRef {
-			w.WriteByte(io.TagArgument)
-			w.Reset()
-			w.WriteSlice(args)
+			writer.WriteByte(io.TagArgument)
+			writer.Reset()
+			writer.WriteSlice(args)
 		}
 	}
-	return w.Bytes()
+	return writer.Bytes()
 }
 
 func (service *BaseService) fireBeforeInvokeEvent(
@@ -338,7 +357,7 @@ func (service *BaseService) beforeInvoke(
 	})
 }
 
-func (service *BaseService) invokeHandler(
+func (service *BaseService) invoke(
 	name string, args []reflect.Value, context ServiceContext) promise.Promise {
 	if context.Oneway {
 		go func() {
@@ -359,4 +378,147 @@ func (service *BaseService) invokeHandler(
 		}
 		return results, err
 	})
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+var interfaceType = reflect.TypeOf((interface{})(nil))
+
+func (service *BaseService) readArguments(
+	reader *io.Reader,
+	method *Method,
+	context ServiceContext) (args []reflect.Value) {
+	if method == nil {
+		return reader.ReadSliceWithoutTag()
+	}
+	count := reader.ReadCount()
+	ft := method.Function.Type()
+	n := ft.NumIn()
+	if ft.IsVariadic() {
+		n--
+	}
+	max := max(n, count)
+	args = make([]reflect.Value, max)
+	for i := 0; i < n; i++ {
+		args[i] = reflect.New(ft.In(i)).Elem()
+	}
+	if n < count {
+		for i := n; i < count; i++ {
+			if ft.IsVariadic() {
+				args[i] = reflect.New(ft.In(n)).Elem()
+			} else {
+				args[i] = reflect.New(interfaceType).Elem()
+			}
+		}
+	}
+	reader.ReadSlice(args[:count])
+	if !ft.IsVariadic() && n > count {
+		service.FixArguments(args, context)
+	}
+	return
+}
+
+func (service *BaseService) doInvoke(
+	reader *io.Reader, context ServiceContext) promise.Promise {
+	var results []interface{}
+	for {
+		reader.Reset()
+		name := reader.ReadString()
+		alias := strings.ToLower(name)
+		method := service.RemoteMethods[alias]
+		tag := reader.CheckTags([]byte{io.TagList, io.TagEnd, io.TagCall})
+		var args []reflect.Value
+		if tag == io.TagList {
+			reader.Reset()
+			args = service.readArguments(reader, method, context)
+			tag = reader.CheckTags([]byte{io.TagTrue, io.TagEnd, io.TagCall})
+			if tag == io.TagTrue {
+				context.ByRef = true
+				tag = reader.CheckTags([]byte{io.TagEnd, io.TagCall})
+			}
+		}
+		if method == nil {
+			method = service.RemoteMethods["*"]
+			context.IsMissingMethod = true
+		}
+		if method == nil {
+			err := errors.New("Can't find this method " + name)
+			results = append(results, service.sendError(err, context))
+		} else {
+			context.Method = method
+			results = append(results, service.beforeInvoke(name, args, context))
+		}
+		if tag != io.TagCall {
+			break
+		}
+	}
+	return promise.All(results...).Then(func(results []interface{}) []byte {
+		writer := &io.ByteWriter{}
+		n := len(results)
+		for i := 0; i < n; i++ {
+			data := results[i].([]byte)
+			writer.Write(data)
+			pool.Recycle(data)
+		}
+		writer.WriteByte(io.TagEnd)
+		return writer.Bytes()
+	})
+}
+
+func (service *BaseService) doFunctionList(context ServiceContext) []byte {
+	writer := io.NewWriter(true)
+	writer.WriteByte(io.TagFunctions)
+	writer.WriteStringSlice(service.MethodNames)
+	writer.WriteByte(io.TagEnd)
+	return writer.Bytes()
+}
+
+func (service *BaseService) afterFilter(
+	request []byte, context ServiceContext) promise.Promise {
+	reader := io.NewReader(request, false)
+	tag, err := reader.ReadByte()
+	if err != nil {
+		return promise.Reject(err)
+	}
+	switch tag {
+	case io.TagCall:
+		return service.doInvoke(reader, context)
+	case io.TagEnd:
+		return promise.Resolve(service.doFunctionList(context))
+	default:
+		return promise.Reject(fmt.Errorf("Wrong Request: \r\n%s", request))
+	}
+}
+
+func (service *BaseService) delayError(err error, context ServiceContext) promise.Promise {
+	e := service.endError(err, context)
+	if service.ErrorDelay > 0 {
+		return promise.Delayed(service.ErrorDelay, e)
+	}
+	return promise.Resolve(e)
+}
+
+func (service *BaseService) beforeFilter(
+	request []byte, context ServiceContext) promise.Promise {
+	return promise.
+		Sync(func() promise.Promise {
+			request = service.inputFilter(request, context)
+			return service.afterFilterHandler(request, context)
+		}).
+		Catch(func(err error) promise.Promise {
+			return service.delayError(err, context)
+		}).
+		Then(func(response []byte) []byte {
+			return service.outputFilter(response, context)
+		})
+}
+
+func (service *BaseService) handler(
+	request []byte, context ServiceContext) promise.Promise {
+	return service.beforeFilterHandler(request, context)
 }
