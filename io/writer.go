@@ -12,7 +12,7 @@
  *                                                        *
  * hprose writer for Go.                                  *
  *                                                        *
- * LastModified: Sep 11, 2016                             *
+ * LastModified: Sep 12, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -264,6 +264,21 @@ func (w *Writer) WriteTuple(tuple ...interface{}) {
 	writeListHeader(w, count)
 	for _, v := range tuple {
 		w.Serialize(v)
+	}
+	writeListFooter(w)
+}
+
+// WriteSlice to the writer
+func (w *Writer) WriteSlice(slice []reflect.Value) {
+	setWriterRef(w, nil)
+	count := len(slice)
+	if count == 0 {
+		writeEmptyList(w)
+		return
+	}
+	writeListHeader(w, count)
+	for i := range slice {
+		w.WriteValue(slice[i])
 	}
 	writeListFooter(w)
 }
