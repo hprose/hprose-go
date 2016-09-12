@@ -8,11 +8,11 @@
 \**********************************************************/
 /**********************************************************\
  *                                                        *
- * rpc/methods.go                                         *
+ * rpc/method.go                                          *
  *                                                        *
- * hprose methods for Go.                                 *
+ * hprose method manager for Go.                          *
  *                                                        *
- * LastModified: Sep 11, 2016                             *
+ * LastModified: Sep 12, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -32,23 +32,23 @@ type MethodOptions struct {
 	NameSpace string
 }
 
-// serviceMethod is the published service method
-type serviceMethod struct {
+// Method is the published service method
+type Method struct {
 	Function reflect.Value
 	MethodOptions
 }
 
-// methods is the published service methods
-type serviceMethods struct {
+// methodManager manages published service methods
+type methodManager struct {
 	MethodNames   []string
-	RemoteMethods map[string]serviceMethod
+	RemoteMethods map[string]Method
 }
 
-// newServiceMethods is the constructor for Methods
-func newServiceMethods() (methods *serviceMethods) {
-	methods = new(serviceMethods)
+// newMethodManager is the constructor for methodManager
+func newMethodManager() (methods *methodManager) {
+	methods = new(methodManager)
 	methods.MethodNames = make([]string, 0, 64)
-	methods.RemoteMethods = make(map[string]serviceMethod)
+	methods.RemoteMethods = make(map[string]Method)
 	return
 }
 
@@ -56,7 +56,7 @@ func newServiceMethods() (methods *serviceMethods) {
 // name is the method name
 // function is a func or bound method
 // options includes Mode, Simple, Oneway and NameSpace
-func (methods *serviceMethods) AddFunction(
+func (mm *methodManager) AddFunction(
 	name string, function interface{}, options MethodOptions) {
 	if name == "" {
 		panic("name can't be empty")
@@ -74,24 +74,24 @@ func (methods *serviceMethods) AddFunction(
 	if options.NameSpace != "" && name != "*" {
 		name = options.NameSpace + "_" + name
 	}
-	methods.MethodNames = append(methods.MethodNames, name)
-	methods.RemoteMethods[strings.ToLower(name)] = serviceMethod{f, options}
+	mm.MethodNames = append(mm.MethodNames, name)
+	mm.RemoteMethods[strings.ToLower(name)] = Method{f, options}
 }
 
 // AddFunctions is used for batch publishing service method
-func (methods *serviceMethods) AddFunctions(
+func (mm *methodManager) AddFunctions(
 	names []string, functions []interface{}, options MethodOptions) {
 	count := len(names)
 	if count != len(functions) {
 		panic("names and functions must have the same length")
 	}
 	for i := 0; i < count; i++ {
-		methods.AddFunction(names[i], functions[i], options)
+		mm.AddFunction(names[i], functions[i], options)
 	}
 }
 
 // AddMethod is used for publishing a method on the obj with an alias
-func (methods *serviceMethods) AddMethod(
+func (mm *methodManager) AddMethod(
 	name string, obj interface{}, options MethodOptions, alias ...string) {
 	if obj == nil {
 		panic("obj can't be nil")
@@ -101,12 +101,12 @@ func (methods *serviceMethods) AddMethod(
 		name = alias[0]
 	}
 	if f.CanInterface() {
-		methods.AddFunction(name, f, options)
+		mm.AddFunction(name, f, options)
 	}
 }
 
 // AddMethods is used for batch publishing methods on the obj with aliases
-func (methods *serviceMethods) AddMethods(
+func (mm *methodManager) AddMethods(
 	names []string, obj interface{}, options MethodOptions, aliases ...[]string) {
 	if obj == nil {
 		panic("obj can't be nil")
@@ -117,23 +117,23 @@ func (methods *serviceMethods) AddMethods(
 			panic("names and aliases must have the same length")
 		}
 		for i := 0; i < count; i++ {
-			methods.AddMethod(names[i], obj, options, aliases[0][i])
+			mm.AddMethod(names[i], obj, options, aliases[0][i])
 		}
 		return
 	}
 	for i := 0; i < count; i++ {
-		methods.AddMethod(names[i], obj, options)
+		mm.AddMethod(names[i], obj, options)
 	}
 }
 
-func (methods *serviceMethods) addMethods(
+func (mm *methodManager) addMethods(
 	v reflect.Value, t reflect.Type, options MethodOptions) {
 	n := t.NumMethod()
 	for i := 0; i < n; i++ {
 		name := t.Method(i).Name
 		method := v.Method(i)
 		if method.CanInterface() {
-			methods.AddFunction(name, method, options)
+			mm.AddFunction(name, method, options)
 		}
 	}
 }
@@ -145,7 +145,7 @@ func getPtrTo(v reflect.Value, t reflect.Type) (reflect.Value, reflect.Type) {
 	return v, t
 }
 
-func (methods *serviceMethods) addFuncField(
+func (mm *methodManager) addFuncField(
 	v reflect.Value, t reflect.Type, i int, options MethodOptions) {
 	f := v.Field(i)
 	name := t.Field(i).Name
@@ -154,11 +154,11 @@ func (methods *serviceMethods) addFuncField(
 	}
 	f, _ = getPtrTo(f, f.Type())
 	if !f.IsNil() && f.Kind() == reflect.Func {
-		methods.AddFunction(name, f, options)
+		mm.AddFunction(name, f, options)
 	}
 }
 
-func (methods *serviceMethods) recursiveAddFuncFields(
+func (mm *methodManager) recursiveAddFuncFields(
 	v reflect.Value, t reflect.Type, i int, options MethodOptions) {
 	f := v.Field(i)
 	fs := t.Field(i)
@@ -168,14 +168,14 @@ func (methods *serviceMethods) recursiveAddFuncFields(
 	}
 	f, _ = getPtrTo(f, f.Type())
 	if !f.IsNil() && f.Kind() == reflect.Func {
-		methods.AddFunction(name, f, options)
+		mm.AddFunction(name, f, options)
 		return
 	}
 	if f.Kind() != reflect.Struct {
 		return
 	}
 	if fs.Anonymous {
-		methods.AddAllMethods(f.Interface(), options)
+		mm.AddAllMethods(f.Interface(), options)
 	} else {
 		newOptions := options
 		if newOptions.NameSpace == "" {
@@ -183,7 +183,7 @@ func (methods *serviceMethods) recursiveAddFuncFields(
 		} else {
 			newOptions.NameSpace += "_" + name
 		}
-		methods.AddAllMethods(f.Interface(), newOptions)
+		mm.AddAllMethods(f.Interface(), newOptions)
 	}
 }
 
@@ -193,14 +193,14 @@ type addFuncFunc func(
 	i int,
 	options MethodOptions)
 
-func (methods *serviceMethods) addInstanceMethods(
+func (mm *methodManager) addInstanceMethods(
 	obj interface{}, options MethodOptions, addFunc addFuncFunc) {
 	if obj == nil {
 		panic("obj can't be nil")
 	}
 	v := reflect.ValueOf(obj)
 	t := v.Type()
-	methods.addMethods(v, t, options)
+	mm.addMethods(v, t, options)
 	v, t = getPtrTo(v, t)
 	if t.Kind() == reflect.Struct {
 		n := t.NumField()
@@ -211,18 +211,18 @@ func (methods *serviceMethods) addInstanceMethods(
 }
 
 // AddInstanceMethods is used for publishing all the public methods and func fields with options.
-func (methods *serviceMethods) AddInstanceMethods(
+func (mm *methodManager) AddInstanceMethods(
 	obj interface{}, options MethodOptions) {
-	methods.addInstanceMethods(obj, options, methods.addFuncField)
+	mm.addInstanceMethods(obj, options, mm.addFuncField)
 }
 
 // AddAllMethods will publish all methods and non-nil function fields on the
 // obj self and on its anonymous or non-anonymous struct fields (or pointer to
 // pointer ... to pointer struct fields). This is a recursive operation.
 // So it's a pit, if you do not know what you are doing, do not step on.
-func (methods *serviceMethods) AddAllMethods(
+func (mm *methodManager) AddAllMethods(
 	obj interface{}, options MethodOptions) {
-	methods.addInstanceMethods(obj, options, methods.recursiveAddFuncFields)
+	mm.addInstanceMethods(obj, options, mm.recursiveAddFuncFields)
 }
 
 // MissingMethod is missing method
@@ -230,20 +230,20 @@ type MissingMethod func(name string, args []reflect.Value, context Context) (res
 
 // AddMissingMethod is used for publishing a method,
 // all methods not explicitly published will be redirected to this method.
-func (methods *serviceMethods) AddMissingMethod(
+func (mm *methodManager) AddMissingMethod(
 	method MissingMethod, options MethodOptions) {
-	methods.AddFunction("*", method, options)
+	mm.AddFunction("*", method, options)
 }
 
 // Remove the published func or method by name
-func (methods *serviceMethods) Remove(name string) {
+func (mm *methodManager) Remove(name string) {
 	name = strings.ToLower(name)
-	n := len(methods.MethodNames)
+	n := len(mm.MethodNames)
 	for i := 0; i < n; i++ {
-		if strings.ToLower(methods.MethodNames[i]) == name {
-			methods.MethodNames = append(methods.MethodNames[:i], methods.MethodNames[i+1:]...)
+		if strings.ToLower(mm.MethodNames[i]) == name {
+			mm.MethodNames = append(mm.MethodNames[:i], mm.MethodNames[i+1:]...)
 			break
 		}
 	}
-	delete(methods.RemoteMethods, name)
+	delete(mm.RemoteMethods, name)
 }
