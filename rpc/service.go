@@ -28,7 +28,6 @@ import (
 	"time"
 
 	"github.com/hprose/hprose-golang/io"
-	"github.com/hprose/hprose-golang/promise"
 )
 
 // Service interface
@@ -247,7 +246,7 @@ func (service *BaseService) callService(
 }
 
 func (service *BaseService) getErrorMessage(err error) string {
-	if panicError, ok := err.(*promise.PanicError); ok {
+	if panicError, ok := err.(*PanicError); ok {
 		if service.Debug {
 			return fmt.Sprintf("%v\r\n%s", panicError.Panic, panicError.Stack)
 		}
@@ -260,7 +259,7 @@ func (service *BaseService) fireErrorEvent(
 	e error, context Context) (err error) {
 	defer func() {
 		if e := recover(); e != nil {
-			err = promise.NewPanicError(e)
+			err = NewPanicError(e)
 		}
 	}()
 	err = e
@@ -327,7 +326,7 @@ func (service *BaseService) fireBeforeInvokeEvent(
 	context *ServiceContext) (err error) {
 	defer func() {
 		if e := recover(); e != nil {
-			err = promise.NewPanicError(e)
+			err = NewPanicError(e)
 		}
 	}()
 	switch event := service.Event.(type) {
@@ -346,7 +345,7 @@ func (service *BaseService) fireAfterInvokeEvent(
 	context *ServiceContext) (err error) {
 	defer func() {
 		if e := recover(); e != nil {
-			err = promise.NewPanicError(e)
+			err = NewPanicError(e)
 		}
 	}()
 	switch event := service.Event.(type) {
@@ -546,7 +545,7 @@ func (service *BaseService) Handle(
 	request []byte, context *ServiceContext) (response []byte, err error) {
 	defer func() {
 		if e := recover(); e != nil {
-			err = promise.NewPanicError(e)
+			err = NewPanicError(e)
 		}
 	}()
 	return service.beforeFilterHandler(request, context)

@@ -8,9 +8,9 @@
 \**********************************************************/
 /**********************************************************\
  *                                                        *
- * rpc/topic.go                                           *
+ * rpc/error.go                                           *
  *                                                        *
- * hprose push topic for Go.                              *
+ * rpc error for Go.                                      *
  *                                                        *
  * LastModified: Sep 13, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
@@ -19,23 +19,34 @@
 
 package rpc
 
-import "time"
+import (
+	"fmt"
+	"runtime"
+)
 
-type message struct {
-	Detector chan bool
-	Result   interface{}
+// PanicError represents a panic error
+type PanicError struct {
+	Panic interface{}
+	Stack []byte
 }
 
-type topic struct {
-	*time.Timer
-	Request   interface{}
-	Messages  chan *message
-	Count     int64
-	Heartbeat time.Duration
+func stack() []byte {
+	buf := make([]byte, 1024)
+	for {
+		n := runtime.Stack(buf, false)
+		if n < len(buf) {
+			return buf[:n]
+		}
+		buf = make([]byte, 2*len(buf))
+	}
 }
 
-func newTopic(heartbeat time.Duration) *topic {
-	t := new(topic)
-	t.Heartbeat = heartbeat
-	return t
+// NewPanicError return a panic error
+func NewPanicError(v interface{}) *PanicError {
+	return &PanicError{v, stack()}
+}
+
+// Error implements the PanicError Error method.
+func (pe *PanicError) Error() string {
+	return fmt.Sprintf("%v", pe.Panic)
 }

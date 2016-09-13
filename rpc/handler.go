@@ -19,11 +19,7 @@
 
 package rpc
 
-import (
-	"reflect"
-
-	"github.com/hprose/hprose-golang/promise"
-)
+import "reflect"
 
 // NextInvokeHandler is the next invoke handler function
 type NextInvokeHandler func(
@@ -99,7 +95,7 @@ func getNextInvokeHandler(
 		context Context) (results []reflect.Value, err error) {
 		defer func() {
 			if e := recover(); e != nil {
-				err = promise.NewPanicError(e)
+				err = NewPanicError(e)
 			}
 		}()
 		return handler(name, args, context, next)
@@ -111,7 +107,7 @@ func getNextFilterHandler(
 	return func(request []byte, context Context) (response []byte, err error) {
 		defer func() {
 			if e := recover(); e != nil {
-				err = promise.NewPanicError(e)
+				err = NewPanicError(e)
 			}
 		}()
 		return handler(request, context, next)
