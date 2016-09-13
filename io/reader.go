@@ -238,8 +238,6 @@ func (r *Reader) ReadBigIntWithoutTag() *big.Int {
 	return i
 }
 
-var interfaceType = reflect.TypeOf((interface{})(nil))
-
 // ReadSliceWithoutTag from the reader
 func (r *Reader) ReadSliceWithoutTag() []reflect.Value {
 	l := r.ReadCount()
