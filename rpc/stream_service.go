@@ -21,7 +21,6 @@ package rpc
 
 import (
 	"bufio"
-	"io"
 	"net"
 )
 
@@ -94,7 +93,7 @@ func (service *StreamService) ServeConn(conn net.Conn) {
 		context := &StreamContext{NewServiceContext(nil), conn}
 		context.TransportContext = context
 		data.context = context.ServiceContext
-		if _, err = io.ReadAtLeast(reader, header[:], 4); err != nil {
+		if _, err = reader.Read(header[:]); err != nil {
 			break
 		}
 		size = bytesToInt(header)
@@ -102,12 +101,12 @@ func (service *StreamService) ServeConn(conn net.Conn) {
 		if data.fullDuplex {
 			size &= 0x7FFFFFF
 			data.fullDuplex = true
-			if _, err = io.ReadAtLeast(reader, data.id[:], 4); err != nil {
+			if _, err = reader.Read(data.id[:]); err != nil {
 				break
 			}
 		}
 		data.body = make([]byte, size)
-		if _, err = io.ReadAtLeast(reader, data.body, size); err != nil {
+		if _, err = reader.Read(data.body); err != nil {
 			break
 		}
 		if data.fullDuplex {
