@@ -20,6 +20,7 @@
 package rpc
 
 import (
+	"bufio"
 	"io"
 	"net"
 )
@@ -42,32 +43,6 @@ type StreamService struct {
 	BaseService
 }
 
-func (service *StreamService) sendData(conn net.Conn, data packet) error {
-	var header [4]byte
-	var size int
-	var err error
-	size = len(data.body)
-	if data.fullDuplex {
-		size |= 0x80000000
-	}
-	header[0] = byte((size >> 24) & 0xFF)
-	header[1] = byte((size >> 16) & 0xFF)
-	header[2] = byte((size >> 28) & 0xFF)
-	header[3] = byte(size & 0xFF)
-	if _, err = conn.Write(header[:]); err != nil {
-		return err
-	}
-	if data.fullDuplex {
-		if _, err = conn.Write(data.id[:]); err != nil {
-			return err
-		}
-	}
-	if _, err = conn.Write(data.body); err != nil {
-		return err
-	}
-	return nil
-}
-
 func (service *StreamService) initSendQueue(
 	sendQueue chan packet, conn net.Conn) {
 	var data packet
@@ -78,7 +53,8 @@ func (service *StreamService) initSendQueue(
 		if !ok {
 			break
 		}
-		if err = service.sendData(conn, data); err != nil {
+		err = sendDataOverStream(conn, data.body, data.id, data.fullDuplex)
+		if err != nil {
 			break
 		}
 	}
@@ -96,7 +72,7 @@ func (service *StreamService) onReceived(conn net.Conn, data packet, sendQueue c
 	if data.fullDuplex {
 		sendQueue <- data
 	} else {
-		service.sendData(conn, data)
+		sendDataOverStream(conn, data.body, data.id, data.fullDuplex)
 	}
 }
 
@@ -111,27 +87,28 @@ func (service *StreamService) ServeConn(conn net.Conn) {
 	var size int
 	var data packet
 	var err error
+	reader := bufio.NewReader(conn)
 	sendQueue := make(chan packet, 10)
 	go service.initSendQueue(sendQueue, conn)
 	for {
 		context := &StreamContext{NewServiceContext(nil), conn}
 		context.TransportContext = context
 		data.context = context.ServiceContext
-		if _, err := io.ReadAtLeast(conn, header[0:4], 4); err != nil {
+		if _, err = io.ReadAtLeast(reader, header[:], 4); err != nil {
 			break
 		}
 		size = bytesToInt(header)
 		if size&0x8000000 != 0 {
 			size &= 0x7FFFFFF
 			data.fullDuplex = true
-			if _, err = io.ReadAtLeast(conn, data.id[0:4], 4); err != nil {
+			if _, err = io.ReadAtLeast(reader, data.id[:], 4); err != nil {
 				break
 			}
 		} else {
 			data.fullDuplex = false
 		}
 		data.body = make([]byte, size)
-		if _, err = io.ReadAtLeast(conn, data.body, size); err != nil {
+		if _, err = io.ReadAtLeast(reader, data.body, size); err != nil {
 			break
 		}
 		if data.fullDuplex {
