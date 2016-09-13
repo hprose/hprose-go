@@ -44,21 +44,18 @@ type StreamService struct {
 
 func (service *StreamService) initSendQueue(
 	sendQueue chan packet, conn net.Conn) {
-	var data packet
-	var err error
-	var ok bool
 	for {
-		data, ok = <-sendQueue
+		data, ok := <-sendQueue
 		if !ok {
 			conn.Close()
 			return
 		}
-		err = sendDataOverStream(conn, data.body, data.id, data.fullDuplex)
+		err := sendDataOverStream(conn, data.body, data.id, data.fullDuplex)
 		if err != nil {
+			service.fireErrorEvent(err, data.context)
 			break
 		}
 	}
-	service.fireErrorEvent(err, data.context)
 	close(sendQueue)
 	conn.Close()
 }
