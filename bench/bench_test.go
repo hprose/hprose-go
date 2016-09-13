@@ -15,32 +15,13 @@ func hello(name string) string {
 	return "Hello " + name + "!"
 }
 
-// BenchmarkHprose is ...
-func BenchmarkHprose(b *testing.B) {
-	b.StopTimer()
-	service := hproserpc.NewTCPService()
-	service.AddFunction("hello", hello, hproserpc.Options{})
-	listener, _ := net.Listen("tcp", "")
-	go service.ServeTCP(listener.(*net.TCPListener))
-	client := hprose.NewClient("tcp://" + listener.Addr().String())
-	defer listener.Close()
-	var args = []interface{}{"World"}
-	var result string
-	// client.Invoke("Hello", args, nil, &result)
-	// fmt.Println(result)
-	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		client.Invoke("Hello", args, nil, &result)
-	}
-}
-
 // RO is Reomote object
 type RO struct {
 	Hello func(string) (string, error)
 }
 
-// BenchmarkHprose2 is ...
-func BenchmarkHprose2(b *testing.B) {
+// BenchmarkHprose is ...
+func BenchmarkHprose(b *testing.B) {
 	b.StopTimer()
 	server := hprose.NewTcpServer("")
 	server.AddFunction("hello", hello)
@@ -51,6 +32,23 @@ func BenchmarkHprose2(b *testing.B) {
 	defer server.Stop()
 	// result, _ := ro.Hello("World")
 	// fmt.Println(result)
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		ro.Hello("World")
+	}
+}
+
+// BenchmarkHprose2 is ...
+func BenchmarkHprose2(b *testing.B) {
+	b.StopTimer()
+	service := hproserpc.NewTCPService()
+	service.AddFunction("hello", hello, hproserpc.Options{})
+	listener, _ := net.Listen("tcp", "")
+	go service.ServeTCP(listener.(*net.TCPListener))
+	client := hprose.NewClient("tcp://" + listener.Addr().String())
+	var ro *RO
+	client.UseService(&ro)
+	defer listener.Close()
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		ro.Hello("World")
