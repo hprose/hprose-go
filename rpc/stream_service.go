@@ -42,10 +42,34 @@ type StreamService struct {
 	BaseService
 }
 
-func (service *StreamService) initSendQueue(
-	sendQueue chan packet, conn net.Conn) {
+func (service *StreamService) sendData(conn net.Conn, data packet) error {
 	var header [4]byte
 	var size int
+	var err error
+	size = len(data.body)
+	if data.fullDuplex {
+		size |= 0x80000000
+	}
+	header[0] = byte((size >> 24) & 0xFF)
+	header[1] = byte((size >> 16) & 0xFF)
+	header[2] = byte((size >> 28) & 0xFF)
+	header[3] = byte(size & 0xFF)
+	if _, err = conn.Write(header[:]); err != nil {
+		return err
+	}
+	if data.fullDuplex {
+		if _, err = conn.Write(data.id[:]); err != nil {
+			return err
+		}
+	}
+	if _, err = conn.Write(data.body); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (service *StreamService) initSendQueue(
+	sendQueue chan packet, conn net.Conn) {
 	var data packet
 	var err error
 	var ok bool
@@ -54,23 +78,7 @@ func (service *StreamService) initSendQueue(
 		if !ok {
 			break
 		}
-		size = len(data.body)
-		if data.fullDuplex {
-			size |= 0x80000000
-		}
-		header[0] = byte((size >> 24) & 0xFF)
-		header[1] = byte((size >> 16) & 0xFF)
-		header[2] = byte((size >> 28) & 0xFF)
-		header[3] = byte(size & 0xFF)
-		if _, err = conn.Write(header[:]); err != nil {
-			break
-		}
-		if data.fullDuplex {
-			if _, err = conn.Write(data.id[:]); err != nil {
-				break
-			}
-		}
-		if _, err = conn.Write(data.body); err != nil {
+		if err = service.sendData(conn, data); err != nil {
 			break
 		}
 	}
@@ -78,14 +86,18 @@ func (service *StreamService) initSendQueue(
 	conn.Close()
 }
 
-func (service *StreamService) onReceived(data packet, sendQueue chan packet) {
+func (service *StreamService) onReceived(conn net.Conn, data packet, sendQueue chan packet) {
 	resp, err := service.Handle(data.body, data.context)
 	if err == nil {
 		data.body = resp
 	} else {
 		data.body = service.endError(err, data.context)
 	}
-	sendQueue <- data
+	if data.fullDuplex {
+		sendQueue <- data
+	} else {
+		service.sendData(conn, data)
+	}
 }
 
 func bytesToInt(b [4]byte) int {
@@ -105,14 +117,14 @@ func (service *StreamService) ServeConn(conn net.Conn) {
 		context := &StreamContext{NewServiceContext(nil), conn}
 		context.TransportContext = context
 		data.context = context.ServiceContext
-		if _, err := io.ReadAtLeast(conn, header[:], 4); err != nil {
+		if _, err := io.ReadAtLeast(conn, header[0:4], 4); err != nil {
 			break
 		}
 		size = bytesToInt(header)
 		if size&0x8000000 != 0 {
 			size &= 0x7FFFFFF
 			data.fullDuplex = true
-			if _, err = io.ReadAtLeast(conn, data.id[:], 4); err != nil {
+			if _, err = io.ReadAtLeast(conn, data.id[0:4], 4); err != nil {
 				break
 			}
 		} else {
@@ -122,7 +134,11 @@ func (service *StreamService) ServeConn(conn net.Conn) {
 		if _, err = io.ReadAtLeast(conn, data.body, size); err != nil {
 			break
 		}
-		go service.onReceived(data, sendQueue)
+		if data.fullDuplex {
+			go service.onReceived(conn, data, sendQueue)
+		} else {
+			service.onReceived(conn, data, sendQueue)
+		}
 	}
 	service.fireErrorEvent(err, data.context)
 	close(sendQueue)
