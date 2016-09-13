@@ -50,7 +50,8 @@ func (service *StreamService) initSendQueue(
 	for {
 		data, ok = <-sendQueue
 		if !ok {
-			break
+			conn.Close()
+			return
 		}
 		err = sendDataOverStream(conn, data.body, data.id, data.fullDuplex)
 		if err != nil {
@@ -58,6 +59,7 @@ func (service *StreamService) initSendQueue(
 		}
 	}
 	service.fireErrorEvent(err, data.context)
+	close(sendQueue)
 	conn.Close()
 }
 
