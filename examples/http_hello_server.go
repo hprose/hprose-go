@@ -40,7 +40,7 @@ func main() {
 	service := rpc.NewHTTPService()
 	service.Event = &ServerEvent{}
 	service.Debug = true
-	service.AddFunction("hello", hello, rpc.MethodOptions{})
-	service.AddFunction("getEmptySlice", getEmptySlice, rpc.MethodOptions{})
+	service.AddFunction("hello", hello, rpc.Options{})
+	service.AddFunction("getEmptySlice", getEmptySlice, rpc.Options{})
 	http.ListenAndServe(":8080", service)
 }

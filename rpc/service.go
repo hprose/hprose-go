@@ -34,13 +34,13 @@ import (
 
 // Service interface
 type Service interface {
-	AddFunction(name string, function interface{}, options MethodOptions) Service
-	AddFunctions(names []string, functions []interface{}, options MethodOptions) Service
-	AddMethod(name string, obj interface{}, options MethodOptions, alias ...string) Service
-	AddMethods(names []string, obj interface{}, options MethodOptions, aliases ...[]string) Service
-	AddInstanceMethods(obj interface{}, options MethodOptions) Service
-	AddAllMethods(obj interface{}, options MethodOptions) Service
-	AddMissingMethod(method MissingMethod, options MethodOptions) Service
+	AddFunction(name string, function interface{}, options Options) Service
+	AddFunctions(names []string, functions []interface{}, options Options) Service
+	AddMethod(name string, obj interface{}, options Options, alias ...string) Service
+	AddMethods(names []string, obj interface{}, options Options, aliases ...[]string) Service
+	AddInstanceMethods(obj interface{}, options Options) Service
+	AddAllMethods(obj interface{}, options Options) Service
+	AddMissingMethod(method MissingMethod, options Options) Service
 	Remove(name string) Service
 	Filter() Filter
 	FilterByIndex(index int) Filter
@@ -100,7 +100,7 @@ func NewBaseService() (service *BaseService) {
 	service.Heartbeat = 3 * 1000 * 1000
 	service.ErrorDelay = 10 * 1000 * 1000
 	service.allTopics = make(map[string]map[string]*topic)
-	service.AddFunction("#", GetNextID, MethodOptions{Simple: true})
+	service.AddFunction("#", GetNextID, Options{Simple: true})
 	service.override.invokeHandler = func(
 		name string, args []reflect.Value, context Context) promise.Promise {
 		return service.invoke(name, args, context.(*ServiceContext))
@@ -120,31 +120,31 @@ func NewBaseService() (service *BaseService) {
 // name is the method name
 // function is a func or bound method
 // options includes Mode, Simple, Oneway and NameSpace
-func (service *BaseService) AddFunction(name string, function interface{}, options MethodOptions) Service {
+func (service *BaseService) AddFunction(name string, function interface{}, options Options) Service {
 	service.methodManager.AddFunction(name, function, options)
 	return service
 }
 
 // AddFunctions is used for batch publishing service method
-func (service *BaseService) AddFunctions(names []string, functions []interface{}, options MethodOptions) Service {
+func (service *BaseService) AddFunctions(names []string, functions []interface{}, options Options) Service {
 	service.methodManager.AddFunctions(names, functions, options)
 	return service
 }
 
 // AddMethod is used for publishing a method on the obj with an alias
-func (service *BaseService) AddMethod(name string, obj interface{}, options MethodOptions, alias ...string) Service {
+func (service *BaseService) AddMethod(name string, obj interface{}, options Options, alias ...string) Service {
 	service.methodManager.AddMethod(name, obj, options, alias...)
 	return service
 }
 
 // AddMethods is used for batch publishing methods on the obj with aliases
-func (service *BaseService) AddMethods(names []string, obj interface{}, options MethodOptions, aliases ...[]string) Service {
+func (service *BaseService) AddMethods(names []string, obj interface{}, options Options, aliases ...[]string) Service {
 	service.methodManager.AddMethods(names, obj, options, aliases...)
 	return service
 }
 
 // AddInstanceMethods is used for publishing all the public methods and func fields with options.
-func (service *BaseService) AddInstanceMethods(obj interface{}, options MethodOptions) Service {
+func (service *BaseService) AddInstanceMethods(obj interface{}, options Options) Service {
 	service.methodManager.AddInstanceMethods(obj, options)
 	return service
 }
@@ -153,14 +153,14 @@ func (service *BaseService) AddInstanceMethods(obj interface{}, options MethodOp
 // obj self and on its anonymous or non-anonymous struct fields (or pointer to
 // pointer ... to pointer struct fields). This is a recursive operation.
 // So it's a pit, if you do not know what you are doing, do not step on.
-func (service *BaseService) AddAllMethods(obj interface{}, options MethodOptions) Service {
+func (service *BaseService) AddAllMethods(obj interface{}, options Options) Service {
 	service.methodManager.AddAllMethods(obj, options)
 	return service
 }
 
 // AddMissingMethod is used for publishing a method,
 // all methods not explicitly published will be redirected to this method.
-func (service *BaseService) AddMissingMethod(method MissingMethod, options MethodOptions) Service {
+func (service *BaseService) AddMissingMethod(method MissingMethod, options Options) Service {
 	service.methodManager.AddMissingMethod(method, options)
 	return service
 }

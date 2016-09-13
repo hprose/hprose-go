@@ -12,7 +12,7 @@
  *                                                        *
  * hprose method manager for Go.                          *
  *                                                        *
- * LastModified: Sep 12, 2016                             *
+ * LastModified: Sep 13, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -24,8 +24,8 @@ import (
 	"strings"
 )
 
-// MethodOptions is the options of the published service method
-type MethodOptions struct {
+// Options is the options of the published service method
+type Options struct {
 	Mode      ResultMode
 	Simple    bool
 	Oneway    bool
@@ -35,7 +35,7 @@ type MethodOptions struct {
 // Method is the published service method
 type Method struct {
 	Function reflect.Value
-	MethodOptions
+	Options
 }
 
 // methodManager manages published service methods
@@ -57,7 +57,7 @@ func newMethodManager() (methods *methodManager) {
 // function is a func or bound method
 // options includes Mode, Simple, Oneway and NameSpace
 func (mm *methodManager) AddFunction(
-	name string, function interface{}, options MethodOptions) {
+	name string, function interface{}, options Options) {
 	if name == "" {
 		panic("name can't be empty")
 	}
@@ -80,7 +80,7 @@ func (mm *methodManager) AddFunction(
 
 // AddFunctions is used for batch publishing service method
 func (mm *methodManager) AddFunctions(
-	names []string, functions []interface{}, options MethodOptions) {
+	names []string, functions []interface{}, options Options) {
 	count := len(names)
 	if count != len(functions) {
 		panic("names and functions must have the same length")
@@ -92,7 +92,7 @@ func (mm *methodManager) AddFunctions(
 
 // AddMethod is used for publishing a method on the obj with an alias
 func (mm *methodManager) AddMethod(
-	name string, obj interface{}, options MethodOptions, alias ...string) {
+	name string, obj interface{}, options Options, alias ...string) {
 	if obj == nil {
 		panic("obj can't be nil")
 	}
@@ -107,7 +107,7 @@ func (mm *methodManager) AddMethod(
 
 // AddMethods is used for batch publishing methods on the obj with aliases
 func (mm *methodManager) AddMethods(
-	names []string, obj interface{}, options MethodOptions, aliases ...[]string) {
+	names []string, obj interface{}, options Options, aliases ...[]string) {
 	if obj == nil {
 		panic("obj can't be nil")
 	}
@@ -127,7 +127,7 @@ func (mm *methodManager) AddMethods(
 }
 
 func (mm *methodManager) addMethods(
-	v reflect.Value, t reflect.Type, options MethodOptions) {
+	v reflect.Value, t reflect.Type, options Options) {
 	n := t.NumMethod()
 	for i := 0; i < n; i++ {
 		name := t.Method(i).Name
@@ -146,7 +146,7 @@ func getPtrTo(v reflect.Value, t reflect.Type) (reflect.Value, reflect.Type) {
 }
 
 func (mm *methodManager) addFuncField(
-	v reflect.Value, t reflect.Type, i int, options MethodOptions) {
+	v reflect.Value, t reflect.Type, i int, options Options) {
 	f := v.Field(i)
 	name := t.Field(i).Name
 	if !f.CanInterface() || !f.IsValid() {
@@ -159,7 +159,7 @@ func (mm *methodManager) addFuncField(
 }
 
 func (mm *methodManager) recursiveAddFuncFields(
-	v reflect.Value, t reflect.Type, i int, options MethodOptions) {
+	v reflect.Value, t reflect.Type, i int, options Options) {
 	f := v.Field(i)
 	fs := t.Field(i)
 	name := fs.Name
@@ -191,10 +191,10 @@ type addFuncFunc func(
 	v reflect.Value,
 	t reflect.Type,
 	i int,
-	options MethodOptions)
+	options Options)
 
 func (mm *methodManager) addInstanceMethods(
-	obj interface{}, options MethodOptions, addFunc addFuncFunc) {
+	obj interface{}, options Options, addFunc addFuncFunc) {
 	if obj == nil {
 		panic("obj can't be nil")
 	}
@@ -212,7 +212,7 @@ func (mm *methodManager) addInstanceMethods(
 
 // AddInstanceMethods is used for publishing all the public methods and func fields with options.
 func (mm *methodManager) AddInstanceMethods(
-	obj interface{}, options MethodOptions) {
+	obj interface{}, options Options) {
 	mm.addInstanceMethods(obj, options, mm.addFuncField)
 }
 
@@ -221,7 +221,7 @@ func (mm *methodManager) AddInstanceMethods(
 // pointer ... to pointer struct fields). This is a recursive operation.
 // So it's a pit, if you do not know what you are doing, do not step on.
 func (mm *methodManager) AddAllMethods(
-	obj interface{}, options MethodOptions) {
+	obj interface{}, options Options) {
 	mm.addInstanceMethods(obj, options, mm.recursiveAddFuncFields)
 }
 
@@ -231,7 +231,7 @@ type MissingMethod func(name string, args []reflect.Value, context Context) (res
 // AddMissingMethod is used for publishing a method,
 // all methods not explicitly published will be redirected to this method.
 func (mm *methodManager) AddMissingMethod(
-	method MissingMethod, options MethodOptions) {
+	method MissingMethod, options Options) {
 	mm.AddFunction("*", method, options)
 }
 
