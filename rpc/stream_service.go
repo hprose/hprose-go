@@ -43,25 +43,15 @@ type StreamService struct {
 }
 
 func (service *StreamService) initSendQueue(
-	sendQueue chan packet, conn net.Conn) {
-	for {
-		data, ok := <-sendQueue
-		if !ok {
-			conn.Close()
-			return
-		}
-		err := sendDataOverStream(conn, data.body, data.id, data.fullDuplex)
-		if err != nil {
-			service.fireErrorEvent(err, data.context)
-			break
-		}
+	sendQueue <-chan packet, conn net.Conn) {
+	for data := range sendQueue {
+		sendDataOverStream(conn, data.body, data.id, data.fullDuplex)
 	}
-	close(sendQueue)
 	conn.Close()
 }
 
 func (service *StreamService) onReceived(
-	conn net.Conn, data packet, sendQueue chan packet) {
+	conn net.Conn, data packet, sendQueue chan<- packet) {
 	if resp, err := service.Handle(data.body, data.context); err == nil {
 		data.body = resp
 	} else {
@@ -114,7 +104,6 @@ func (service *StreamService) ServeConn(conn net.Conn) {
 			service.onReceived(conn, data, sendQueue)
 		}
 	}
-	service.fireErrorEvent(err, data.context)
 	close(sendQueue)
 	conn.Close()
 }
