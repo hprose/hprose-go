@@ -225,7 +225,7 @@ func (service *HTTPService) SetClientAccessPolicyXMLContent(content []byte) {
 	service.clientAccessPolicyXMLContent = content
 }
 
-func (service *HTTPService) readAll(request *http.Request) ([]byte, error) {
+func readAllFromHTTPRequest(request *http.Request) ([]byte, error) {
 	if request.ContentLength > 0 {
 		data := pool.Alloc(int(request.ContentLength))
 		_, err := io.ReadFull(request.Body, data)
@@ -237,7 +237,7 @@ func (service *HTTPService) readAll(request *http.Request) ([]byte, error) {
 	return nil, nil
 }
 
-// Serve ...
+// Serve is the hprose http handler method with the userData
 func (service *HTTPService) Serve(
 	response http.ResponseWriter, request *http.Request,
 	userData map[string]interface{}) {
@@ -264,12 +264,13 @@ func (service *HTTPService) Serve(
 			response.WriteHeader(403)
 		}
 	case "POST":
-		data, err := service.readAll(request)
+		req, err := readAllFromHTTPRequest(request)
 		request.Body.Close()
 		if err != nil {
 			response.Write(service.endError(err, context))
 		}
-		resp, err := service.Handle(data, context.ServiceContext).Get()
+		resp, err := service.Handle(req, context.ServiceContext).Get()
+		pool.Recycle(req)
 		if err != nil {
 			response.Write(service.endError(err, context))
 		} else if data, ok := resp.([]byte); ok {

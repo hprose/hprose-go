@@ -520,10 +520,7 @@ func (service *BaseService) beforeFilter(
 // Handle the hprose request and return the hprose response
 func (service *BaseService) Handle(
 	request []byte, context *ServiceContext) promise.Promise {
-	return service.beforeFilterHandler(request, context).
-		WhenComplete(func() {
-			pool.Recycle(request)
-		})
+	return service.beforeFilterHandler(request, context)
 }
 
 // func (service *BaseService) getTopics(topic string) (topics map[string]*topic) {
