@@ -98,14 +98,13 @@ func (service *StreamService) ServeConn(conn net.Conn) {
 			break
 		}
 		size = bytesToInt(header)
-		if size&0x8000000 != 0 {
+		data.fullDuplex = (size&0x8000000 != 0)
+		if data.fullDuplex {
 			size &= 0x7FFFFFF
 			data.fullDuplex = true
 			if _, err = io.ReadAtLeast(reader, data.id[:], 4); err != nil {
 				break
 			}
-		} else {
-			data.fullDuplex = false
 		}
 		data.body = make([]byte, size)
 		if _, err = io.ReadAtLeast(reader, data.body, size); err != nil {
