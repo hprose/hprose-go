@@ -12,7 +12,7 @@
  *                                                        *
  * hprose service for Go.                                 *
  *                                                        *
- * LastModified: Sep 13, 2016                             *
+ * LastModified: Sep 14, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -487,8 +487,8 @@ func (service *BaseService) doInvoke(
 	if n == 1 {
 		return append(results[0], io.TagEnd)
 	}
-	writer := &io.ByteWriter{}
-	for i := 0; i < n; i++ {
+	writer := io.NewByteWriter(results[0])
+	for i := 1; i < n; i++ {
 		writer.Write(results[i])
 	}
 	writer.WriteByte(io.TagEnd)
