@@ -229,14 +229,14 @@ func (service *HTTPService) SetClientAccessPolicyXMLContent(content []byte) {
 
 func (service *HTTPService) readAll(request *http.Request) ([]byte, error) {
 	if request.ContentLength > 0 {
-		data := make([]byte, request.ContentLength)
+		data := pool.Alloc(int(request.ContentLength))
 		_, err := io.ReadFull(request.Body, data)
 		return data, err
 	}
 	if request.ContentLength < 0 {
 		return ioutil.ReadAll(request.Body)
 	}
-	return make([]byte, 0), nil
+	return nil, nil
 }
 
 // Serve ...
