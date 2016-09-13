@@ -63,7 +63,8 @@ func (service *StreamService) initSendQueue(
 	conn.Close()
 }
 
-func (service *StreamService) onReceived(conn net.Conn, data packet, sendQueue chan packet) {
+func (service *StreamService) onReceived(
+	conn net.Conn, data packet, sendQueue chan packet) {
 	resp, err := service.Handle(data.body, data.context)
 	if err == nil {
 		data.body = resp
