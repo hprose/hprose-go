@@ -79,9 +79,9 @@ func (service *StreamService) initSendQueue(
 }
 
 func (service *StreamService) onReceived(data packet, sendQueue chan packet) {
-	resp, err := service.Handle(data.body, data.context).Get()
+	resp, err := service.Handle(data.body, data.context)
 	if err == nil {
-		data.body = resp.([]byte)
+		data.body = resp
 	} else {
 		data.body = service.endError(err, data.context)
 	}

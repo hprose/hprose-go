@@ -101,15 +101,17 @@ func NewBaseService() (service *BaseService) {
 	service.allTopics = make(map[string]map[string]*topic)
 	service.AddFunction("#", GetNextID, Options{Simple: true})
 	service.override.invokeHandler = func(
-		name string, args []reflect.Value, context Context) promise.Promise {
+		name string,
+		args []reflect.Value,
+		context Context) (results []reflect.Value, err error) {
 		return service.invoke(name, args, context.(*ServiceContext))
 	}
 	service.override.beforeFilterHandler = func(
-		request []byte, context Context) promise.Promise {
+		request []byte, context Context) (response []byte, err error) {
 		return service.beforeFilter(request, context.(*ServiceContext))
 	}
 	service.override.afterFilterHandler = func(
-		request []byte, context Context) promise.Promise {
+		request []byte, context Context) (response []byte, err error) {
 		return service.afterFilter(request, context.(*ServiceContext))
 	}
 	return service
@@ -223,7 +225,9 @@ func (service *BaseService) AddAfterFilterHandler(handler FilterHandler) Service
 }
 
 func (service *BaseService) callService(
-	name string, args []reflect.Value, context *ServiceContext) []reflect.Value {
+	name string,
+	args []reflect.Value,
+	context *ServiceContext) []reflect.Value {
 	remoteMethod := context.Method
 	function := remoteMethod.Function
 	if context.IsMissingMethod {
@@ -318,63 +322,83 @@ func doOutput(
 }
 
 func (service *BaseService) fireBeforeInvokeEvent(
-	name string, args []reflect.Value, context *ServiceContext) error {
+	name string,
+	args []reflect.Value,
+	context *ServiceContext) (err error) {
+	defer func() {
+		if e := recover(); e != nil {
+			err = promise.NewPanicError(e)
+		}
+	}()
 	switch event := service.Event.(type) {
 	case beforeInvokeEvent:
 		event.OnBeforeInvoke(name, args, context.ByRef, context)
 	case beforeInvokeEvent2:
-		return event.OnBeforeInvoke(name, args, context.ByRef, context)
+		err = event.OnBeforeInvoke(name, args, context.ByRef, context)
 	}
-	return nil
+	return err
 }
 
 func (service *BaseService) fireAfterInvokeEvent(
-	name string, args []reflect.Value, results []reflect.Value, context *ServiceContext) error {
+	name string,
+	args []reflect.Value,
+	results []reflect.Value,
+	context *ServiceContext) (err error) {
+	defer func() {
+		if e := recover(); e != nil {
+			err = promise.NewPanicError(e)
+		}
+	}()
 	switch event := service.Event.(type) {
 	case afterInvokeEvent:
 		event.OnAfterInvoke(name, args, context.ByRef, results, context)
 	case afterInvokeEvent2:
-		return event.OnAfterInvoke(name, args, context.ByRef, results, context)
+		err = event.OnAfterInvoke(name, args, context.ByRef, results, context)
 	}
-	return nil
+	return err
 }
 
 func (service *BaseService) beforeInvoke(
-	name string, args []reflect.Value, context *ServiceContext) promise.Promise {
-	return promise.Sync(func() error {
-		return service.fireBeforeInvokeEvent(name, args, context)
-	}).Then(func() promise.Promise {
-		return service.handlerManager.invokeHandler(name, args, context)
-	}).Then(func(results []reflect.Value) ([]byte, error) {
-		err := service.fireAfterInvokeEvent(name, args, results, context)
-		if err != nil {
-			return nil, err
-		}
-		return doOutput(args, results, context), nil
-	})
+	name string,
+	args []reflect.Value,
+	context *ServiceContext) (response []byte, err error) {
+	err = service.fireBeforeInvokeEvent(name, args, context)
+	if err != nil {
+		return nil, err
+	}
+	var results []reflect.Value
+	results, err = service.handlerManager.invokeHandler(name, args, context)
+	if err != nil {
+		return nil, err
+	}
+	err = service.fireAfterInvokeEvent(name, args, results, context)
+	if err != nil {
+		return nil, err
+	}
+	return doOutput(args, results, context), nil
 }
 
 func (service *BaseService) invoke(
-	name string, args []reflect.Value, context *ServiceContext) promise.Promise {
+	name string,
+	args []reflect.Value,
+	context *ServiceContext) (results []reflect.Value, err error) {
 	if context.Oneway {
 		go func() {
 			defer recover()
 			service.callService(name, args, context)
 		}()
-		return promise.Resolve(nil)
+		return nil, nil
 	}
-	return promise.Sync(func() ([]reflect.Value, error) {
-		results := service.callService(name, args, context)
-		n := len(results)
-		if n == 0 {
-			return results, nil
-		}
-		err, ok := results[n-1].Interface().(error)
-		if ok {
-			results = results[:n-1]
-		}
-		return results, err
-	})
+	results = service.callService(name, args, context)
+	n := len(results)
+	if n == 0 {
+		return results, nil
+	}
+	err, ok := results[n-1].Interface().(error)
+	if ok {
+		results = results[:n-1]
+	}
+	return results, err
 }
 
 func max(a, b int) int {
@@ -421,8 +445,9 @@ func (service *BaseService) readArguments(
 }
 
 func (service *BaseService) doInvoke(
-	reader *io.Reader, context *ServiceContext) promise.Promise {
-	var results []interface{}
+	reader *io.Reader,
+	context *ServiceContext) []byte {
+	var results [][]byte
 	for {
 		reader.Reset()
 		name := reader.ReadString()
@@ -448,22 +473,27 @@ func (service *BaseService) doInvoke(
 			results = append(results, service.sendError(err, context))
 		} else {
 			context.Method = method
-			results = append(results, service.beforeInvoke(name, args, context))
+			result, err := service.beforeInvoke(name, args, context)
+			if err != nil {
+				results = append(results, service.sendError(err, context))
+			} else {
+				results = append(results, result)
+			}
 		}
 		if tag != io.TagCall {
 			break
 		}
 	}
-	return promise.All(results...).Then(func(results []interface{}) []byte {
-		writer := &io.ByteWriter{}
-		n := len(results)
-		for i := 0; i < n; i++ {
-			data := results[i].([]byte)
-			writer.Write(data)
-		}
-		writer.WriteByte(io.TagEnd)
-		return writer.Bytes()
-	})
+	n := len(results)
+	if n == 1 {
+		return append(results[0], io.TagEnd)
+	}
+	writer := &io.ByteWriter{}
+	for i := 0; i < n; i++ {
+		writer.Write(results[i])
+	}
+	writer.WriteByte(io.TagEnd)
+	return writer.Bytes()
 }
 
 func (service *BaseService) doFunctionList(context *ServiceContext) []byte {
@@ -475,49 +505,50 @@ func (service *BaseService) doFunctionList(context *ServiceContext) []byte {
 }
 
 func (service *BaseService) afterFilter(
-	request []byte, context *ServiceContext) promise.Promise {
+	request []byte,
+	context *ServiceContext) ([]byte, error) {
 	reader := io.NewReader(request, false)
 	tag, err := reader.ReadByte()
 	if err != nil {
-		return promise.Reject(err)
+		return nil, err
 	}
 	switch tag {
 	case io.TagCall:
-		return service.doInvoke(reader, context)
+		return service.doInvoke(reader, context), nil
 	case io.TagEnd:
-		return promise.Resolve(service.doFunctionList(context))
+		return service.doFunctionList(context), nil
 	default:
-		return promise.Reject(fmt.Errorf("Wrong Request: \r\n%s", request))
+		return nil, fmt.Errorf("Wrong Request: \r\n%s", request)
 	}
 }
 
 func (service *BaseService) delayError(
-	err error, context *ServiceContext) promise.Promise {
-	e := service.endError(err, context)
+	err error, context *ServiceContext) []byte {
+	response := service.endError(err, context)
 	if service.ErrorDelay > 0 {
-		return promise.Delayed(service.ErrorDelay, e)
+		time.Sleep(service.ErrorDelay)
 	}
-	return promise.Resolve(e)
+	return response
 }
 
 func (service *BaseService) beforeFilter(
-	request []byte, context *ServiceContext) promise.Promise {
-	return promise.
-		Sync(func() promise.Promise {
-			request = service.inputFilter(request, context)
-			return service.afterFilterHandler(request, context)
-		}).
-		Catch(func(err error) promise.Promise {
-			return service.delayError(err, context)
-		}).
-		Then(func(response []byte) []byte {
-			return service.outputFilter(response, context)
-		})
+	request []byte, context *ServiceContext) (response []byte, err error) {
+	request = service.inputFilter(request, context)
+	response, err = service.afterFilterHandler(request, context)
+	if err != nil {
+		response = service.delayError(err, context)
+	}
+	return service.outputFilter(response, context), nil
 }
 
 // Handle the hprose request and return the hprose response
 func (service *BaseService) Handle(
-	request []byte, context *ServiceContext) promise.Promise {
+	request []byte, context *ServiceContext) (response []byte, err error) {
+	defer func() {
+		if e := recover(); e != nil {
+			err = promise.NewPanicError(e)
+		}
+	}()
 	return service.beforeFilterHandler(request, context)
 }
 

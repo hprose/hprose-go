@@ -267,14 +267,12 @@ func (service *HTTPService) Serve(
 		if err != nil {
 			response.Write(service.endError(err, context))
 		}
-		resp, err := service.Handle(req, context.ServiceContext).Get()
+		resp, err := service.Handle(req, context.ServiceContext)
 		if err != nil {
 			response.Write(service.endError(err, context))
-		} else if data, ok := resp.([]byte); ok {
-			response.Header().Set("Content-Length", strconv.Itoa(len(data)))
-			response.Write(data)
 		} else {
-			response.WriteHeader(500)
+			response.Header().Set("Content-Length", strconv.Itoa(len(resp)))
+			response.Write(resp)
 		}
 	}
 }

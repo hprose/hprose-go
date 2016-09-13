@@ -12,7 +12,7 @@
  *                                                        *
  * hprose handler manager for Go.                         *
  *                                                        *
- * LastModified: Sep 12, 2016                             *
+ * LastModified: Sep 13, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -26,18 +26,28 @@ import (
 )
 
 // NextInvokeHandler is the next invoke handler function
-type NextInvokeHandler func(name string, args []reflect.Value, context Context) promise.Promise
+type NextInvokeHandler func(
+	name string,
+	args []reflect.Value,
+	context Context) (results []reflect.Value, err error)
 
 // InvokeHandler is the invoke handler function
-type InvokeHandler func(name string, args []reflect.Value, context Context, next NextInvokeHandler) promise.Promise
+type InvokeHandler func(
+	name string,
+	args []reflect.Value,
+	context Context,
+	next NextInvokeHandler) (results []reflect.Value, err error)
 
 // NextFilterHandler is the next filter handler function
-// The result type is promise.Promise<[]byte>
-type NextFilterHandler func(request []byte, context Context) promise.Promise
+type NextFilterHandler func(
+	request []byte,
+	context Context) (response []byte, err error)
 
 // FilterHandler is the filter handler function
-// The result type is promise.Promise<[]byte>
-type FilterHandler func(request []byte, context Context, next NextFilterHandler) promise.Promise
+type FilterHandler func(
+	request []byte,
+	context Context,
+	next NextFilterHandler) (response []byte, err error)
 
 // handlerManager is the hprose handler manager
 type handlerManager struct {
@@ -61,15 +71,19 @@ type handlerManager struct {
 func newHandlerManager() (hm *handlerManager) {
 	hm = new(handlerManager)
 	hm.defaultInvokeHandler = func(
-		name string, args []reflect.Value, context Context) promise.Promise {
+		name string,
+		args []reflect.Value,
+		context Context) (results []reflect.Value, err error) {
 		return hm.override.invokeHandler(name, args, context)
 	}
 	hm.defaultBeforeFilterHandler = func(
-		request []byte, context Context) promise.Promise {
+		request []byte,
+		context Context) (response []byte, err error) {
 		return hm.override.beforeFilterHandler(request, context)
 	}
 	hm.defaultAfterFilterHandler = func(
-		request []byte, context Context) promise.Promise {
+		request []byte,
+		context Context) (response []byte, err error) {
 		return hm.override.afterFilterHandler(request, context)
 	}
 	hm.invokeHandler = hm.defaultInvokeHandler
@@ -80,10 +94,12 @@ func newHandlerManager() (hm *handlerManager) {
 
 func getNextInvokeHandler(
 	next NextInvokeHandler, handler InvokeHandler) NextInvokeHandler {
-	return func(name string, args []reflect.Value, context Context) (result promise.Promise) {
+	return func(name string,
+		args []reflect.Value,
+		context Context) (results []reflect.Value, err error) {
 		defer func() {
 			if e := recover(); e != nil {
-				result = promise.Reject(promise.NewPanicError(e))
+				err = promise.NewPanicError(e)
 			}
 		}()
 		return handler(name, args, context, next)
@@ -92,10 +108,10 @@ func getNextInvokeHandler(
 
 func getNextFilterHandler(
 	next NextFilterHandler, handler FilterHandler) NextFilterHandler {
-	return func(request []byte, context Context) (result promise.Promise) {
+	return func(request []byte, context Context) (response []byte, err error) {
 		defer func() {
 			if e := recover(); e != nil {
-				result = promise.Reject(promise.NewPanicError(e))
+				err = promise.NewPanicError(e)
 			}
 		}()
 		return handler(request, context, next)
