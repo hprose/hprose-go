@@ -12,7 +12,7 @@
  *                                                        *
  * hprose http service for Go.                            *
  *                                                        *
- * LastModified: Sep 12, 2016                             *
+ * LastModified: Sep 13, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -28,7 +28,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"unsafe"
 
 	"github.com/hprose/hprose-golang/pool"
 )
@@ -67,8 +66,7 @@ type httpFixer struct{}
 
 func (httpFixer) FixArguments(args []reflect.Value, context *ServiceContext) {
 	i := len(args) - 1
-	lastParamType := args[i].Type()
-	typ := (*emptyInterface)(unsafe.Pointer(&lastParamType)).ptr
+	typ := args[i].Type()
 	if typ == httpContextType {
 		if c, ok := context.TransportContext.(*HTTPContext); ok {
 			args[i] = reflect.ValueOf(c)

@@ -12,7 +12,7 @@
  *                                                        *
  * reflect types for Go.                                  *
  *                                                        *
- * LastModified: Sep 11, 2016                             *
+ * LastModified: Sep 13, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -21,20 +21,11 @@ package rpc
 
 import (
 	"net/http"
-	"unsafe"
+	"reflect"
 )
 
-type emptyInterface struct {
-	typ uintptr
-	ptr uintptr
-}
-
-func getType(v interface{}) uintptr {
-	return *(*uintptr)(unsafe.Pointer(&v))
-}
-
-var interfaceType = getType((interface{})(nil))
-var contextType = getType((Context)(nil))
-var serviceContextType = getType((*ServiceContext)(nil))
-var httpContextType = getType((*HTTPContext)(nil))
-var httpRequestType = getType((*http.Request)(nil))
+var interfaceType = reflect.TypeOf((*interface{})(nil)).Elem()
+var contextType = reflect.TypeOf((*Context)(nil)).Elem()
+var serviceContextType = reflect.TypeOf((*ServiceContext)(nil))
+var httpContextType = reflect.TypeOf((*HTTPContext)(nil))
+var httpRequestType = reflect.TypeOf((*http.Request)(nil))

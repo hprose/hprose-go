@@ -12,7 +12,7 @@
  *                                                        *
  * hprose service for Go.                                 *
  *                                                        *
- * LastModified: Sep 12, 2016                             *
+ * LastModified: Sep 13, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -26,7 +26,6 @@ import (
 	"reflect"
 	"strings"
 	"time"
-	"unsafe"
 
 	"github.com/hprose/hprose-golang/io"
 	"github.com/hprose/hprose-golang/pool"
@@ -60,8 +59,7 @@ type fixer interface {
 
 func fixArguments(args []reflect.Value, context *ServiceContext) {
 	i := len(args) - 1
-	lastParamType := args[i].Type()
-	typ := (*emptyInterface)(unsafe.Pointer(&lastParamType)).ptr
+	typ := args[i].Type()
 	if typ == interfaceType || typ == contextType || typ == serviceContextType {
 		args[i] = reflect.ValueOf(context)
 	}
@@ -411,7 +409,6 @@ func (service *BaseService) readArguments(
 				args[i] = reflect.New(ft.In(n)).Elem()
 			}
 		} else {
-			interfaceType := reflect.TypeOf((interface{})(nil))
 			for i := n; i < count; i++ {
 				args[i] = reflect.New(interfaceType).Elem()
 			}
