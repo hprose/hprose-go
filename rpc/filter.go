@@ -12,7 +12,7 @@
  *                                                        *
  * hprose filter interface for Go.                        *
  *                                                        *
- * LastModified: Sep 11, 2016                             *
+ * LastModified: Sep 14, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -74,8 +74,7 @@ func (fm *filterManager) RemoveFilterByIndex(index int) {
 }
 
 func (fm *filterManager) removeFilter(filter Filter) {
-	n := len(fm.filters)
-	for i := 0; i < n; i++ {
+	for i := range fm.filters {
 		if fm.filters[i] == filter {
 			fm.RemoveFilterByIndex(i)
 			return
@@ -85,8 +84,7 @@ func (fm *filterManager) removeFilter(filter Filter) {
 
 // RemoveFilter remove the filter from this FilterManager
 func (fm *filterManager) RemoveFilter(filter ...Filter) {
-	n := len(filter)
-	for i := 0; i < n; i++ {
+	for i := range filter {
 		fm.removeFilter(filter[i])
 	}
 }
@@ -99,8 +97,7 @@ func (fm *filterManager) inputFilter(data []byte, context Context) []byte {
 }
 
 func (fm *filterManager) outputFilter(data []byte, context Context) []byte {
-	n := len(fm.filters)
-	for i := 0; i < n; i++ {
+	for i := range fm.filters {
 		data = fm.filters[i].OutputFilter(data, context)
 	}
 	return data
