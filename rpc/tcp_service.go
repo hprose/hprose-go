@@ -73,7 +73,7 @@ func (service *TCPService) ServeTCPConn(conn *net.TCPConn) {
 func (service *TCPService) ServeTCP(listener *net.TCPListener) {
 	for {
 		conn, err := listener.AcceptTCP()
-		if err == nil {
+		if err != nil {
 			break
 		}
 		go service.ServeTCPConn(conn)

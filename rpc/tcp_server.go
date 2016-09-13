@@ -50,15 +50,15 @@ func NewTCPServer(uri string) (server *TCPServer) {
 }
 
 // URI return the real address of this server
-func (server *TCPServer) URI() (string, error) {
+func (server *TCPServer) URI() string {
 	if server.listener == nil {
-		return server.uri, errServerIsNotStarted
+		panic(errServerIsNotStarted)
 	}
 	u, err := url.Parse(server.uri)
 	if err != nil {
-		return server.uri, err
+		panic(errServerIsNotStarted)
 	}
-	return u.Scheme + "://" + server.listener.Addr().String(), nil
+	return u.Scheme + "://" + server.listener.Addr().String()
 }
 
 // Start the hprose tcp server
