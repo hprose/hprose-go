@@ -20,11 +20,8 @@
 package rpc
 
 import (
-	"bufio"
 	"io"
 	"net"
-
-	"github.com/hprose/hprose-golang/pool"
 )
 
 // StreamContext is the hprose stream context for service
@@ -37,7 +34,7 @@ type packet struct {
 	fullDuplex bool
 	id         [4]byte
 	body       []byte
-	context    *StreamContext
+	context    *ServiceContext
 }
 
 // StreamService is the base service for TcpService and UnixService
@@ -51,8 +48,12 @@ func (service *StreamService) initSendQueue(
 	var size int
 	var data packet
 	var err error
+	var ok bool
 	for {
-		data = <-sendQueue
+		data, ok = <-sendQueue
+		if !ok {
+			break
+		}
 		size = len(data.body)
 		if data.fullDuplex {
 			size |= 0x80000000
@@ -72,21 +73,19 @@ func (service *StreamService) initSendQueue(
 		if _, err = conn.Write(data.body); err != nil {
 			break
 		}
-		pool.Recycle(data.body)
 	}
 	service.fireErrorEvent(err, data.context)
-	close(sendQueue)
 	conn.Close()
 }
 
 func (service *StreamService) onReceived(data packet, sendQueue chan packet) {
-	service.
-		Handle(data.body, data.context.ServiceContext).
-		Then(func(resp []byte) {
-			pool.Recycle(data.body)
-			data.body = resp
-			sendQueue <- data
-		})
+	resp, err := service.Handle(data.body, data.context).Get()
+	if err == nil {
+		data.body = resp.([]byte)
+	} else {
+		data.body = service.endError(err, data.context)
+	}
+	sendQueue <- data
 }
 
 func bytesToInt(b [4]byte) int {
@@ -100,27 +99,27 @@ func (service *StreamService) ServeConn(conn net.Conn) {
 	var size int
 	var data packet
 	var err error
-	sendQueue := make(chan packet, 16)
+	sendQueue := make(chan packet, 10)
 	go service.initSendQueue(sendQueue, conn)
-	r := bufio.NewReader(conn)
 	for {
-		data.context = &StreamContext{NewServiceContext(nil), conn}
-		data.context.TransportContext = data.context
-		if _, err := io.ReadAtLeast(r, header[:], 4); err != nil {
+		context := &StreamContext{NewServiceContext(nil), conn}
+		context.TransportContext = context
+		data.context = context.ServiceContext
+		if _, err := io.ReadAtLeast(conn, header[:], 4); err != nil {
 			break
 		}
 		size = bytesToInt(header)
 		if size&0x8000000 != 0 {
 			size &= 0x7FFFFFF
 			data.fullDuplex = true
-			if _, err = io.ReadAtLeast(r, data.id[:], 4); err != nil {
+			if _, err = io.ReadAtLeast(conn, data.id[:], 4); err != nil {
 				break
 			}
 		} else {
 			data.fullDuplex = false
 		}
-		data.body = pool.Alloc(size)
-		if _, err = io.ReadAtLeast(r, data.body, size); err != nil {
+		data.body = make([]byte, size)
+		if _, err = io.ReadAtLeast(conn, data.body, size); err != nil {
 			break
 		}
 		go service.onReceived(data, sendQueue)

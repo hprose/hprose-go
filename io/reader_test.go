@@ -66,7 +66,6 @@ func TestReadBool(t *testing.T) {
 	if b != true {
 		t.Error(trueValue, true, b)
 	}
-	w.Close()
 }
 
 func TestUnserializeBool(t *testing.T) {
@@ -106,7 +105,6 @@ func TestUnserializeBool(t *testing.T) {
 	if p != true {
 		t.Error(trueValue, true, p)
 	}
-	w.Close()
 }
 
 func BenchmarkReadBool(b *testing.B) {
@@ -117,7 +115,6 @@ func BenchmarkReadBool(b *testing.B) {
 		reader := NewReader(bytes, true)
 		reader.ReadBool()
 	}
-	w.Close()
 }
 
 func BenchmarkUnserializeBool(b *testing.B) {
@@ -129,7 +126,6 @@ func BenchmarkUnserializeBool(b *testing.B) {
 		reader := NewReader(bytes, true)
 		reader.Unserialize(&p)
 	}
-	w.Close()
 }
 
 func TestReadInt(t *testing.T) {
@@ -174,7 +170,6 @@ func TestReadInt(t *testing.T) {
 	if i != 1234567 {
 		t.Error(intValue, 1234567, i)
 	}
-	w.Close()
 }
 
 func TestUnserializeInt(t *testing.T) {
@@ -220,7 +215,6 @@ func TestUnserializeInt(t *testing.T) {
 	if p != 1234567 {
 		t.Error(intValue, 1234567, p)
 	}
-	w.Close()
 }
 
 func BenchmarkReadInt(b *testing.B) {
@@ -231,7 +225,6 @@ func BenchmarkReadInt(b *testing.B) {
 		reader := NewReader(bytes, true)
 		reader.ReadInt()
 	}
-	w.Close()
 }
 
 func BenchmarkUnserializeInt(b *testing.B) {
@@ -243,7 +236,6 @@ func BenchmarkUnserializeInt(b *testing.B) {
 		reader := NewReader(bytes, true)
 		reader.Unserialize(&p)
 	}
-	w.Close()
 }
 
 func TestReadUint(t *testing.T) {
@@ -285,7 +277,6 @@ func TestReadUint(t *testing.T) {
 	if i != 1234567 {
 		t.Error(intValue, 1234567, i)
 	}
-	w.Close()
 }
 
 func TestUnserializeUint(t *testing.T) {
@@ -328,7 +319,6 @@ func TestUnserializeUint(t *testing.T) {
 	if p != 1234567 {
 		t.Error(intValue, 1234567, p)
 	}
-	w.Close()
 }
 
 func BenchmarkReadUint(b *testing.B) {
@@ -339,7 +329,6 @@ func BenchmarkReadUint(b *testing.B) {
 		reader := NewReader(bytes, true)
 		reader.ReadUint()
 	}
-	w.Close()
 }
 
 func BenchmarkUnserializeUint(b *testing.B) {
@@ -351,7 +340,6 @@ func BenchmarkUnserializeUint(b *testing.B) {
 		reader := NewReader(bytes, true)
 		reader.Unserialize(&p)
 	}
-	w.Close()
 }
 
 func TestReadFloat32(t *testing.T) {
@@ -392,7 +380,6 @@ func TestReadFloat32(t *testing.T) {
 	if x != float32(3.14159) {
 		t.Error(floatValue, 3.14159, x)
 	}
-	w.Close()
 }
 
 func TestUnserializeFloat32(t *testing.T) {
@@ -434,7 +421,6 @@ func TestUnserializeFloat32(t *testing.T) {
 	if p != float32(3.14159) {
 		t.Error(floatValue, 3.14159, p)
 	}
-	w.Close()
 }
 
 func BenchmarkReadFloat32(b *testing.B) {
@@ -445,7 +431,6 @@ func BenchmarkReadFloat32(b *testing.B) {
 		reader := NewReader(bytes, true)
 		reader.ReadFloat32()
 	}
-	w.Close()
 }
 
 func BenchmarkUnserializeFloat32(b *testing.B) {
@@ -457,7 +442,6 @@ func BenchmarkUnserializeFloat32(b *testing.B) {
 		reader := NewReader(bytes, true)
 		reader.Unserialize(&p)
 	}
-	w.Close()
 }
 
 func TestReadFloat64(t *testing.T) {
@@ -498,7 +482,6 @@ func TestReadFloat64(t *testing.T) {
 	if x != float64(3.14159) {
 		t.Error(floatValue, 3.14159, x)
 	}
-	w.Close()
 }
 
 func TestUnserializeFloat64(t *testing.T) {
@@ -540,7 +523,6 @@ func TestUnserializeFloat64(t *testing.T) {
 	if p != float64(3.14159) {
 		t.Error(floatValue, 3.14159, p)
 	}
-	w.Close()
 }
 
 func BenchmarkReadFloat64(b *testing.B) {
@@ -551,7 +533,6 @@ func BenchmarkReadFloat64(b *testing.B) {
 		reader := NewReader(bytes, true)
 		reader.ReadFloat64()
 	}
-	w.Close()
 }
 
 func BenchmarkUnserializeFloat64(b *testing.B) {
@@ -563,7 +544,6 @@ func BenchmarkUnserializeFloat64(b *testing.B) {
 		reader := NewReader(bytes, true)
 		reader.Unserialize(&p)
 	}
-	w.Close()
 }
 
 func TestUnserializeArray(t *testing.T) {
@@ -617,7 +597,6 @@ func TestUnserializeArray(t *testing.T) {
 	if !reflect.DeepEqual(b3, [6]byte{0, 0, 0, 0, 0, 0}) {
 		t.Error(b3)
 	}
-	w.Close()
 }
 
 func BenchmarkUnserializeByteArray(b *testing.B) {
@@ -629,7 +608,6 @@ func BenchmarkUnserializeByteArray(b *testing.B) {
 		reader := NewReader(bytes, true)
 		reader.Unserialize(&p)
 	}
-	w.Close()
 }
 
 func BenchmarkUnserializeIntArray(b *testing.B) {
@@ -641,7 +619,6 @@ func BenchmarkUnserializeIntArray(b *testing.B) {
 		reader := NewReader(bytes, true)
 		reader.Unserialize(&p)
 	}
-	w.Close()
 }
 
 func TestUnserializeSlice(t *testing.T) {
@@ -695,7 +672,6 @@ func TestUnserializeSlice(t *testing.T) {
 	if b2 != nil {
 		t.Error(b2, nil)
 	}
-	w.Close()
 }
 
 func TestUnserializeSliceRef(t *testing.T) {
@@ -739,7 +715,6 @@ func TestUnserializeSliceRef(t *testing.T) {
 	if !reflect.DeepEqual(b2, b) {
 		t.Error(b2, b)
 	}
-	w.Close()
 }
 
 func BenchmarkUnserializeByteSlice(b *testing.B) {
@@ -751,7 +726,6 @@ func BenchmarkUnserializeByteSlice(b *testing.B) {
 		reader := NewReader(bytes, true)
 		reader.Unserialize(&p)
 	}
-	w.Close()
 }
 
 func BenchmarkUnserializeIntSlice(b *testing.B) {
@@ -763,7 +737,6 @@ func BenchmarkUnserializeIntSlice(b *testing.B) {
 		reader := NewReader(bytes, true)
 		reader.Unserialize(&p)
 	}
-	w.Close()
 }
 
 func TestUnserializeComplex64(t *testing.T) {
@@ -811,7 +784,6 @@ func TestUnserializeComplex64(t *testing.T) {
 	if p != complex(math.MaxFloat32, math.MaxFloat32) {
 		t.Error(complex64Value, complex(math.MaxFloat32, math.MaxFloat32), p)
 	}
-	w.Close()
 }
 
 func BenchmarkReadComplex64(b *testing.B) {
@@ -822,7 +794,6 @@ func BenchmarkReadComplex64(b *testing.B) {
 		reader := NewReader(bytes, true)
 		reader.ReadComplex64()
 	}
-	w.Close()
 }
 
 func BenchmarkUnserializeComplex64(b *testing.B) {
@@ -834,7 +805,6 @@ func BenchmarkUnserializeComplex64(b *testing.B) {
 		reader := NewReader(bytes, true)
 		reader.Unserialize(&p)
 	}
-	w.Close()
 }
 
 func TestUnserializeComplex128(t *testing.T) {
@@ -881,7 +851,6 @@ func TestUnserializeComplex128(t *testing.T) {
 	if p != complex(math.MaxFloat64, math.MaxFloat64) {
 		t.Error(complex128Value, complex(math.MaxFloat64, math.MaxFloat64), p)
 	}
-	w.Close()
 }
 
 func BenchmarkReadComplex128(b *testing.B) {
@@ -892,7 +861,6 @@ func BenchmarkReadComplex128(b *testing.B) {
 		reader := NewReader(bytes, true)
 		reader.ReadComplex128()
 	}
-	w.Close()
 }
 
 func BenchmarkUnserializeComplex128(b *testing.B) {
@@ -904,7 +872,6 @@ func BenchmarkUnserializeComplex128(b *testing.B) {
 		reader := NewReader(bytes, true)
 		reader.Unserialize(&p)
 	}
-	w.Close()
 }
 
 func TestUnserializeListAsMap(t *testing.T) {
@@ -930,7 +897,6 @@ func TestUnserializeListAsMap(t *testing.T) {
 	if !reflect.DeepEqual(m3, m) {
 		t.Error(m3, m, a)
 	}
-	w.Close()
 }
 
 func TestUnserializeListRefAsMapRef(t *testing.T) {
@@ -974,7 +940,6 @@ func TestUnserializeListRefAsMapRef(t *testing.T) {
 	if !reflect.DeepEqual(m6, m) {
 		t.Error(m6, m, a)
 	}
-	w.Close()
 }
 
 func TestUnserializeMap(t *testing.T) {
@@ -1012,7 +977,6 @@ func TestUnserializeMap(t *testing.T) {
 	if m3 != nil {
 		t.Error(m3, nil)
 	}
-	w.Close()
 }
 
 func BenchmarkUnserializeSliceAsMap(b *testing.B) {
@@ -1024,7 +988,6 @@ func BenchmarkUnserializeSliceAsMap(b *testing.B) {
 		reader := NewReader(bytes, true)
 		reader.Unserialize(&p)
 	}
-	w.Close()
 }
 
 func BenchmarkUnserializeMap(b *testing.B) {
@@ -1039,7 +1002,6 @@ func BenchmarkUnserializeMap(b *testing.B) {
 		reader := NewReader(bytes, true)
 		reader.Unserialize(&p)
 	}
-	w.Close()
 }
 
 func TestUnserializeString(t *testing.T) {
@@ -1085,7 +1047,6 @@ func TestUnserializeString(t *testing.T) {
 	if p != strValue {
 		t.Error(strValue, p)
 	}
-	w.Close()
 }
 
 func BenchmarkReadString(b *testing.B) {
@@ -1096,7 +1057,6 @@ func BenchmarkReadString(b *testing.B) {
 		reader := NewReader(bytes, true)
 		reader.ReadString()
 	}
-	w.Close()
 }
 
 func BenchmarkUnserializeString(b *testing.B) {
@@ -1108,7 +1068,6 @@ func BenchmarkUnserializeString(b *testing.B) {
 		reader := NewReader(bytes, true)
 		reader.Unserialize(&p)
 	}
-	w.Close()
 }
 
 func TestUnserializeInterface(t *testing.T) {
@@ -1172,7 +1131,6 @@ func TestUnserializeInterface(t *testing.T) {
 	if !reflect.DeepEqual(p.(map[interface{}]interface{}), map[interface{}]interface{}{0: 1, 1: 2, 2: 3, 3: 4, 4: 5}) {
 		t.Error(p)
 	}
-	w.Close()
 }
 
 func TestUnserializeIntPtr(t *testing.T) {
@@ -1190,7 +1148,6 @@ func TestUnserializeIntPtr(t *testing.T) {
 	if *p != i {
 		t.Error(*p, i)
 	}
-	w.Close()
 }
 
 func TestUnserializeFloatPtr(t *testing.T) {
@@ -1208,7 +1165,6 @@ func TestUnserializeFloatPtr(t *testing.T) {
 	if *p != f {
 		t.Error(*p, f)
 	}
-	w.Close()
 }
 
 func TestUnserializeStringPtr(t *testing.T) {
@@ -1226,7 +1182,6 @@ func TestUnserializeStringPtr(t *testing.T) {
 	if *p != str {
 		t.Error(*p, str)
 	}
-	w.Close()
 }
 
 func TestUnserializeBoolPtr(t *testing.T) {
@@ -1244,7 +1199,6 @@ func TestUnserializeBoolPtr(t *testing.T) {
 	if *p != b {
 		t.Error(*p, b)
 	}
-	w.Close()
 }
 
 func TestUnserializeArrayPtr(t *testing.T) {
@@ -1262,7 +1216,6 @@ func TestUnserializeArrayPtr(t *testing.T) {
 	if !reflect.DeepEqual(*p, a) {
 		t.Error(*p, a)
 	}
-	w.Close()
 }
 
 func TestUnserializeSlicePtr(t *testing.T) {
@@ -1280,7 +1233,6 @@ func TestUnserializeSlicePtr(t *testing.T) {
 	if !reflect.DeepEqual(*p, slice) {
 		t.Error(*p, slice)
 	}
-	w.Close()
 }
 
 func TestUnserializeMapPtr(t *testing.T) {
@@ -1301,7 +1253,6 @@ func TestUnserializeMapPtr(t *testing.T) {
 	if !reflect.DeepEqual(*p, m) {
 		t.Error(*p, m)
 	}
-	w.Close()
 }
 
 func TestUnserializeIntPtrPtr(t *testing.T) {
@@ -1320,7 +1271,6 @@ func TestUnserializeIntPtrPtr(t *testing.T) {
 	if **p != i {
 		t.Error(**p, i)
 	}
-	w.Close()
 }
 
 func TestUnserializeNilPtr(t *testing.T) {
@@ -1338,7 +1288,6 @@ func TestUnserializeNilPtr(t *testing.T) {
 	if pb != nil {
 		t.Error(pb, nil)
 	}
-	w.Close()
 }
 
 func TestUnserializeBigInt(t *testing.T) {
@@ -1384,7 +1333,6 @@ func TestUnserializeBigInt(t *testing.T) {
 			t.Error(p, v)
 		}
 	}
-	w.Close()
 }
 
 func BenchmarkUnserializeNilInterface(b *testing.B) {
@@ -1396,7 +1344,6 @@ func BenchmarkUnserializeNilInterface(b *testing.B) {
 		reader := NewReader(bytes, true)
 		reader.Unserialize(&p)
 	}
-	w.Close()
 }
 
 func BenchmarkUnserializeNilPtr(b *testing.B) {
@@ -1408,7 +1355,6 @@ func BenchmarkUnserializeNilPtr(b *testing.B) {
 		reader := NewReader(bytes, true)
 		reader.Unserialize(&p)
 	}
-	w.Close()
 }
 
 func BenchmarkUnserializeIntInterface(b *testing.B) {
@@ -1420,7 +1366,6 @@ func BenchmarkUnserializeIntInterface(b *testing.B) {
 		reader := NewReader(bytes, true)
 		reader.Unserialize(&p)
 	}
-	w.Close()
 }
 
 func BenchmarkUnserializeIntPtr(b *testing.B) {
@@ -1432,7 +1377,6 @@ func BenchmarkUnserializeIntPtr(b *testing.B) {
 		reader := NewReader(bytes, true)
 		reader.Unserialize(&p)
 	}
-	w.Close()
 }
 
 func BenchmarkUnserializeBigInt(b *testing.B) {
@@ -1444,7 +1388,6 @@ func BenchmarkUnserializeBigInt(b *testing.B) {
 		reader := NewReader(bytes, true)
 		reader.Unserialize(&p)
 	}
-	w.Close()
 }
 
 func TestUnserializeBigRat(t *testing.T) {
@@ -1490,7 +1433,6 @@ func TestUnserializeBigRat(t *testing.T) {
 			t.Error(p, v)
 		}
 	}
-	w.Close()
 }
 
 func TestUnserializeBigFloat(t *testing.T) {
@@ -1529,7 +1471,6 @@ func TestUnserializeBigFloat(t *testing.T) {
 	if p.Cmp(bf) != 0 {
 		t.Error(p, bf)
 	}
-	w.Close()
 }
 
 func TestUnserializeTime(t *testing.T) {
@@ -1579,7 +1520,6 @@ func BenchmarkUnserializeTime(b *testing.B) {
 		reader := NewReader(bytes, true)
 		reader.Unserialize(&p)
 	}
-	w.Close()
 }
 
 func TestUnserializeList(t *testing.T) {
@@ -1600,7 +1540,6 @@ func TestUnserializeList(t *testing.T) {
 	if p != nil {
 		t.Error(p, nil)
 	}
-	w.Close()
 }
 
 func BenchmarkUnserializeList(b *testing.B) {
@@ -1616,7 +1555,6 @@ func BenchmarkUnserializeList(b *testing.B) {
 		reader := NewReader(bytes, true)
 		reader.Unserialize(&p)
 	}
-	w.Close()
 }
 
 func TestUnserializeMapAsStruct(t *testing.T) {
@@ -1637,7 +1575,6 @@ func TestUnserializeMapAsStruct(t *testing.T) {
 	if p.Name != "Tom" || p.Age != 36 || p.Male != true {
 		t.Error(p, m)
 	}
-	w.Close()
 }
 
 func BenchmarkUnserializeMapAsStruct(b *testing.B) {
@@ -1658,7 +1595,6 @@ func BenchmarkUnserializeMapAsStruct(b *testing.B) {
 		reader := NewReader(bytes, true)
 		reader.Unserialize(&p)
 	}
-	w.Close()
 }
 
 func TestUnserializeStructAsMap(t *testing.T) {
@@ -1680,7 +1616,6 @@ func TestUnserializeStructAsMap(t *testing.T) {
 	if !reflect.DeepEqual(p, m) {
 		t.Error(p, m)
 	}
-	w.Close()
 }
 
 func BenchmarkUnserializeStructAsMap(b *testing.B) {
@@ -1698,7 +1633,6 @@ func BenchmarkUnserializeStructAsMap(b *testing.B) {
 		reader := NewReader(bytes, true)
 		reader.Unserialize(&p)
 	}
-	w.Close()
 }
 
 func TestUnserializeStruct(t *testing.T) {
@@ -1716,7 +1650,6 @@ func TestUnserializeStruct(t *testing.T) {
 	if !reflect.DeepEqual(p, test) {
 		t.Error(p, test)
 	}
-	w.Close()
 }
 
 func BenchmarkUnserializeStruct(b *testing.B) {
@@ -1734,5 +1667,4 @@ func BenchmarkUnserializeStruct(b *testing.B) {
 		reader := NewReader(bytes, true)
 		reader.Unserialize(&p)
 	}
-	w.Close()
 }

@@ -22,8 +22,6 @@ package promise
 import (
 	"fmt"
 	"runtime"
-
-	"github.com/hprose/hprose-golang/pool"
 )
 
 // IllegalArgumentError represents an error when a function/method has been
@@ -58,16 +56,13 @@ type PanicError struct {
 }
 
 func stack() []byte {
-	size := 1024
-	buf := pool.Alloc(size)
+	buf := make([]byte, 1024)
 	for {
 		n := runtime.Stack(buf, false)
-		if n < size {
+		if n < len(buf) {
 			return buf[:n]
 		}
-		pool.Recycle(buf)
-		size <<= 1
-		buf = pool.Alloc(size)
+		buf = make([]byte, 2*len(buf))
 	}
 }
 

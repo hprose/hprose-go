@@ -28,8 +28,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/hprose/hprose-golang/pool"
 )
 
 // HTTPContext is the hprose http context
@@ -227,7 +225,7 @@ func (service *HTTPService) SetClientAccessPolicyXMLContent(content []byte) {
 
 func readAllFromHTTPRequest(request *http.Request) ([]byte, error) {
 	if request.ContentLength > 0 {
-		data := pool.Alloc(int(request.ContentLength))
+		data := make([]byte, request.ContentLength)
 		_, err := io.ReadFull(request.Body, data)
 		return data, err
 	}
@@ -270,13 +268,11 @@ func (service *HTTPService) Serve(
 			response.Write(service.endError(err, context))
 		}
 		resp, err := service.Handle(req, context.ServiceContext).Get()
-		pool.Recycle(req)
 		if err != nil {
 			response.Write(service.endError(err, context))
 		} else if data, ok := resp.([]byte); ok {
 			response.Header().Set("Content-Length", strconv.Itoa(len(data)))
 			response.Write(data)
-			pool.Recycle(data)
 		} else {
 			response.WriteHeader(500)
 		}

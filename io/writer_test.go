@@ -38,7 +38,6 @@ func TestSerializeNil(t *testing.T) {
 	if w.String() != "n" {
 		t.Error(w.String())
 	}
-	w.Close()
 }
 
 func BenchmarkSerializeNil(b *testing.B) {
@@ -46,7 +45,6 @@ func BenchmarkSerializeNil(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		w.Serialize(nil)
 	}
-	w.Close()
 }
 
 func BenchmarkWriteNil(b *testing.B) {
@@ -54,7 +52,6 @@ func BenchmarkWriteNil(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		w.WriteNil()
 	}
-	w.Close()
 }
 
 func TestSerializeTrue(t *testing.T) {
@@ -63,7 +60,6 @@ func TestSerializeTrue(t *testing.T) {
 	if w.String() != "t" {
 		t.Error(w.String())
 	}
-	w.Close()
 }
 
 func BenchmarkSerializeTrue(b *testing.B) {
@@ -71,7 +67,6 @@ func BenchmarkSerializeTrue(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		w.Serialize(true)
 	}
-	w.Close()
 }
 
 func BenchmarkWriteTrue(b *testing.B) {
@@ -79,7 +74,6 @@ func BenchmarkWriteTrue(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		w.WriteBool(true)
 	}
-	w.Close()
 }
 
 func TestSerializeFalse(t *testing.T) {
@@ -88,7 +82,6 @@ func TestSerializeFalse(t *testing.T) {
 	if w.String() != "f" {
 		t.Error(w.String())
 	}
-	w.Close()
 }
 
 func BenchmarkSerializeFalse(b *testing.B) {
@@ -96,7 +89,6 @@ func BenchmarkSerializeFalse(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		w.Serialize(false)
 	}
-	w.Close()
 }
 
 func BenchmarkWriteFalse(b *testing.B) {
@@ -104,7 +96,6 @@ func BenchmarkWriteFalse(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		w.WriteBool(false)
 	}
-	w.Close()
 }
 
 func TestSerializeDigit(t *testing.T) {
@@ -116,7 +107,6 @@ func TestSerializeDigit(t *testing.T) {
 			t.Error(w.String())
 		}
 	}
-	w.Close()
 }
 
 func TestSerializeInt(t *testing.T) {
@@ -137,7 +127,6 @@ func TestSerializeInt(t *testing.T) {
 			t.Error(w.String())
 		}
 	}
-	w.Close()
 }
 
 func BenchmarkSerializeInt(b *testing.B) {
@@ -145,7 +134,6 @@ func BenchmarkSerializeInt(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		w.Serialize(i)
 	}
-	w.Close()
 }
 
 func BenchmarkWriteInt(b *testing.B) {
@@ -153,7 +141,6 @@ func BenchmarkWriteInt(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		w.WriteInt(int64(i))
 	}
-	w.Close()
 }
 
 func TestSerializeInt8(t *testing.T) {
@@ -179,7 +166,6 @@ func TestSerializeInt8(t *testing.T) {
 			t.Error(w.String())
 		}
 	}
-	w.Close()
 }
 
 func TestSerializeInt16(t *testing.T) {
@@ -188,7 +174,6 @@ func TestSerializeInt16(t *testing.T) {
 	if w.String() != "i"+strconv.Itoa(math.MaxInt16)+";" {
 		t.Error(w.String())
 	}
-	w.Close()
 }
 
 func TestSerializeInt32(t *testing.T) {
@@ -197,7 +182,6 @@ func TestSerializeInt32(t *testing.T) {
 	if w.String() != "i"+strconv.Itoa(math.MaxInt32)+";" {
 		t.Error(w.String())
 	}
-	w.Close()
 }
 
 func BenchmarkSerializeInt32(b *testing.B) {
@@ -205,7 +189,6 @@ func BenchmarkSerializeInt32(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		w.Serialize(int32(i))
 	}
-	w.Close()
 }
 
 func TestSerializeInt64(t *testing.T) {
@@ -219,7 +202,6 @@ func TestSerializeInt64(t *testing.T) {
 	if w.String() != "l"+strconv.Itoa(math.MaxInt64)+";" {
 		t.Error(w.String())
 	}
-	w.Close()
 }
 
 func TestSerializeUint(t *testing.T) {
@@ -240,7 +222,6 @@ func TestSerializeUint(t *testing.T) {
 			t.Error(w.String())
 		}
 	}
-	w.Close()
 }
 
 func TestSerializeUint8(t *testing.T) {
@@ -259,7 +240,6 @@ func TestSerializeUint8(t *testing.T) {
 			t.Error(w.String())
 		}
 	}
-	w.Close()
 }
 
 func TestSerializeUint16(t *testing.T) {
@@ -268,7 +248,6 @@ func TestSerializeUint16(t *testing.T) {
 	if w.String() != "i"+strconv.Itoa(math.MaxUint16)+";" {
 		t.Error(w.String())
 	}
-	w.Close()
 }
 
 func TestSerializeUint32(t *testing.T) {
@@ -277,7 +256,6 @@ func TestSerializeUint32(t *testing.T) {
 	if w.String() != "l"+strconv.Itoa(math.MaxUint32)+";" {
 		t.Error(w.String())
 	}
-	w.Close()
 }
 
 func TestSerializeUint64(t *testing.T) {
@@ -291,7 +269,6 @@ func TestSerializeUint64(t *testing.T) {
 	if w.String() != "l"+strconv.FormatUint(math.MaxUint64, 10)+";" {
 		t.Error(w.String())
 	}
-	w.Close()
 }
 
 func BenchmarkSerializeUint64(b *testing.B) {
@@ -299,7 +276,6 @@ func BenchmarkSerializeUint64(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		w.Serialize(uint64(i))
 	}
-	w.Close()
 }
 
 func BenchmarkWriteUint64(b *testing.B) {
@@ -307,7 +283,6 @@ func BenchmarkWriteUint64(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		w.WriteUint(uint64(i))
 	}
-	w.Close()
 }
 
 func TestSerializeUintptr(t *testing.T) {
@@ -316,7 +291,6 @@ func TestSerializeUintptr(t *testing.T) {
 	if w.String() != "i123;" {
 		t.Error(w.String())
 	}
-	w.Close()
 }
 
 func TestSerializeFloat32(t *testing.T) {
@@ -334,7 +308,6 @@ func TestSerializeFloat32(t *testing.T) {
 		}
 		w.Clear()
 	}
-	w.Close()
 }
 
 func BenchmarkSerializeFloat32(b *testing.B) {
@@ -342,7 +315,6 @@ func BenchmarkSerializeFloat32(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		w.Serialize(float32(i))
 	}
-	w.Close()
 }
 
 func BenchmarkWriteFloat32(b *testing.B) {
@@ -350,7 +322,6 @@ func BenchmarkWriteFloat32(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		w.WriteFloat(float64(i), 32)
 	}
-	w.Close()
 }
 
 func TestSerializeFloat64(t *testing.T) {
@@ -368,7 +339,6 @@ func TestSerializeFloat64(t *testing.T) {
 		}
 		w.Clear()
 	}
-	w.Close()
 }
 
 func BenchmarkSerializeFloat64(b *testing.B) {
@@ -376,7 +346,6 @@ func BenchmarkSerializeFloat64(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		w.Serialize(float64(i))
 	}
-	w.Close()
 }
 
 func BenchmarkWriteFloat64(b *testing.B) {
@@ -384,7 +353,6 @@ func BenchmarkWriteFloat64(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		w.WriteFloat(float64(i), 64)
 	}
-	w.Close()
 }
 
 func TestSerializeComplex64(t *testing.T) {
@@ -398,7 +366,6 @@ func TestSerializeComplex64(t *testing.T) {
 	if w.String() != "a2{d0;d100;}" {
 		t.Error(w.String())
 	}
-	w.Close()
 }
 
 func TestSerializeComplex128(t *testing.T) {
@@ -412,7 +379,6 @@ func TestSerializeComplex128(t *testing.T) {
 	if w.String() != "a2{d0;d100;}" {
 		t.Error(w.String())
 	}
-	w.Close()
 }
 
 func BenchmarkSerializeComplex128(b *testing.B) {
@@ -420,7 +386,6 @@ func BenchmarkSerializeComplex128(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		w.Serialize(complex(float64(i), float64(i)))
 	}
-	w.Close()
 }
 
 func BenchmarkWriteComplex128(b *testing.B) {
@@ -428,7 +393,6 @@ func BenchmarkWriteComplex128(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		w.WriteComplex128(complex(float64(i), float64(i)))
 	}
-	w.Close()
 }
 
 func TestWriteTuple(t *testing.T) {
@@ -442,7 +406,6 @@ func TestWriteTuple(t *testing.T) {
 	if w.String() != "a3{1d3.14;t}" {
 		t.Error(w.String())
 	}
-	w.Close()
 }
 
 func TestWriteBytes(t *testing.T) {
@@ -458,7 +421,6 @@ func TestWriteBytes(t *testing.T) {
 		}
 		w.Clear()
 	}
-	w.Close()
 }
 
 func TestSerializeString(t *testing.T) {
@@ -479,7 +441,6 @@ func TestSerializeString(t *testing.T) {
 		}
 		w.Clear()
 	}
-	w.Close()
 }
 
 func TestWriteString(t *testing.T) {
@@ -500,7 +461,6 @@ func TestWriteString(t *testing.T) {
 		}
 		w.Clear()
 	}
-	w.Close()
 }
 
 func TestSerializeArray(t *testing.T) {
@@ -523,7 +483,6 @@ func TestSerializeArray(t *testing.T) {
 		}
 		w.Clear()
 	}
-	w.Close()
 }
 
 func TestSerializeSlice(t *testing.T) {
@@ -546,7 +505,6 @@ func TestSerializeSlice(t *testing.T) {
 		}
 		w.Clear()
 	}
-	w.Close()
 }
 
 func TestWriteBoolSlice(t *testing.T) {
@@ -562,7 +520,6 @@ func TestWriteBoolSlice(t *testing.T) {
 		}
 		w.Clear()
 	}
-	w.Close()
 }
 
 func TestWriteIntSlice(t *testing.T) {
@@ -578,7 +535,6 @@ func TestWriteIntSlice(t *testing.T) {
 		}
 		w.Clear()
 	}
-	w.Close()
 }
 
 func TestWriteInt8Slice(t *testing.T) {
@@ -594,7 +550,6 @@ func TestWriteInt8Slice(t *testing.T) {
 		}
 		w.Clear()
 	}
-	w.Close()
 }
 
 func TestWriteInt16Slice(t *testing.T) {
@@ -610,7 +565,6 @@ func TestWriteInt16Slice(t *testing.T) {
 		}
 		w.Clear()
 	}
-	w.Close()
 }
 
 func TestWriteInt32Slice(t *testing.T) {
@@ -626,7 +580,6 @@ func TestWriteInt32Slice(t *testing.T) {
 		}
 		w.Clear()
 	}
-	w.Close()
 }
 
 func TestWriteInt64Slice(t *testing.T) {
@@ -642,7 +595,6 @@ func TestWriteInt64Slice(t *testing.T) {
 		}
 		w.Clear()
 	}
-	w.Close()
 }
 
 func TestWriteUintSlice(t *testing.T) {
@@ -658,7 +610,6 @@ func TestWriteUintSlice(t *testing.T) {
 		}
 		w.Clear()
 	}
-	w.Close()
 }
 
 func TestWriteUint8Slice(t *testing.T) {
@@ -674,7 +625,6 @@ func TestWriteUint8Slice(t *testing.T) {
 		}
 		w.Clear()
 	}
-	w.Close()
 }
 
 func TestWriteUint16Slice(t *testing.T) {
@@ -690,7 +640,6 @@ func TestWriteUint16Slice(t *testing.T) {
 		}
 		w.Clear()
 	}
-	w.Close()
 }
 
 func TestWriteUint32Slice(t *testing.T) {
@@ -706,7 +655,6 @@ func TestWriteUint32Slice(t *testing.T) {
 		}
 		w.Clear()
 	}
-	w.Close()
 }
 
 func TestWriteUint64Slice(t *testing.T) {
@@ -722,7 +670,6 @@ func TestWriteUint64Slice(t *testing.T) {
 		}
 		w.Clear()
 	}
-	w.Close()
 }
 
 func TestWriteUintptrSlice(t *testing.T) {
@@ -738,7 +685,6 @@ func TestWriteUintptrSlice(t *testing.T) {
 		}
 		w.Clear()
 	}
-	w.Close()
 }
 
 func TestWriteFloat32Slice(t *testing.T) {
@@ -754,7 +700,6 @@ func TestWriteFloat32Slice(t *testing.T) {
 		}
 		w.Clear()
 	}
-	w.Close()
 }
 
 func TestWriteFloat64Slice(t *testing.T) {
@@ -770,7 +715,6 @@ func TestWriteFloat64Slice(t *testing.T) {
 		}
 		w.Clear()
 	}
-	w.Close()
 }
 
 func TestWriteComplex64Slice(t *testing.T) {
@@ -786,7 +730,6 @@ func TestWriteComplex64Slice(t *testing.T) {
 		}
 		w.Clear()
 	}
-	w.Close()
 }
 
 func TestWriteComplex128Slice(t *testing.T) {
@@ -802,7 +745,6 @@ func TestWriteComplex128Slice(t *testing.T) {
 		}
 		w.Clear()
 	}
-	w.Close()
 }
 
 func TestWriteStringSlice(t *testing.T) {
@@ -818,7 +760,6 @@ func TestWriteStringSlice(t *testing.T) {
 		}
 		w.Clear()
 	}
-	w.Close()
 }
 
 func TestWriteBytesSlice(t *testing.T) {
@@ -834,7 +775,6 @@ func TestWriteBytesSlice(t *testing.T) {
 		}
 		w.Clear()
 	}
-	w.Close()
 }
 
 func BenchmarkSerializeIntArray(b *testing.B) {
@@ -843,7 +783,6 @@ func BenchmarkSerializeIntArray(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		w.Serialize(array)
 	}
-	w.Close()
 }
 
 func BenchmarkSerializeIntSlice(b *testing.B) {
@@ -852,7 +791,6 @@ func BenchmarkSerializeIntSlice(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		w.Serialize(slice)
 	}
-	w.Close()
 }
 
 func BenchmarkWriteIntSlice(b *testing.B) {
@@ -861,7 +799,6 @@ func BenchmarkWriteIntSlice(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		w.WriteIntSlice(slice)
 	}
-	w.Close()
 }
 
 func BenchmarkSerializeBytes(b *testing.B) {
@@ -870,7 +807,6 @@ func BenchmarkSerializeBytes(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		w.Serialize(slice)
 	}
-	w.Close()
 }
 
 func BenchmarkWriteBytes(b *testing.B) {
@@ -879,7 +815,6 @@ func BenchmarkWriteBytes(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		w.WriteBytes(slice)
 	}
-	w.Close()
 }
 
 func BenchmarkSerializeString(b *testing.B) {
@@ -888,7 +823,6 @@ func BenchmarkSerializeString(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		w.Serialize(str)
 	}
-	w.Close()
 }
 
 func BenchmarkWriteString(b *testing.B) {
@@ -897,7 +831,6 @@ func BenchmarkWriteString(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		w.WriteString(str)
 	}
-	w.Close()
 }
 
 func TestSerializeBigInt(t *testing.T) {
@@ -911,7 +844,6 @@ func TestSerializeBigInt(t *testing.T) {
 	if w.String() != "l123;" {
 		t.Error(w.String())
 	}
-	w.Close()
 }
 
 func BenchmarkWriteBigInt(b *testing.B) {
@@ -920,7 +852,6 @@ func BenchmarkWriteBigInt(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		w.WriteBigInt(x)
 	}
-	w.Close()
 }
 
 func BenchmarkSerializeBigInt(b *testing.B) {
@@ -929,7 +860,6 @@ func BenchmarkSerializeBigInt(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		w.Serialize(x)
 	}
-	w.Close()
 }
 
 func TestSerializeBigRat(t *testing.T) {
@@ -943,7 +873,6 @@ func TestSerializeBigRat(t *testing.T) {
 	if w.String() != `s5"123/2"` {
 		t.Error(w.String())
 	}
-	w.Close()
 }
 
 func BenchmarkWriteBigRat(b *testing.B) {
@@ -952,7 +881,6 @@ func BenchmarkWriteBigRat(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		w.WriteBigRat(x)
 	}
-	w.Close()
 }
 
 func BenchmarkSerializeBigRat(b *testing.B) {
@@ -961,7 +889,6 @@ func BenchmarkSerializeBigRat(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		w.Serialize(x)
 	}
-	w.Close()
 }
 
 func TestSerializeBigFloat(t *testing.T) {
@@ -975,7 +902,6 @@ func TestSerializeBigFloat(t *testing.T) {
 	if w.String() != "d3.14159265358979;" {
 		t.Error(w.String())
 	}
-	w.Close()
 }
 
 func BenchmarkWriteBigFloat(b *testing.B) {
@@ -984,7 +910,6 @@ func BenchmarkWriteBigFloat(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		w.WriteBigFloat(x)
 	}
-	w.Close()
 }
 
 func BenchmarkSerializeBigFloat(b *testing.B) {
@@ -993,7 +918,6 @@ func BenchmarkSerializeBigFloat(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		w.Serialize(x)
 	}
-	w.Close()
 }
 
 func TestWriteTime(t *testing.T) {
@@ -1020,7 +944,6 @@ func TestWriteTime(t *testing.T) {
 		}
 		w.Clear()
 	}
-	w.Close()
 }
 
 func TestSerializeTime(t *testing.T) {
@@ -1047,7 +970,6 @@ func TestSerializeTime(t *testing.T) {
 		}
 		w.Clear()
 	}
-	w.Close()
 }
 
 func BenchmarkWriteTime(b *testing.B) {
@@ -1056,7 +978,6 @@ func BenchmarkWriteTime(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		w.WriteTime(&x)
 	}
-	w.Close()
 }
 
 func BenchmarkSerializeTime(b *testing.B) {
@@ -1065,7 +986,6 @@ func BenchmarkSerializeTime(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		w.Serialize(x)
 	}
-	w.Close()
 }
 
 func TestSerializeList(t *testing.T) {
@@ -1084,7 +1004,6 @@ func TestSerializeList(t *testing.T) {
 	if w.String() != `a4{1s5"hello"nd3.14159;}` {
 		t.Error(w.String())
 	}
-	w.Close()
 }
 
 func TestWriteList(t *testing.T) {
@@ -1103,7 +1022,6 @@ func TestWriteList(t *testing.T) {
 	if w.String() != `a4{1s5"hello"nd3.14159;}` {
 		t.Error(w.String())
 	}
-	w.Close()
 }
 
 func BenchmarkSerializeList(b *testing.B) {
@@ -1116,7 +1034,6 @@ func BenchmarkSerializeList(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		w.Serialize(lst)
 	}
-	w.Close()
 }
 
 func BenchmarkWriteList(b *testing.B) {
@@ -1129,7 +1046,6 @@ func BenchmarkWriteList(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		w.WriteList(lst)
 	}
-	w.Close()
 }
 
 func TestWriterMap(t *testing.T) {
@@ -1154,7 +1070,6 @@ func TestWriterMap(t *testing.T) {
 	if s != s1 && s != s2 && s != s3 && s != s4 && s != s5 && s != s6 {
 		t.Error(w.String())
 	}
-	w.Close()
 }
 
 func TestWriterMapRef(t *testing.T) {
@@ -1181,7 +1096,6 @@ func TestWriterMapRef(t *testing.T) {
 	if s != s1 && s != s2 && s != s3 && s != s4 && s != s5 && s != s6 {
 		t.Error(w.String())
 	}
-	w.Close()
 }
 
 func BenchmarkSerializeStringKeyMap(b *testing.B) {
@@ -1193,7 +1107,6 @@ func BenchmarkSerializeStringKeyMap(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		w.Serialize(m)
 	}
-	w.Close()
 }
 
 func BenchmarkSerializeEmptyMap(b *testing.B) {
@@ -1202,7 +1115,6 @@ func BenchmarkSerializeEmptyMap(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		w.Serialize(m)
 	}
-	w.Close()
 }
 
 func BenchmarkSerializeInterfaceKeyMap(b *testing.B) {
@@ -1214,7 +1126,6 @@ func BenchmarkSerializeInterfaceKeyMap(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		w.Serialize(&m)
 	}
-	w.Close()
 }
 
 func TestSerializeStruct(t *testing.T) {
@@ -1250,7 +1161,6 @@ func TestSerializeStruct(t *testing.T) {
 	if w.String() != s {
 		t.Error(w.String())
 	}
-	w.Close()
 }
 
 func BenchmarkSerializeStruct(b *testing.B) {
@@ -1284,7 +1194,6 @@ func BenchmarkSerializeStruct(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		w.Serialize(st)
 	}
-	w.Close()
 }
 
 func TestSerializePromise(t *testing.T) {
@@ -1305,5 +1214,4 @@ func TestSerializePromise(t *testing.T) {
 	if w.String() != `a4{1s5"hello"nd3.14159;}` {
 		t.Error(w.String())
 	}
-	w.Close()
 }

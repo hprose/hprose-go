@@ -28,7 +28,6 @@ import (
 	"time"
 
 	"github.com/hprose/hprose-golang/io"
-	"github.com/hprose/hprose-golang/pool"
 	"github.com/hprose/hprose-golang/promise"
 )
 
@@ -461,7 +460,6 @@ func (service *BaseService) doInvoke(
 		for i := 0; i < n; i++ {
 			data := results[i].([]byte)
 			writer.Write(data)
-			pool.Recycle(data)
 		}
 		writer.WriteByte(io.TagEnd)
 		return writer.Bytes()

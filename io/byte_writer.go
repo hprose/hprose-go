@@ -12,19 +12,18 @@
  *                                                        *
  * byte writer for Go.                                    *
  *                                                        *
- * LastModified: Sep 1, 2016                              *
+ * LastModified: Sep 13, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 
 package io
 
-import "github.com/hprose/hprose-golang/pool"
-
 // ByteWriter implements the io.Writer and io.ByteWriter interfaces by writing
 // to a byte slice
 type ByteWriter struct {
-	buf []byte
+	buf       []byte
+	bootstrap [64]byte
 }
 
 // NewByteWriter create a ByteWriter in append mode
@@ -65,12 +64,11 @@ func (w *ByteWriter) grow(n int) int {
 	l := p + n
 	if l > c {
 		var buf []byte
-		if w.buf == nil {
-			buf = pool.Alloc(n)
+		if w.buf == nil && n <= len(w.bootstrap) {
+			buf = w.bootstrap[0:]
 		} else {
-			buf = pool.Alloc(c<<1 + n)
-			copy(buf, w.buf)
-			pool.Recycle(w.buf)
+			buf = make([]byte, 2*c+n)
+			copy(buf, w.buf[0:])
 		}
 		w.buf = buf
 	}
@@ -96,11 +94,6 @@ func (w *ByteWriter) WriteByte(c byte) error {
 // Write the contents of b to the byte slice of this writer.
 func (w *ByteWriter) Write(b []byte) (int, error) {
 	return w.write(b), nil
-}
-
-// Close the writer and put the buf to []byte pool
-func (w *ByteWriter) Close() {
-	pool.Recycle(w.buf)
 }
 
 func (w *ByteWriter) writeByte(c byte) {

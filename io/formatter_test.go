@@ -25,8 +25,6 @@ import (
 	"math/rand"
 	"testing"
 	"time"
-
-	"github.com/hprose/hprose-golang/pool"
 )
 
 func TestFormat(t *testing.T) {
@@ -65,7 +63,7 @@ func BenchmarkHproseMarshal(b *testing.B) {
 	}
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		pool.Recycle(Marshal(a))
+		Marshal(a)
 	}
 }
 
@@ -115,7 +113,7 @@ func BenchmarkHproseSerialize(b *testing.B) {
 	}
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
-		pool.Recycle(Serialize(a, false))
+		Serialize(a, false)
 	}
 }
 
