@@ -28,6 +28,8 @@ import (
 	"syscall"
 )
 
+var errServerIsAlreadyStarted = errors.New("The server is already started")
+
 var errServerIsNotStarted = errors.New("The server is not started")
 
 // TCPServer is a hprose tcp server
@@ -61,24 +63,32 @@ func (server *TCPServer) URI() string {
 	return u.Scheme + "://" + server.listener.Addr().String()
 }
 
+// Handle the hprose tcp server
+func (server *TCPServer) Handle() (err error) {
+	if server.listener != nil {
+		return errServerIsAlreadyStarted
+	}
+	u, err := url.Parse(server.uri)
+	if err != nil {
+		return err
+	}
+	addr, err := net.ResolveTCPAddr(u.Scheme, u.Host)
+	if err != nil {
+		return err
+	}
+	if server.listener, err = net.ListenTCP(u.Scheme, addr); err != nil {
+		return err
+	}
+	go server.ServeTCP(server.listener)
+	return nil
+}
+
 // Start the hprose tcp server
 func (server *TCPServer) Start() (err error) {
-	if server.listener != nil {
-		return
-	}
 	for {
-		u, err := url.Parse(server.uri)
-		if err != nil {
+		if err = server.Handle(); err != nil {
 			return err
 		}
-		addr, err := net.ResolveTCPAddr(u.Scheme, u.Host)
-		if err != nil {
-			return err
-		}
-		if server.listener, err = net.ListenTCP(u.Scheme, addr); err != nil {
-			return err
-		}
-		go server.ServeTCP(server.listener)
 		server.signal = make(chan os.Signal, 1)
 		signal.Notify(server.signal, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT, syscall.SIGSTOP, syscall.SIGKILL)
 		s := <-server.signal
