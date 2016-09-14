@@ -22,9 +22,10 @@ package rpc
 import (
 	"bufio"
 	"net"
+	"reflect"
 )
 
-// StreamContext is the hprose stream context for service
+// SocketContext is the hprose socket context for service
 type SocketContext struct {
 	*ServiceContext
 	net.Conn
@@ -50,6 +51,26 @@ type serviceHandler struct {
 	sendQueue chan packet
 	conn      net.Conn
 	service   *BaseService
+}
+
+type socketFixer struct{}
+
+func (socketFixer) FixArguments(args []reflect.Value, context *ServiceContext) {
+	i := len(args) - 1
+	typ := args[i].Type()
+	if typ == socketContextType {
+		if c, ok := context.TransportContext.(*SocketContext); ok {
+			args[i] = reflect.ValueOf(c)
+		}
+		return
+	}
+	if typ == netConnType {
+		if c, ok := context.TransportContext.(*SocketContext); ok {
+			args[i] = reflect.ValueOf(c.Conn)
+		}
+		return
+	}
+	fixArguments(args, context)
 }
 
 func bytesToInt(b [4]byte) int {

@@ -44,6 +44,7 @@ func NewTCPService() (service *TCPService) {
 	service.KeepAlive = true
 	service.KeepAlivePeriod = 0
 	service.TLSConfig = nil
+	service.fixer = socketFixer{}
 	return service
 }
 
