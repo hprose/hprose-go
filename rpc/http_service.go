@@ -12,7 +12,7 @@
  *                                                        *
  * hprose http service for Go.                            *
  *                                                        *
- * LastModified: Sep 13, 2016                             *
+ * LastModified: Sep 14, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -53,11 +53,11 @@ type HTTPService struct {
 }
 
 type sendHeaderEvent interface {
-	OnSendHeader(context Context)
+	OnSendHeader(context *HTTPContext)
 }
 
 type sendHeaderEvent2 interface {
-	OnSendHeader(context *HTTPContext)
+	OnSendHeader(context *HTTPContext) error
 }
 
 type httpFixer struct{}
@@ -138,12 +138,25 @@ func (service *HTTPService) clientAccessPolicyXMLHandler(
 	return true
 }
 
-func (service *HTTPService) sendHeader(context *HTTPContext) {
+func (service *HTTPService) fireSendHeaderEvent(
+	context *HTTPContext) (err error) {
+	defer func() {
+		if e := recover(); e != nil {
+			err = NewPanicError(e)
+		}
+	}()
 	switch event := service.Event.(type) {
 	case sendHeaderEvent:
 		event.OnSendHeader(context)
 	case sendHeaderEvent2:
-		event.OnSendHeader(context)
+		err = event.OnSendHeader(context)
+	}
+	return err
+}
+
+func (service *HTTPService) sendHeader(context *HTTPContext) (err error) {
+	if err = service.fireSendHeaderEvent(context); err != nil {
+		return err
 	}
 	header := context.Response.Header()
 	header.Set("Content-Type", "text/plain")
@@ -163,6 +176,7 @@ func (service *HTTPService) sendHeader(context *HTTPContext) {
 			header.Set("Access-Control-Allow-Origin", "*")
 		}
 	}
+	return nil
 }
 
 // AddAccessControlAllowOrigin add access control allow origin
@@ -253,28 +267,29 @@ func (service *HTTPService) Serve(
 			context.SetInterface(k, v)
 		}
 	}
-	service.sendHeader(context)
-	switch request.Method {
-	case "GET":
-		if service.GET {
-			response.Write(service.doFunctionList(context.ServiceContext))
-		} else {
-			response.WriteHeader(403)
-		}
-	case "POST":
-		req, err := readAllFromHTTPRequest(request)
-		request.Body.Close()
-		if err != nil {
-			response.Write(service.endError(err, context))
-		}
-		resp, err := service.Handle(req, context.ServiceContext)
-		if err != nil {
-			response.Write(service.endError(err, context))
-		} else {
-			response.Header().Set("Content-Length", strconv.Itoa(len(resp)))
-			response.Write(resp)
+	var resp []byte
+	err := service.sendHeader(context)
+	if err == nil {
+		switch request.Method {
+		case "GET":
+			if service.GET {
+				resp = service.doFunctionList(context.ServiceContext)
+			} else {
+				response.WriteHeader(403)
+			}
+		case "POST":
+			req, err := readAllFromHTTPRequest(request)
+			request.Body.Close()
+			if err == nil {
+				resp, err = service.Handle(req, context.ServiceContext)
+			}
 		}
 	}
+	if err != nil {
+		resp = service.endError(err, context)
+	}
+	response.Header().Set("Content-Length", strconv.Itoa(len(resp)))
+	response.Write(resp)
 }
 
 // ServeHTTP is the hprose http handler method
