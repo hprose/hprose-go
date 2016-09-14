@@ -185,6 +185,24 @@ func TestByteString(t *testing.T) {
 	}
 }
 
+func TestItoa(t *testing.T) {
+	if Itoa(1234567) != "1234567" {
+		t.Error(Itoa(1234567))
+	}
+}
+
+func BenchmarkUtilItoa(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		Itoa(i)
+	}
+}
+
+func BenchmarkStrconvItoa(b *testing.B) {
+	for i := 0; i < b.N; i++ {
+		strconv.Itoa(i)
+	}
+}
+
 func TestMin(t *testing.T) {
 	if Min(1, 2) != 1 {
 		t.Error(Min(1, 2))

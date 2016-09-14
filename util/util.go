@@ -200,6 +200,12 @@ func ByteString(b []byte) string {
 	return *(*string)(unsafe.Pointer(&b))
 }
 
+// Itoa returns the string representation of i
+func Itoa(i int) string {
+	var buf [20]byte
+	return ByteString(GetIntBytes(buf[:], int64(i)))
+}
+
 // Min returns the min one of a, b
 func Min(a, b int) int {
 	if a > b {
