@@ -381,6 +381,11 @@ func (service *BaseService) invoke(
 	name string,
 	args []reflect.Value,
 	context *ServiceContext) (results []reflect.Value, err error) {
+	defer func() {
+		if e := recover(); e != nil {
+			err = NewPanicError(e)
+		}
+	}()
 	if context.Oneway {
 		go func() {
 			defer recover()
@@ -505,7 +510,12 @@ func (service *BaseService) doFunctionList(context *ServiceContext) []byte {
 
 func (service *BaseService) afterFilter(
 	request []byte,
-	context *ServiceContext) ([]byte, error) {
+	context *ServiceContext) (response []byte, err error) {
+	defer func() {
+		if e := recover(); e != nil {
+			err = NewPanicError(e)
+		}
+	}()
 	reader := io.NewReader(request, false)
 	tag, err := reader.ReadByte()
 	if err != nil {
@@ -532,6 +542,11 @@ func (service *BaseService) delayError(
 
 func (service *BaseService) beforeFilter(
 	request []byte, context *ServiceContext) (response []byte, err error) {
+	defer func() {
+		if e := recover(); e != nil {
+			err = NewPanicError(e)
+		}
+	}()
 	request = service.inputFilter(request, context)
 	response, err = service.afterFilterHandler(request, context)
 	if err != nil {
@@ -542,12 +557,7 @@ func (service *BaseService) beforeFilter(
 
 // Handle the hprose request and return the hprose response
 func (service *BaseService) Handle(
-	request []byte, context *ServiceContext) (response []byte, err error) {
-	defer func() {
-		if e := recover(); e != nil {
-			err = NewPanicError(e)
-		}
-	}()
+	request []byte, context Context) (response []byte, err error) {
 	return service.beforeFilterHandler(request, context)
 }
 
