@@ -19,7 +19,10 @@
 
 package rpc
 
-import "net"
+import (
+	"net"
+	"strings"
+)
 
 type packet struct {
 	fullDuplex bool
@@ -67,4 +70,9 @@ func sendData(conn net.Conn, data packet) (err error) {
 		_, err = conn.Write(data.body[p:])
 	}
 	return err
+}
+
+func parseUnixURI(uri string) (scheme, path string) {
+	t := strings.SplitN(uri, ":", 2)
+	return t[0], t[1]
 }
