@@ -8,9 +8,9 @@
 \**********************************************************/
 /**********************************************************\
  *                                                        *
- * rpc/stream_service.go                                  *
+ * rpc/socket_service.go                                  *
  *                                                        *
- * hprose stream service for Go.                          *
+ * hprose socket service for Go.                          *
  *                                                        *
  * LastModified: Sep 14, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
@@ -25,32 +25,25 @@ import (
 )
 
 // StreamContext is the hprose stream context for service
-type StreamContext struct {
+type SocketContext struct {
 	*ServiceContext
 	net.Conn
 }
 
 type acceptEvent interface {
-	OnAccept(context *StreamContext)
+	OnAccept(context *SocketContext)
 }
 
 type acceptEvent2 interface {
-	OnAccept(context *StreamContext) error
+	OnAccept(context *SocketContext) error
 }
 
 type closeEvent interface {
-	OnClose(context *StreamContext)
+	OnClose(context *SocketContext)
 }
 
 type closeEvent2 interface {
-	OnClose(context *StreamContext) error
-}
-
-type packet struct {
-	fullDuplex bool
-	id         [4]byte
-	body       []byte
-	context    *ServiceContext
+	OnClose(context *SocketContext) error
 }
 
 type serviceHandler struct {
@@ -63,7 +56,7 @@ func bytesToInt(b [4]byte) int {
 	return int(b[0])<<24 | int(b[1])<<16 | int(b[2])<<8 | int(b[3])
 }
 
-func fireAcceptEvent(service *BaseService, context *StreamContext) (err error) {
+func fireAcceptEvent(service *BaseService, context *SocketContext) (err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			err = NewPanicError(e)
@@ -78,7 +71,7 @@ func fireAcceptEvent(service *BaseService, context *StreamContext) (err error) {
 	return err
 }
 
-func fireCloseEvent(service *BaseService, context *StreamContext) (err error) {
+func fireCloseEvent(service *BaseService, context *SocketContext) (err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			err = NewPanicError(e)
@@ -94,7 +87,7 @@ func fireCloseEvent(service *BaseService, context *StreamContext) (err error) {
 }
 
 func serveConn(conn net.Conn, service *BaseService) {
-	context := &StreamContext{NewServiceContext(nil), conn}
+	context := &SocketContext{NewServiceContext(nil), conn}
 	context.TransportContext = context
 	if err := fireAcceptEvent(service, context); err != nil {
 		service.fireErrorEvent(err, context)
@@ -113,7 +106,7 @@ func serveConn(conn net.Conn, service *BaseService) {
 
 func (handler *serviceHandler) init() {
 	for data := range handler.sendQueue {
-		sendDataOverStream(handler.conn, data.body, data.id, data.fullDuplex)
+		sendData(handler.conn, data)
 	}
 }
 
@@ -124,9 +117,8 @@ func (handler *serviceHandler) serve() {
 	var err error
 	reader := bufio.NewReader(handler.conn)
 	for {
-		context := &StreamContext{NewServiceContext(nil), handler.conn}
+		context := &SocketContext{NewServiceContext(nil), handler.conn}
 		context.TransportContext = context
-		data.context = context.ServiceContext
 		if _, err = reader.Read(header[:]); err != nil {
 			break
 		}
@@ -144,24 +136,24 @@ func (handler *serviceHandler) serve() {
 			break
 		}
 		if data.fullDuplex {
-			go handler.handle(data)
+			go handler.handle(data, context.ServiceContext)
 		} else {
-			handler.handle(data)
+			handler.handle(data, context.ServiceContext)
 		}
 	}
 	close(handler.sendQueue)
 	handler.conn.Close()
 }
 
-func (handler *serviceHandler) handle(data packet) {
-	if resp, err := handler.service.Handle(data.body, data.context); err == nil {
+func (handler *serviceHandler) handle(data packet, context *ServiceContext) {
+	if resp, err := handler.service.Handle(data.body, context); err == nil {
 		data.body = resp
 	} else {
-		data.body = handler.service.endError(err, data.context)
+		data.body = handler.service.endError(err, context)
 	}
 	if data.fullDuplex {
 		handler.sendQueue <- data
 	} else {
-		sendDataOverStream(handler.conn, data.body, data.id, data.fullDuplex)
+		sendData(handler.conn, data)
 	}
 }

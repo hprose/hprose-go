@@ -8,11 +8,11 @@
 \**********************************************************/
 /**********************************************************\
  *                                                        *
- * rpc/stream_common.go                                   *
+ * rpc/socket_common.go                                   *
  *                                                        *
- * hprose stream common for Go.                           *
+ * hprose socket common for Go.                           *
  *                                                        *
- * LastModified: Sep 13, 2016                             *
+ * LastModified: Sep 14, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -21,12 +21,14 @@ package rpc
 
 import "net"
 
-func sendDataOverStream(
-	conn net.Conn,
-	data []byte,
-	id [4]byte,
-	fullDuplex bool) (err error) {
-	n := len(data)
+type packet struct {
+	fullDuplex bool
+	id         [4]byte
+	body       []byte
+}
+
+func sendData(conn net.Conn, data packet) (err error) {
+	n := len(data.body)
 	var l int
 	switch {
 	case n > 1020 && n <= 1400:
@@ -36,7 +38,7 @@ func sendDataOverStream(
 	default:
 		l = 512
 	}
-	if fullDuplex {
+	if data.fullDuplex {
 		n |= 0x80000000
 	}
 	buf := make([]byte, l)
@@ -45,24 +47,24 @@ func sendDataOverStream(
 	buf[2] = byte((n >> 8) & 0xff)
 	buf[3] = byte(n & 0xff)
 	i := 4
-	if fullDuplex {
-		buf[4] = id[0]
-		buf[5] = id[1]
-		buf[6] = id[2]
-		buf[7] = id[3]
+	if data.fullDuplex {
+		buf[4] = data.id[0]
+		buf[5] = data.id[1]
+		buf[6] = data.id[2]
+		buf[7] = data.id[3]
 		i = 8
 	}
 	p := l - i
 	if n <= p {
-		copy(buf[i:], data)
+		copy(buf[i:], data.body)
 		_, err = conn.Write(buf[:n+i])
 	} else {
-		copy(buf[i:], data[:p])
+		copy(buf[i:], data.body[:p])
 		_, err = conn.Write(buf)
 		if err != nil {
 			return err
 		}
-		_, err = conn.Write(data[p:])
+		_, err = conn.Write(data.body[p:])
 	}
 	return err
 }
