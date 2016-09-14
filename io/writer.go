@@ -12,7 +12,7 @@
  *                                                        *
  * hprose writer for Go.                                  *
  *                                                        *
- * LastModified: Sep 12, 2016                             *
+ * LastModified: Sep 14, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -27,6 +27,8 @@ import (
 	"strconv"
 	"time"
 	"unsafe"
+
+	"github.com/hprose/hprose-golang/util"
 )
 
 // Writer is a fine-grained operation struct for Hprose serialization
@@ -87,7 +89,7 @@ func (w *Writer) WriteInt(i int64) {
 		w.writeByte(TagLong)
 	}
 	var buf [20]byte
-	w.write(getIntBytes(buf[:], i))
+	w.write(util.GetIntBytes(buf[:], i))
 	w.writeByte(TagSemicolon)
 }
 
@@ -103,7 +105,7 @@ func (w *Writer) WriteUint(i uint64) {
 		w.writeByte(TagLong)
 	}
 	var buf [20]byte
-	w.write(getUintBytes(buf[:], i))
+	w.write(util.GetUintBytes(buf[:], i))
 	w.writeByte(TagSemicolon)
 }
 
@@ -155,7 +157,7 @@ func (w *Writer) WriteComplex128(c complex128) {
 
 // WriteString to the writer
 func (w *Writer) WriteString(str string) {
-	length := utf16Length(str)
+	length := util.UTF16Length(str)
 	switch {
 	case length == 0:
 		w.writeByte(TagEmpty)
@@ -548,7 +550,7 @@ func writeRef(w *Writer, ref unsafe.Pointer) bool {
 	if found {
 		w.writeByte(TagRef)
 		var buf [20]byte
-		w.write(getIntBytes(buf[:], int64(n)))
+		w.write(util.GetIntBytes(buf[:], int64(n)))
 		w.writeByte(TagSemicolon)
 	}
 	return found
@@ -570,7 +572,7 @@ func setWriterRef(w *Writer, ref unsafe.Pointer) {
 func writeString(w *Writer, str string, length int) {
 	w.writeByte(TagString)
 	var buf [20]byte
-	w.write(getIntBytes(buf[:], int64(length)))
+	w.write(util.GetIntBytes(buf[:], int64(length)))
 	w.writeByte(TagQuote)
 	w.writeString(str)
 	w.writeByte(TagQuote)
@@ -584,7 +586,7 @@ func writeBytes(w *Writer, bytes []byte) {
 	}
 	w.writeByte(TagBytes)
 	var buf [20]byte
-	w.write(getIntBytes(buf[:], int64(count)))
+	w.write(util.GetIntBytes(buf[:], int64(count)))
 	w.writeByte(TagQuote)
 	w.write(bytes)
 	w.writeByte(TagQuote)
@@ -593,7 +595,7 @@ func writeBytes(w *Writer, bytes []byte) {
 func writeListHeader(w *Writer, count int) {
 	w.writeByte(TagList)
 	var buf [20]byte
-	w.write(getIntBytes(buf[:], int64(count)))
+	w.write(util.GetIntBytes(buf[:], int64(count)))
 	w.writeByte(TagOpenbrace)
 }
 
@@ -672,7 +674,7 @@ func writeEmptyMap(w *Writer) {
 func writeMapHeader(w *Writer, count int) {
 	w.writeByte(TagMap)
 	var buf [20]byte
-	w.write(getIntBytes(buf[:], int64(count)))
+	w.write(util.GetIntBytes(buf[:], int64(count)))
 	w.writeByte(TagOpenbrace)
 }
 
@@ -743,7 +745,7 @@ func writeStruct(w *Writer, v reflect.Value) {
 	setWriterRef(w, val.ptr)
 	w.writeByte(TagObject)
 	var buf [20]byte
-	w.write(getIntBytes(buf[:], int64(index)))
+	w.write(util.GetIntBytes(buf[:], int64(index)))
 	w.writeByte(TagOpenbrace)
 	fields := cache.Fields
 	for _, field := range fields {

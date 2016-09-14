@@ -12,7 +12,7 @@
  *                                                        *
  * hprose uint decoder for Go.                            *
  *                                                        *
- * LastModified: Sep 10, 2016                             *
+ * LastModified: Sep 14, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -24,6 +24,8 @@ import (
 	"reflect"
 	"strconv"
 	"time"
+
+	"github.com/hprose/hprose-golang/util"
 )
 
 func readUint64(r *Reader) uint64 {
@@ -43,7 +45,7 @@ func stringToUint(s string) uint64 {
 }
 
 func readUTF8CharAsUint(r *Reader) uint64 {
-	return stringToUint(byteString(readUTF8Slice(&r.ByteReader, 1)))
+	return stringToUint(util.ByteString(readUTF8Slice(&r.ByteReader, 1)))
 }
 
 func readStringAsUint(r *Reader) uint64 {

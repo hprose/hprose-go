@@ -12,7 +12,7 @@
  *                                                        *
  * hprose float32 decoder for Go.                         *
  *                                                        *
- * LastModified: Sep 10, 2016                             *
+ * LastModified: Sep 14, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -25,6 +25,8 @@ import (
 	"reflect"
 	"strconv"
 	"time"
+
+	"github.com/hprose/hprose-golang/util"
 )
 
 func readLongAsFloat32(r *Reader) float32 {
@@ -44,7 +46,7 @@ func readInfinityAsFloat32(r *Reader) float32 {
 }
 
 func readUTF8CharAsFloat32(r *Reader) float32 {
-	return stringToFloat32(byteString(readUTF8Slice(&r.ByteReader, 1)))
+	return stringToFloat32(util.ByteString(readUTF8Slice(&r.ByteReader, 1)))
 }
 
 func readStringAsFloat32(r *Reader) float32 {

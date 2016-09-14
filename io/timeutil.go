@@ -8,21 +8,16 @@
 \**********************************************************/
 /**********************************************************\
  *                                                        *
- * io/util.go                                             *
+ * io/timeutil.go                                         *
  *                                                        *
- * io util for Go.                                        *
+ * time util for Go.                                      *
  *                                                        *
- * LastModified: Sep 9, 2016                              *
+ * LastModified: Sep 14, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 
 package io
-
-import (
-	"math"
-	"unsafe"
-)
 
 const digits = "0123456789"
 
@@ -85,116 +80,6 @@ const digit3 = "" +
 	"960961962963964965966967968969970971972973974975976977978979" +
 	"980981982983984985986987988989990991992993994995996997998999"
 
-var minInt64Buf = [...]byte{
-	'-', '9', '2', '2', '3', '3', '7', '2', '0', '3',
-	'6', '8', '5', '4', '7', '7', '5', '8', '0', '8'}
-
-// getIntBytes returns the []byte representation of i in base 10.
-// buf length must be greater than or equal to 20
-func getIntBytes(buf []byte, i int64) []byte {
-	if i == 0 {
-		return []byte{'0'}
-	}
-	if i == math.MinInt64 {
-		return minInt64Buf[:]
-	}
-	var sign byte
-	if i < 0 {
-		sign = '-'
-		i = -i
-	}
-	off := len(buf)
-	var q, p int64
-	for i >= 100 {
-		q = i / 1000
-		p = (i - (q * 1000)) * 3
-		i = q
-		off -= 3
-		buf[off] = digit3[p]
-		buf[off+1] = digit3[p+1]
-		buf[off+2] = digit3[p+2]
-	}
-	if i >= 10 {
-		q = i / 100
-		p = (i - (q * 100)) * 2
-		i = q
-		off -= 2
-		buf[off] = digit2[p]
-		buf[off+1] = digit2[p+1]
-	}
-	if i > 0 {
-		off--
-		buf[off] = digits[i]
-	}
-	if sign == '-' {
-		off--
-		buf[off] = sign
-	}
-	return buf[off:]
-}
-
-// getUintBytes returns the []byte representation of i in base 10.
-// buf length must be greater than or equal to 20
-func getUintBytes(buf []byte, i uint64) []byte {
-	if i == 0 {
-		return []byte{'0'}
-	}
-	off := len(buf)
-	var q, p uint64
-	for i >= 100 {
-		q = i / 1000
-		p = (i - (q * 1000)) * 3
-		i = q
-		off -= 3
-		buf[off] = digit3[p]
-		buf[off+1] = digit3[p+1]
-		buf[off+2] = digit3[p+2]
-	}
-	if i >= 10 {
-		q = i / 100
-		p = (i - (q * 100)) * 2
-		i = q
-		off -= 2
-		buf[off] = digit2[p]
-		buf[off+1] = digit2[p+1]
-	}
-	if i > 0 {
-		off--
-		buf[off] = digits[i]
-	}
-	return buf[off:]
-}
-
-// utf16Length return the UTF16 length of str.
-// str must be an UTF8 encode string, otherwise return -1.
-func utf16Length(str string) (n int) {
-	length := len(str)
-	n = length
-	p := 0
-	for p < length {
-		a := str[p]
-		switch a >> 4 {
-		case 0, 1, 2, 3, 4, 5, 6, 7:
-			p++
-		case 12, 13:
-			p += 2
-			n--
-		case 14:
-			p += 3
-			n -= 2
-		case 15:
-			if a&8 == 8 {
-				return -1
-			}
-			p += 4
-			n -= 2
-		default:
-			return -1
-		}
-	}
-	return n
-}
-
 func formatDate(date []byte, year int, month int, day int) int {
 	date[0] = TagDate
 	q := year / 100
@@ -251,36 +136,4 @@ func formatTime(time []byte, hour int, min int, sec int, nsec int) int {
 	time[15] = digit3[p+1]
 	time[16] = digit3[p+2]
 	return 17
-}
-
-func pow2roundup(x int) int {
-	x--
-	x |= x >> 1
-	x |= x >> 2
-	x |= x >> 4
-	x |= x >> 8
-	x |= x >> 16
-	return x + 1
-}
-
-var debruijn = []int{
-	0, 1, 28, 2, 29, 14, 24, 3,
-	30, 22, 20, 15, 25, 17, 4, 8,
-	31, 27, 13, 23, 21, 19, 16, 7,
-	26, 12, 18, 6, 11, 5, 10, 9,
-}
-
-func log2(x int) int {
-	return debruijn[uint32(x*0x077CB531)>>27]
-}
-
-func byteString(b []byte) string {
-	return *(*string)(unsafe.Pointer(&b))
-}
-
-func min(a, b int) int {
-	if a > b {
-		return b
-	}
-	return a
 }

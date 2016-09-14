@@ -12,7 +12,7 @@
  *                                                        *
  * hprose struct encoder for Go.                          *
  *                                                        *
- * LastModified: Sep 10, 2015                             *
+ * LastModified: Sep 14, 2015                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -24,6 +24,8 @@ import (
 	"strings"
 	"sync"
 	"unsafe"
+
+	"github.com/hprose/hprose-golang/util"
 )
 
 type fieldCache struct {
@@ -117,18 +119,18 @@ func initStructCacheData(cache *structCache) {
 	cache.FieldMap = make(map[string]*fieldCache, count)
 	w.writeByte(TagClass)
 	var buf [20]byte
-	w.write(getIntBytes(buf[:], int64(utf16Length(cache.Alias))))
+	w.write(util.GetIntBytes(buf[:], int64(util.UTF16Length(cache.Alias))))
 	w.writeByte(TagQuote)
 	w.writeString(cache.Alias)
 	w.writeByte(TagQuote)
 	if count > 0 {
-		w.write(getIntBytes(buf[:], int64(count)))
+		w.write(util.GetIntBytes(buf[:], int64(count)))
 	}
 	w.writeByte(TagOpenbrace)
 	for _, field := range fields {
 		cache.FieldMap[field.Alias] = field
 		w.writeByte(TagString)
-		w.write(getIntBytes(buf[:], int64(utf16Length(field.Alias))))
+		w.write(util.GetIntBytes(buf[:], int64(util.UTF16Length(field.Alias))))
 		w.writeByte(TagQuote)
 		w.writeString(field.Alias)
 		w.writeByte(TagQuote)

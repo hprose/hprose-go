@@ -12,7 +12,7 @@
  *                                                        *
  * hprose encoder for Go.                                 *
  *                                                        *
- * LastModified: Sep 13, 2016                             *
+ * LastModified: Sep 14, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -25,6 +25,8 @@ import (
 	"reflect"
 	"time"
 	"unsafe"
+
+	"github.com/hprose/hprose-golang/util"
 )
 
 type valueEncoder func(w *Writer, v reflect.Value)
@@ -123,7 +125,7 @@ func slicePtrEncoder(w *Writer, v reflect.Value, ptr unsafe.Pointer) {
 
 func stringPtrEncoder(w *Writer, v reflect.Value, ptr unsafe.Pointer) {
 	str := v.String()
-	length := utf16Length(str)
+	length := util.UTF16Length(str)
 	switch {
 	case length == 0:
 		w.writeByte(TagEmpty)

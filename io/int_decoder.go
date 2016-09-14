@@ -12,7 +12,7 @@
  *                                                        *
  * hprose int decoder for Go.                             *
  *                                                        *
- * LastModified: Sep 10, 2016                             *
+ * LastModified: Sep 14, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -24,6 +24,8 @@ import (
 	"reflect"
 	"strconv"
 	"time"
+
+	"github.com/hprose/hprose-golang/util"
 )
 
 func readInt64(r *Reader) int64 {
@@ -43,7 +45,7 @@ func stringToInt(s string) int64 {
 }
 
 func readUTF8CharAsInt(r *Reader) int64 {
-	return stringToInt(byteString(readUTF8Slice(&r.ByteReader, 1)))
+	return stringToInt(util.ByteString(readUTF8Slice(&r.ByteReader, 1)))
 }
 
 func readStringAsInt(r *Reader) int64 {

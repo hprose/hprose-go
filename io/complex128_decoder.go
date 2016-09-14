@@ -12,7 +12,7 @@
  *                                                        *
  * hprose complex128 decoder for Go.                      *
  *                                                        *
- * LastModified: Sep 10, 2016                             *
+ * LastModified: Sep 14, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -24,6 +24,8 @@ import (
 	"math"
 	"reflect"
 	"strconv"
+
+	"github.com/hprose/hprose-golang/util"
 )
 
 func readLongAsComplex128(r *Reader) complex128 {
@@ -43,7 +45,7 @@ func readInfinityAsComplex128(r *Reader) complex128 {
 }
 
 func readUTF8CharAsComplex128(r *Reader) complex128 {
-	return stringToComplex128(byteString(readUTF8Slice(&r.ByteReader, 1)))
+	return stringToComplex128(util.ByteString(readUTF8Slice(&r.ByteReader, 1)))
 }
 
 func readStringAsComplex128(r *Reader) complex128 {

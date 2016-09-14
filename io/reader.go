@@ -12,7 +12,7 @@
  *                                                        *
  * hprose reader for Go.                                  *
  *                                                        *
- * LastModified: Sep 12, 2016                             *
+ * LastModified: Sep 14, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -25,6 +25,8 @@ import (
 	"math/big"
 	"reflect"
 	"time"
+
+	"github.com/hprose/hprose-golang/util"
 )
 
 // Reader is a fine-grained operation struct for Hprose unserialization
@@ -234,7 +236,7 @@ func (r *Reader) ReadTimeWithoutTag() (t time.Time) {
 // ReadBigIntWithoutTag from the reader
 func (r *Reader) ReadBigIntWithoutTag() *big.Int {
 	b := readUntil(&r.ByteReader, TagSemicolon)
-	i, _ := new(big.Int).SetString(byteString(b), 10)
+	i, _ := new(big.Int).SetString(util.ByteString(b), 10)
 	return i
 }
 

@@ -12,7 +12,7 @@
  *                                                        *
  * hprose struct decoder for Go.                          *
  *                                                        *
- * LastModified: Sep 12, 2016                             *
+ * LastModified: Sep 14, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -27,6 +27,8 @@ import (
 	"strconv"
 	"time"
 	"unsafe"
+
+	"github.com/hprose/hprose-golang/util"
 )
 
 func readDigitAsStruct(r *Reader, v reflect.Value, tag byte) {
@@ -63,7 +65,7 @@ func readIntAsStruct(r *Reader, v reflect.Value, tag byte) {
 }
 
 func readLongAsStruct(r *Reader, v reflect.Value, tag byte) {
-	i := byteString(readUntil(&r.ByteReader, TagSemicolon))
+	i := util.ByteString(readUntil(&r.ByteReader, TagSemicolon))
 	typ := (*reflectValue)(unsafe.Pointer(&v)).typ
 	switch typ {
 	case bigIntType:
@@ -92,7 +94,7 @@ func readLongAsStruct(r *Reader, v reflect.Value, tag byte) {
 }
 
 func readDoubleAsStruct(r *Reader, v reflect.Value, tag byte) {
-	f := byteString(readUntil(&r.ByteReader, TagSemicolon))
+	f := util.ByteString(readUntil(&r.ByteReader, TagSemicolon))
 	typ := (*reflectValue)(unsafe.Pointer(&v)).typ
 	switch typ {
 	case bigFloatType:

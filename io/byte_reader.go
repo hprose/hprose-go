@@ -12,7 +12,7 @@
  *                                                        *
  * byte reader for Go.                                    *
  *                                                        *
- * LastModified: Sep 12, 2016                             *
+ * LastModified: Sep 14, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -26,6 +26,8 @@ import (
 	"math"
 	"math/big"
 	"strconv"
+
+	"github.com/hprose/hprose-golang/util"
 )
 
 // ByteReader implements the io.Reader and io.ByteReader interfaces by reading
@@ -192,7 +194,7 @@ func readUntil(r *ByteReader, tag byte) (result []byte) {
 }
 
 func readFloat32(r *ByteReader) float32 {
-	s := byteString(readUntil(r, TagSemicolon))
+	s := util.ByteString(readUntil(r, TagSemicolon))
 	f, e := strconv.ParseFloat(s, 32)
 	if e != nil {
 		panic(e)
@@ -201,7 +203,7 @@ func readFloat32(r *ByteReader) float32 {
 }
 
 func readFloat64(r *ByteReader) float64 {
-	s := byteString(readUntil(r, TagSemicolon))
+	s := util.ByteString(readUntil(r, TagSemicolon))
 	f, e := strconv.ParseFloat(s, 64)
 	if e != nil {
 		panic(e)
@@ -253,12 +255,12 @@ func readUTF8Char(r *ByteReader) (result string) {
 
 func readBigInt(r *ByteReader) (result *big.Int) {
 	result = new(big.Int)
-	result.SetString(byteString(readUntil(r, TagSemicolon)), 10)
+	result.SetString(util.ByteString(readUntil(r, TagSemicolon)), 10)
 	return
 }
 
 func readBigFloat(r *ByteReader) (result *big.Float) {
-	result, _, _ = new(big.Float).Parse(byteString(readUntil(r, TagSemicolon)), 10)
+	result, _, _ = new(big.Float).Parse(util.ByteString(readUntil(r, TagSemicolon)), 10)
 	return
 }
 

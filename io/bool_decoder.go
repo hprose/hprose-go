@@ -12,7 +12,7 @@
  *                                                        *
  * hprose bool decoder for Go.                            *
  *                                                        *
- * LastModified: Sep 10, 2016                             *
+ * LastModified: Sep 14, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -23,6 +23,8 @@ import (
 	"errors"
 	"reflect"
 	"strconv"
+
+	"github.com/hprose/hprose-golang/util"
 )
 
 func readBoolFalse(r *Reader) bool {
@@ -50,7 +52,7 @@ func readInfinityAsBool(r *Reader) bool {
 }
 
 func readUTF8CharAsBool(r *Reader) bool {
-	b, err := strconv.ParseBool(byteString(readUTF8Slice(&r.ByteReader, 1)))
+	b, err := strconv.ParseBool(util.ByteString(readUTF8Slice(&r.ByteReader, 1)))
 	if err != nil {
 		panic(err)
 	}
