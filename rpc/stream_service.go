@@ -12,7 +12,7 @@
  *                                                        *
  * hprose stream service for Go.                          *
  *                                                        *
- * LastModified: Sep 13, 2016                             *
+ * LastModified: Sep 14, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -30,6 +30,22 @@ type StreamContext struct {
 	net.Conn
 }
 
+type acceptEvent interface {
+	OnAccept(context *StreamContext)
+}
+
+type acceptEvent2 interface {
+	OnAccept(context *StreamContext) error
+}
+
+type closeEvent interface {
+	OnClose(context *StreamContext)
+}
+
+type closeEvent2 interface {
+	OnClose(context *StreamContext) error
+}
+
 type packet struct {
 	fullDuplex bool
 	id         [4]byte
@@ -37,49 +53,78 @@ type packet struct {
 	context    *ServiceContext
 }
 
-// StreamService is the base service for TcpService and UnixService
-type StreamService struct {
-	BaseService
-}
-
-func (service *StreamService) initSendQueue(
-	sendQueue <-chan packet, conn net.Conn) {
-	for data := range sendQueue {
-		sendDataOverStream(conn, data.body, data.id, data.fullDuplex)
-	}
-	conn.Close()
-}
-
-func (service *StreamService) onReceived(
-	conn net.Conn, data packet, sendQueue chan<- packet) {
-	if resp, err := service.Handle(data.body, data.context); err == nil {
-		data.body = resp
-	} else {
-		data.body = service.endError(err, data.context)
-	}
-	if data.fullDuplex {
-		sendQueue <- data
-	} else {
-		sendDataOverStream(conn, data.body, data.id, data.fullDuplex)
-	}
+type serviceHandler struct {
+	sendQueue chan packet
+	conn      net.Conn
+	service   *BaseService
 }
 
 func bytesToInt(b [4]byte) int {
 	return int(b[0])<<24 | int(b[1])<<16 | int(b[2])<<8 | int(b[3])
 }
 
-// ServeConn runs on a single connection. ServeConn blocks, serving the
-// connection until the client hangs up. The caller typically invokes ServeConn // in a go statement.
-func (service *StreamService) ServeConn(conn net.Conn) {
+func fireAcceptEvent(service *BaseService, context *StreamContext) (err error) {
+	defer func() {
+		if e := recover(); e != nil {
+			err = NewPanicError(e)
+		}
+	}()
+	switch event := service.Event.(type) {
+	case acceptEvent:
+		event.OnAccept(context)
+	case acceptEvent2:
+		err = event.OnAccept(context)
+	}
+	return err
+}
+
+func fireCloseEvent(service *BaseService, context *StreamContext) (err error) {
+	defer func() {
+		if e := recover(); e != nil {
+			err = NewPanicError(e)
+		}
+	}()
+	switch event := service.Event.(type) {
+	case closeEvent:
+		event.OnClose(context)
+	case closeEvent2:
+		err = event.OnClose(context)
+	}
+	return err
+}
+
+func serveConn(conn net.Conn, service *BaseService) {
+	context := &StreamContext{NewServiceContext(nil), conn}
+	context.TransportContext = context
+	if err := fireAcceptEvent(service, context); err != nil {
+		service.fireErrorEvent(err, context)
+		return
+	}
+	handler := new(serviceHandler)
+	handler.sendQueue = make(chan packet, 10)
+	handler.conn = conn
+	handler.service = service
+	go handler.init()
+	handler.serve()
+	if err := fireCloseEvent(service, context); err != nil {
+		service.fireErrorEvent(err, context)
+	}
+}
+
+func (handler *serviceHandler) init() {
+	for data := range handler.sendQueue {
+		sendDataOverStream(handler.conn, data.body, data.id, data.fullDuplex)
+	}
+}
+
+func (handler *serviceHandler) serve() {
 	var header [4]byte
 	var size int
 	var data packet
 	var err error
-	reader := bufio.NewReader(conn)
-	sendQueue := make(chan packet, 10)
-	go service.initSendQueue(sendQueue, conn)
+	reader := bufio.NewReader(handler.conn)
 	for {
-		context := &StreamContext{NewServiceContext(nil), conn}
+		context := &StreamContext{NewServiceContext(nil), handler.conn}
 		context.TransportContext = context
 		data.context = context.ServiceContext
 		if _, err = reader.Read(header[:]); err != nil {
@@ -99,11 +144,24 @@ func (service *StreamService) ServeConn(conn net.Conn) {
 			break
 		}
 		if data.fullDuplex {
-			go service.onReceived(conn, data, sendQueue)
+			go handler.handle(data)
 		} else {
-			service.onReceived(conn, data, sendQueue)
+			handler.handle(data)
 		}
 	}
-	close(sendQueue)
-	conn.Close()
+	close(handler.sendQueue)
+	handler.conn.Close()
+}
+
+func (handler *serviceHandler) handle(data packet) {
+	if resp, err := handler.service.Handle(data.body, data.context); err == nil {
+		data.body = resp
+	} else {
+		data.body = handler.service.endError(err, data.context)
+	}
+	if data.fullDuplex {
+		handler.sendQueue <- data
+	} else {
+		sendDataOverStream(handler.conn, data.body, data.id, data.fullDuplex)
+	}
 }
