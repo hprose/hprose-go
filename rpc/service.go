@@ -28,6 +28,7 @@ import (
 	"time"
 
 	"github.com/hprose/hprose-golang/io"
+	"github.com/hprose/hprose-golang/util"
 )
 
 // Service interface
@@ -405,13 +406,6 @@ func (service *BaseService) invoke(
 	return results, err
 }
 
-func max(a, b int) int {
-	if a > b {
-		return a
-	}
-	return b
-}
-
 func (service *BaseService) readArguments(
 	reader *io.Reader,
 	method *Method,
@@ -425,7 +419,7 @@ func (service *BaseService) readArguments(
 	if ft.IsVariadic() {
 		n--
 	}
-	max := max(n, count)
+	max := util.Max(n, count)
 	args = make([]reflect.Value, max)
 	for i := 0; i < n; i++ {
 		args[i] = reflect.New(ft.In(i)).Elem()

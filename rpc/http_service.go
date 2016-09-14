@@ -28,6 +28,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/hprose/hprose-golang/util"
 )
 
 // HTTPContext is the hprose http context
@@ -111,7 +113,7 @@ func (service *HTTPService) crossDomainXMLHandler(
 		header.Set("Last-Modified", service.lastModified)
 		header.Set("Etag", service.etag)
 		header.Set("Content-Type", "text/xml")
-		header.Set("Content-Length", strconv.Itoa(contentLength))
+		header.Set("Content-Length", util.Itoa(contentLength))
 		response.Write(service.crossDomainXMLContent)
 	}
 	return true
@@ -132,7 +134,7 @@ func (service *HTTPService) clientAccessPolicyXMLHandler(
 		header.Set("Last-Modified", service.lastModified)
 		header.Set("Etag", service.etag)
 		header.Set("Content-Type", "text/xml")
-		header.Set("Content-Length", strconv.Itoa(contentLength))
+		header.Set("Content-Length", util.Itoa(contentLength))
 		response.Write(service.clientAccessPolicyXMLContent)
 	}
 	return true
@@ -288,7 +290,7 @@ func (service *HTTPService) Serve(
 	if err != nil {
 		resp = service.endError(err, context)
 	}
-	response.Header().Set("Content-Length", strconv.Itoa(len(resp)))
+	response.Header().Set("Content-Length", util.Itoa(len(resp)))
 	response.Write(resp)
 }
 
