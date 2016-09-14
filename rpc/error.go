@@ -20,9 +20,13 @@
 package rpc
 
 import (
+	"errors"
 	"fmt"
 	"runtime"
 )
+
+var errServerIsAlreadyStarted = errors.New("The server is already started")
+var errServerIsNotStarted = errors.New("The server is not started")
 
 // PanicError represents a panic error
 type PanicError struct {

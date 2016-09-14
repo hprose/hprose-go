@@ -12,7 +12,7 @@
  *                                                        *
  * hprose tcp server for Go.                              *
  *                                                        *
- * LastModified: Sep 13, 2016                             *
+ * LastModified: Sep 14, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -20,17 +20,12 @@
 package rpc
 
 import (
-	"errors"
 	"net"
 	"net/url"
 	"os"
 	"os/signal"
 	"syscall"
 )
-
-var errServerIsAlreadyStarted = errors.New("The server is already started")
-
-var errServerIsNotStarted = errors.New("The server is not started")
 
 // TCPServer is a hprose tcp server
 type TCPServer struct {
@@ -58,7 +53,7 @@ func (server *TCPServer) URI() string {
 	}
 	u, err := url.Parse(server.uri)
 	if err != nil {
-		panic(errServerIsNotStarted)
+		panic(err)
 	}
 	return u.Scheme + "://" + server.listener.Addr().String()
 }
