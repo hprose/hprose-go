@@ -12,7 +12,7 @@
  *                                                        *
  * hprose server for Go.                                  *
  *                                                        *
- * LastModified: Sep 14, 2016                             *
+ * LastModified: Sep 15, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -27,6 +27,7 @@ import (
 
 // Server interface
 type Server interface {
+	Service
 	URI() string
 	Handle() (err error)
 	Close()
