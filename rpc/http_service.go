@@ -12,7 +12,7 @@
  *                                                        *
  * hprose http service for Go.                            *
  *                                                        *
- * LastModified: Sep 14, 2016                             *
+ * LastModified: Sep 15, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -22,12 +22,10 @@ package rpc
 import (
 	"io"
 	"io/ioutil"
-	"math/rand"
 	"net/http"
 	"reflect"
-	"strconv"
 	"strings"
-	"time"
+	"unsafe"
 
 	"github.com/hprose/hprose-golang/util"
 )
@@ -41,17 +39,7 @@ type HTTPContext struct {
 
 // HTTPService is the hprose http service
 type HTTPService struct {
-	*BaseService
-	P3P                          bool
-	GET                          bool
-	CrossDomain                  bool
-	accessControlAllowOrigins    map[string]bool
-	lastModified                 string
-	etag                         string
-	crossDomainXMLFile           string
-	crossDomainXMLContent        []byte
-	clientAccessPolicyXMLFile    string
-	clientAccessPolicyXMLContent []byte
+	baseHTTPService
 }
 
 type sendHeaderEvent interface {
@@ -84,60 +72,44 @@ func (httpFixer) FixArguments(args []reflect.Value, context *ServiceContext) {
 
 // NewHTTPService is the constructor of HTTPService
 func NewHTTPService() (service *HTTPService) {
-	t := time.Now().UTC()
-	rand.Seed(t.UnixNano())
-	service = new(HTTPService)
-	service.BaseService = NewBaseService()
-	service.P3P = true
-	service.GET = true
-	service.CrossDomain = true
-	service.accessControlAllowOrigins = make(map[string]bool)
-	service.lastModified = t.Format(time.RFC1123)
-	service.etag = `"` + strconv.FormatInt(rand.Int63(), 16) + `"`
+	service = (*HTTPService)(unsafe.Pointer(newBaseHTTPService()))
 	service.fixer = httpFixer{}
 	return
 }
 
-func (service *HTTPService) crossDomainXMLHandler(
-	response http.ResponseWriter, request *http.Request) bool {
-	if service.crossDomainXMLContent == nil ||
-		strings.ToLower(request.URL.Path) != "/crossdomain.xml" {
+func (service *HTTPService) xmlFileHandler(
+	response http.ResponseWriter, request *http.Request,
+	path string, context []byte) bool {
+	if context == nil || strings.ToLower(request.URL.Path) != path {
 		return false
 	}
 	if request.Header.Get("if-modified-since") == service.lastModified &&
 		request.Header.Get("if-none-match") == service.etag {
 		response.WriteHeader(304)
 	} else {
-		contentLength := len(service.crossDomainXMLContent)
+		contentLength := len(context)
 		header := response.Header()
 		header.Set("Last-Modified", service.lastModified)
 		header.Set("Etag", service.etag)
 		header.Set("Content-Type", "text/xml")
 		header.Set("Content-Length", util.Itoa(contentLength))
-		response.Write(service.crossDomainXMLContent)
+		response.Write(context)
 	}
 	return true
 }
 
+func (service *HTTPService) crossDomainXMLHandler(
+	response http.ResponseWriter, request *http.Request) bool {
+	path := "/crossdomain.xml"
+	context := service.crossDomainXMLContent
+	return service.xmlFileHandler(response, request, path, context)
+}
+
 func (service *HTTPService) clientAccessPolicyXMLHandler(
 	response http.ResponseWriter, request *http.Request) bool {
-	if service.clientAccessPolicyXMLContent == nil ||
-		strings.ToLower(request.URL.Path) != "/clientaccesspolicy.xml" {
-		return false
-	}
-	if request.Header.Get("if-modified-since") == service.lastModified &&
-		request.Header.Get("if-none-match") == service.etag {
-		response.WriteHeader(304)
-	} else {
-		contentLength := len(service.clientAccessPolicyXMLContent)
-		header := response.Header()
-		header.Set("Last-Modified", service.lastModified)
-		header.Set("Etag", service.etag)
-		header.Set("Content-Type", "text/xml")
-		header.Set("Content-Length", util.Itoa(contentLength))
-		response.Write(service.clientAccessPolicyXMLContent)
-	}
-	return true
+	path := "/clientaccesspolicy.xml"
+	context := service.clientAccessPolicyXMLContent
+	return service.xmlFileHandler(response, request, path, context)
 }
 
 func (service *HTTPService) fireSendHeaderEvent(
@@ -179,64 +151,6 @@ func (service *HTTPService) sendHeader(context *HTTPContext) (err error) {
 		}
 	}
 	return nil
-}
-
-// AddAccessControlAllowOrigin add access control allow origin
-func (service *HTTPService) AddAccessControlAllowOrigin(origins ...string) {
-	for _, origin := range origins {
-		service.accessControlAllowOrigins[origin] = true
-	}
-}
-
-// RemoveAccessControlAllowOrigin remove access control allow origin
-func (service *HTTPService) RemoveAccessControlAllowOrigin(origins ...string) {
-	for _, origin := range origins {
-		delete(service.accessControlAllowOrigins, origin)
-	}
-}
-
-// CrossDomainXMLFile return the cross domain xml file
-func (service *HTTPService) CrossDomainXMLFile() string {
-	return service.crossDomainXMLFile
-}
-
-// CrossDomainXMLContent return the cross domain xml content
-func (service *HTTPService) CrossDomainXMLContent() []byte {
-	return service.crossDomainXMLContent
-}
-
-// ClientAccessPolicyXMLFile return the client access policy xml file
-func (service *HTTPService) ClientAccessPolicyXMLFile() string {
-	return service.clientAccessPolicyXMLFile
-}
-
-// ClientAccessPolicyXMLContent return the client access policy xml content
-func (service *HTTPService) ClientAccessPolicyXMLContent() []byte {
-	return service.clientAccessPolicyXMLContent
-}
-
-// SetCrossDomainXMLFile set the cross domain xml file
-func (service *HTTPService) SetCrossDomainXMLFile(filename string) {
-	service.crossDomainXMLFile = filename
-	service.crossDomainXMLContent, _ = ioutil.ReadFile(filename)
-}
-
-// SetClientAccessPolicyXMLFile set the client access policy xml file
-func (service *HTTPService) SetClientAccessPolicyXMLFile(filename string) {
-	service.clientAccessPolicyXMLFile = filename
-	service.clientAccessPolicyXMLContent, _ = ioutil.ReadFile(filename)
-}
-
-// SetCrossDomainXMLContent set the cross domain xml content
-func (service *HTTPService) SetCrossDomainXMLContent(content []byte) {
-	service.crossDomainXMLFile = ""
-	service.crossDomainXMLContent = content
-}
-
-// SetClientAccessPolicyXMLContent set the client access policy xml content
-func (service *HTTPService) SetClientAccessPolicyXMLContent(content []byte) {
-	service.clientAccessPolicyXMLFile = ""
-	service.clientAccessPolicyXMLContent = content
 }
 
 func readAllFromHTTPRequest(request *http.Request) ([]byte, error) {
@@ -282,7 +196,7 @@ func (service *HTTPService) Serve(
 		case "POST":
 			var req []byte
 			if req, err = readAllFromHTTPRequest(request); err == nil {
-				resp, err = service.Handle(req, context.ServiceContext)
+				resp = service.Handle(req, context.ServiceContext)
 			}
 		}
 	}

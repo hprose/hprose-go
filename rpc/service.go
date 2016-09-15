@@ -550,9 +550,12 @@ func (service *BaseService) beforeFilter(
 }
 
 // Handle the hprose request and return the hprose response
-func (service *BaseService) Handle(
-	request []byte, context Context) (response []byte, err error) {
-	return service.beforeFilterHandler(request, context)
+func (service *BaseService) Handle(request []byte, context Context) []byte {
+	response, err := service.beforeFilterHandler(request, context)
+	if err != nil {
+		return service.endError(err, context)
+	}
+	return response
 }
 
 // func (service *BaseService) getTopics(topic string) (topics map[string]*topic) {

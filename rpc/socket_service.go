@@ -31,6 +31,15 @@ type SocketContext struct {
 	net.Conn
 }
 
+// NewSocketContext is the constructor for SocketContext
+func NewSocketContext(clients Clients, conn net.Conn) (context *SocketContext) {
+	context = new(SocketContext)
+	context.ServiceContext = NewServiceContext(clients)
+	context.TransportContext = context
+	context.Conn = conn
+	return
+}
+
 // SocketService is the hprose socket service
 type SocketService struct {
 	*BaseService
@@ -138,8 +147,7 @@ type connHandler struct {
 }
 
 func serveConn(service *BaseService, conn net.Conn) {
-	context := &SocketContext{NewServiceContext(nil), conn}
-	context.TransportContext = context
+	context := NewSocketContext(nil, conn)
 	if err := fireAcceptEvent(service, context); err != nil {
 		service.fireErrorEvent(err, context)
 		return
@@ -198,13 +206,8 @@ func (handler *connHandler) serve(service *BaseService) {
 }
 
 func (handler *connHandler) handle(service *BaseService, data packet) {
-	context := NewServiceContext(nil)
-	context.TransportContext = &SocketContext{context, handler.conn}
-	if resp, err := service.Handle(data.body, context); err == nil {
-		data.body = resp
-	} else {
-		data.body = service.endError(err, context)
-	}
+	context := NewSocketContext(nil, handler.conn)
+	data.body = service.Handle(data.body, context.ServiceContext)
 	if data.fullDuplex {
 		handler.sendQueue <- data
 	} else {
