@@ -22,11 +22,14 @@ package rpc
 import "net"
 
 // UnixService is the hprose unix service
-type UnixService BaseService
+type UnixService struct {
+	*BaseService
+}
 
 // NewUnixService is the constructor of UnixService
 func NewUnixService() (service *UnixService) {
-	service = (*UnixService)(NewBaseService())
+	service = new(UnixService)
+	service.BaseService = NewBaseService()
 	service.fixer = socketFixer{}
 	return service
 }
@@ -35,7 +38,7 @@ func NewUnixService() (service *UnixService) {
 // the connection until the client hangs up. The caller typically invokes
 // ServeUnixConn in a go statement.
 func (service *UnixService) ServeUnixConn(conn *net.UnixConn) {
-	serveConn(conn, (*BaseService)(service))
+	serveConn(service.BaseService, conn)
 }
 
 // ServeUnix runs on the UnixListener. ServeUnix blocks, serving the listener

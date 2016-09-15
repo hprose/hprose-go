@@ -31,26 +31,37 @@ type SocketContext struct {
 	net.Conn
 }
 
-type acceptEvent interface {
-	OnAccept(context *SocketContext)
+// SocketService is the hprose socket service
+type SocketService struct {
+	*BaseService
 }
 
-type acceptEvent2 interface {
-	OnAccept(context *SocketContext) error
+// NewSocketService is the constructor of SocketService
+func NewSocketService() (service *SocketService) {
+	service = new(SocketService)
+	service.BaseService = NewBaseService()
+	service.fixer = socketFixer{}
+	return service
 }
 
-type closeEvent interface {
-	OnClose(context *SocketContext)
+// ServeConn runs on a single net connection. ServeConn blocks, serving the
+// connection until the client hangs up. The caller typically invokes ServeConn
+// in a go statement.
+func (service *SocketService) ServeConn(conn net.Conn) {
+	serveConn(service.BaseService, conn)
 }
 
-type closeEvent2 interface {
-	OnClose(context *SocketContext) error
-}
-
-type serviceHandler struct {
-	sendQueue chan packet
-	conn      net.Conn
-	service   *BaseService
+// Serve runs on the Listener. Serve blocks, serving the listener
+// until the server is stop. The caller typically invokes Serve in a go
+// statement.
+func (service *SocketService) Serve(listener net.Listener) {
+	for {
+		conn, err := listener.Accept()
+		if err != nil {
+			break
+		}
+		go service.ServeConn(conn)
+	}
 }
 
 type socketFixer struct{}
@@ -73,11 +84,24 @@ func (socketFixer) FixArguments(args []reflect.Value, context *ServiceContext) {
 	fixArguments(args, context)
 }
 
-func bytesToInt(b [4]byte) int {
-	return int(b[0])<<24 | int(b[1])<<16 | int(b[2])<<8 | int(b[3])
+type acceptEvent interface {
+	OnAccept(context *SocketContext)
 }
 
-func fireAcceptEvent(service *BaseService, context *SocketContext) (err error) {
+type acceptEvent2 interface {
+	OnAccept(context *SocketContext) error
+}
+
+type closeEvent interface {
+	OnClose(context *SocketContext)
+}
+
+type closeEvent2 interface {
+	OnClose(context *SocketContext) error
+}
+
+func fireAcceptEvent(
+	service *BaseService, context *SocketContext) (err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			err = NewPanicError(e)
@@ -92,7 +116,8 @@ func fireAcceptEvent(service *BaseService, context *SocketContext) (err error) {
 	return err
 }
 
-func fireCloseEvent(service *BaseService, context *SocketContext) (err error) {
+func fireCloseEvent(
+	service *BaseService, context *SocketContext) (err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			err = NewPanicError(e)
@@ -107,39 +132,45 @@ func fireCloseEvent(service *BaseService, context *SocketContext) (err error) {
 	return err
 }
 
-func serveConn(conn net.Conn, service *BaseService) {
+type connHandler struct {
+	sendQueue chan packet
+	conn      net.Conn
+}
+
+func serveConn(service *BaseService, conn net.Conn) {
 	context := &SocketContext{NewServiceContext(nil), conn}
 	context.TransportContext = context
 	if err := fireAcceptEvent(service, context); err != nil {
 		service.fireErrorEvent(err, context)
 		return
 	}
-	handler := new(serviceHandler)
+	handler := new(connHandler)
 	handler.sendQueue = make(chan packet, 10)
 	handler.conn = conn
-	handler.service = service
 	go handler.init()
-	handler.serve()
+	handler.serve(service)
 	if err := fireCloseEvent(service, context); err != nil {
 		service.fireErrorEvent(err, context)
 	}
 }
 
-func (handler *serviceHandler) init() {
+func bytesToInt(b [4]byte) int {
+	return int(b[0])<<24 | int(b[1])<<16 | int(b[2])<<8 | int(b[3])
+}
+
+func (handler *connHandler) init() {
 	for data := range handler.sendQueue {
 		sendData(handler.conn, data)
 	}
 }
 
-func (handler *serviceHandler) serve() {
+func (handler *connHandler) serve(service *BaseService) {
 	var header [4]byte
 	var size int
 	var data packet
 	var err error
 	reader := bufio.NewReader(handler.conn)
 	for {
-		context := &SocketContext{NewServiceContext(nil), handler.conn}
-		context.TransportContext = context
 		if _, err = reader.Read(header[:]); err != nil {
 			break
 		}
@@ -157,20 +188,22 @@ func (handler *serviceHandler) serve() {
 			break
 		}
 		if data.fullDuplex {
-			go handler.handle(data, context.ServiceContext)
+			go handler.handle(service, data)
 		} else {
-			handler.handle(data, context.ServiceContext)
+			handler.handle(service, data)
 		}
 	}
 	close(handler.sendQueue)
 	handler.conn.Close()
 }
 
-func (handler *serviceHandler) handle(data packet, context *ServiceContext) {
-	if resp, err := handler.service.Handle(data.body, context); err == nil {
+func (handler *connHandler) handle(service *BaseService, data packet) {
+	context := NewServiceContext(nil)
+	context.TransportContext = &SocketContext{context, handler.conn}
+	if resp, err := service.Handle(data.body, context); err == nil {
 		data.body = resp
 	} else {
-		data.body = handler.service.endError(err, context)
+		data.body = service.endError(err, context)
 	}
 	if data.fullDuplex {
 		handler.sendQueue <- data

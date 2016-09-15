@@ -39,12 +39,10 @@ type TCPService struct {
 func NewTCPService() (service *TCPService) {
 	service = new(TCPService)
 	service.BaseService = NewBaseService()
+	service.fixer = socketFixer{}
 	service.Linger = -1
 	service.NoDelay = true
 	service.KeepAlive = true
-	service.KeepAlivePeriod = 0
-	service.TLSConfig = nil
-	service.fixer = socketFixer{}
 	return service
 }
 
@@ -58,13 +56,13 @@ func (service *TCPService) ServeTCPConn(conn *net.TCPConn) {
 	if service.KeepAlivePeriod > 0 {
 		conn.SetKeepAlivePeriod(service.KeepAlivePeriod)
 	}
-	var netConn net.Conn = conn
 	if service.TLSConfig != nil {
 		tlsConn := tls.Server(conn, service.TLSConfig)
 		tlsConn.Handshake()
-		netConn = tlsConn
+		serveConn(service.BaseService, tlsConn)
+	} else {
+		serveConn(service.BaseService, conn)
 	}
-	serveConn(netConn, service.BaseService)
 }
 
 // ServeTCP runs on the TCPListener. ServeTCP blocks, serving the listener

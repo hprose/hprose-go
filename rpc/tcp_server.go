@@ -22,17 +22,14 @@ package rpc
 import (
 	"net"
 	"net/url"
-	"os"
-	"os/signal"
-	"syscall"
 )
 
 // TCPServer is a hprose tcp server
 type TCPServer struct {
 	*TCPService
+	*starter
 	uri      string
 	listener *net.TCPListener
-	signal   chan os.Signal
 }
 
 // NewTCPServer is the constructor for TCPServer
@@ -42,6 +39,7 @@ func NewTCPServer(uri string) (server *TCPServer) {
 	}
 	server = new(TCPServer)
 	server.TCPService = NewTCPService()
+	server.starter = &starter{server: server}
 	server.uri = uri
 	return
 }
@@ -78,29 +76,8 @@ func (server *TCPServer) Handle() (err error) {
 	return nil
 }
 
-// Start the hprose tcp server
-func (server *TCPServer) Start() (err error) {
-	for {
-		if err = server.Handle(); err != nil {
-			return err
-		}
-		server.signal = make(chan os.Signal, 1)
-		signal.Notify(server.signal, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT, syscall.SIGSTOP, syscall.SIGKILL)
-		s := <-server.signal
-		server.Stop()
-		switch s {
-		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGSTOP, syscall.SIGINT, syscall.SIGKILL:
-			return nil
-		}
-	}
-}
-
-// Stop the hprose tcp server
-func (server *TCPServer) Stop() {
-	if server.signal != nil {
-		signal.Stop(server.signal)
-		server.signal = nil
-	}
+// Close the hprose tcp server
+func (server *TCPServer) Close() {
 	if server.listener != nil {
 		listener := server.listener
 		server.listener = nil

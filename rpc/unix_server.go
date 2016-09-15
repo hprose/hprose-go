@@ -22,16 +22,15 @@ package rpc
 import (
 	"net"
 	"os"
-	"os/signal"
-	"syscall"
+	"strings"
 )
 
 // UnixServer is a hprose unix server
 type UnixServer struct {
 	*UnixService
+	*starter
 	uri      string
 	listener *net.UnixListener
-	signal   chan os.Signal
 }
 
 // NewUnixServer is the constructor for UnixServer
@@ -41,6 +40,7 @@ func NewUnixServer(uri string) (server *UnixServer) {
 	}
 	server = new(UnixServer)
 	server.UnixService = NewUnixService()
+	server.starter = &starter{server: server}
 	server.uri = uri
 	return
 }
@@ -73,32 +73,20 @@ func (server *UnixServer) Handle() (err error) {
 	return nil
 }
 
-// Start the hprose unix server
-func (server *UnixServer) Start() (err error) {
-	for {
-		if err = server.Handle(); err != nil {
-			return err
-		}
-		server.signal = make(chan os.Signal, 1)
-		signal.Notify(server.signal, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT, syscall.SIGSTOP, syscall.SIGKILL)
-		s := <-server.signal
-		server.Stop()
-		switch s {
-		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGSTOP, syscall.SIGINT, syscall.SIGKILL:
-			return nil
-		}
-	}
-}
-
-// Stop the hprose tcp server
-func (server *UnixServer) Stop() {
-	if server.signal != nil {
-		signal.Stop(server.signal)
-		server.signal = nil
-	}
+// Close the hprose unix server
+func (server *UnixServer) Close() {
 	if server.listener != nil {
 		listener := server.listener
 		server.listener = nil
 		listener.Close()
 	}
+}
+
+func (server *UnixServer) signal() chan os.Signal {
+	return server.c
+}
+
+func parseUnixURI(uri string) (scheme, path string) {
+	t := strings.SplitN(uri, ":", 2)
+	return t[0], t[1]
 }

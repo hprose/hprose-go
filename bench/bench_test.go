@@ -47,7 +47,7 @@ func BenchmarkHprose2(b *testing.B) {
 	client := hprose.NewClient(server.URI())
 	var ro *RO
 	client.UseService(&ro)
-	defer server.Stop()
+	defer server.Close()
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		ro.Hello("World")
