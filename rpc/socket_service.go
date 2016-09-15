@@ -109,14 +109,13 @@ type closeEvent2 interface {
 	OnClose(context *SocketContext) error
 }
 
-func fireAcceptEvent(
-	service *BaseService, context *SocketContext) (err error) {
+func fireAcceptEvent(event ServiceEvent, context *SocketContext) (err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			err = NewPanicError(e)
 		}
 	}()
-	switch event := service.Event.(type) {
+	switch event := event.(type) {
 	case acceptEvent:
 		event.OnAccept(context)
 	case acceptEvent2:
@@ -125,14 +124,13 @@ func fireAcceptEvent(
 	return err
 }
 
-func fireCloseEvent(
-	service *BaseService, context *SocketContext) (err error) {
+func fireCloseEvent(event ServiceEvent, context *SocketContext) (err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			err = NewPanicError(e)
 		}
 	}()
-	switch event := service.Event.(type) {
+	switch event := event.(type) {
 	case closeEvent:
 		event.OnClose(context)
 	case closeEvent2:
@@ -148,8 +146,15 @@ type connHandler struct {
 
 func serveConn(service *BaseService, conn net.Conn) {
 	context := NewSocketContext(nil, conn)
-	if err := fireAcceptEvent(service, context); err != nil {
-		service.fireErrorEvent(err, context)
+	event := service.Event
+	defer func() {
+		if e := recover(); e != nil {
+			err := NewPanicError(e)
+			fireErrorEvent(event, err, context)
+		}
+	}()
+	if err := fireAcceptEvent(event, context); err != nil {
+		fireErrorEvent(event, err, context)
 		return
 	}
 	handler := new(connHandler)
@@ -157,8 +162,8 @@ func serveConn(service *BaseService, conn net.Conn) {
 	handler.conn = conn
 	go handler.init()
 	handler.serve(service)
-	if err := fireCloseEvent(service, context); err != nil {
-		service.fireErrorEvent(err, context)
+	if err := fireCloseEvent(event, context); err != nil {
+		fireErrorEvent(event, err, context)
 	}
 }
 

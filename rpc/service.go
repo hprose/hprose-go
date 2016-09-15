@@ -12,7 +12,7 @@
  *                                                        *
  * hprose service for Go.                                 *
  *                                                        *
- * LastModified: Sep 14, 2016                             *
+ * LastModified: Sep 15, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -101,10 +101,9 @@ func NewBaseService() (service *BaseService) {
 	service.allTopics = make(map[string]map[string]*topic)
 	service.AddFunction("#", GetNextID, Options{Simple: true})
 	service.override.invokeHandler = func(
-		name string,
-		args []reflect.Value,
+		name string, args []reflect.Value,
 		context Context) (results []reflect.Value, err error) {
-		return service.invoke(name, args, context.(*ServiceContext))
+		return invoke(name, args, context.(*ServiceContext))
 	}
 	service.override.beforeFilterHandler = func(
 		request []byte, context Context) (response []byte, err error) {
@@ -224,9 +223,8 @@ func (service *BaseService) AddAfterFilterHandler(handler FilterHandler) Service
 	return service
 }
 
-func (service *BaseService) callService(
-	name string,
-	args []reflect.Value,
+func callService(
+	name string, args []reflect.Value,
 	context *ServiceContext) []reflect.Value {
 	remoteMethod := context.Method
 	function := remoteMethod.Function
@@ -244,47 +242,6 @@ func (service *BaseService) callService(
 		args = args[:n]
 	}
 	return function.Call(args)
-}
-
-func (service *BaseService) getErrorMessage(err error) string {
-	if panicError, ok := err.(*PanicError); ok {
-		if service.Debug {
-			return fmt.Sprintf("%v\r\n%s", panicError.Panic, panicError.Stack)
-		}
-		return panicError.Error()
-	}
-	return err.Error()
-}
-
-func (service *BaseService) fireErrorEvent(
-	e error, context Context) (err error) {
-	defer func() {
-		if e := recover(); e != nil {
-			err = NewPanicError(e)
-		}
-	}()
-	err = e
-	switch event := service.Event.(type) {
-	case sendErrorEvent:
-		event.OnSendError(err, context)
-	case sendErrorEvent2:
-		err = event.OnSendError(err, context)
-	}
-	return err
-}
-
-func (service *BaseService) sendError(err error, context Context) []byte {
-	err = service.fireErrorEvent(err, context)
-	w := io.NewWriter(true)
-	w.WriteByte(io.TagError)
-	w.WriteString(service.getErrorMessage(err))
-	return w.Bytes()
-}
-
-func (service *BaseService) endError(err error, context Context) []byte {
-	w := io.NewByteWriter(service.sendError(err, context))
-	w.WriteByte(io.TagEnd)
-	return w.Bytes()
 }
 
 func doOutput(
@@ -321,7 +278,34 @@ func doOutput(
 	return writer.Bytes()
 }
 
-func (service *BaseService) fireBeforeInvokeEvent(
+func getErrorMessage(err error, debug bool) string {
+	if panicError, ok := err.(*PanicError); ok {
+		if debug {
+			return fmt.Sprintf("%v\r\n%s", panicError.Panic, panicError.Stack)
+		}
+		return panicError.Error()
+	}
+	return err.Error()
+}
+
+func fireErrorEvent(event ServiceEvent, e error, context Context) (err error) {
+	defer func() {
+		if e := recover(); e != nil {
+			err = NewPanicError(e)
+		}
+	}()
+	err = e
+	switch event := event.(type) {
+	case sendErrorEvent:
+		event.OnSendError(err, context)
+	case sendErrorEvent2:
+		err = event.OnSendError(err, context)
+	}
+	return err
+}
+
+func fireBeforeInvokeEvent(
+	event ServiceEvent,
 	name string,
 	args []reflect.Value,
 	context *ServiceContext) (err error) {
@@ -330,7 +314,7 @@ func (service *BaseService) fireBeforeInvokeEvent(
 			err = NewPanicError(e)
 		}
 	}()
-	switch event := service.Event.(type) {
+	switch event := event.(type) {
 	case beforeInvokeEvent:
 		event.OnBeforeInvoke(name, args, context.ByRef, context)
 	case beforeInvokeEvent2:
@@ -339,7 +323,8 @@ func (service *BaseService) fireBeforeInvokeEvent(
 	return err
 }
 
-func (service *BaseService) fireAfterInvokeEvent(
+func fireAfterInvokeEvent(
+	event ServiceEvent,
 	name string,
 	args []reflect.Value,
 	results []reflect.Value,
@@ -349,7 +334,7 @@ func (service *BaseService) fireAfterInvokeEvent(
 			err = NewPanicError(e)
 		}
 	}()
-	switch event := service.Event.(type) {
+	switch event := event.(type) {
 	case afterInvokeEvent:
 		event.OnAfterInvoke(name, args, context.ByRef, results, context)
 	case afterInvokeEvent2:
@@ -358,29 +343,22 @@ func (service *BaseService) fireAfterInvokeEvent(
 	return err
 }
 
-func (service *BaseService) beforeInvoke(
-	name string,
-	args []reflect.Value,
-	context *ServiceContext) (response []byte, err error) {
-	err = service.fireBeforeInvokeEvent(name, args, context)
-	if err != nil {
-		return nil, err
-	}
-	var results []reflect.Value
-	results, err = service.handlerManager.invokeHandler(name, args, context)
-	if err != nil {
-		return nil, err
-	}
-	err = service.fireAfterInvokeEvent(name, args, results, context)
-	if err != nil {
-		return nil, err
-	}
-	return doOutput(args, results, context), nil
+func (service *BaseService) sendError(err error, context Context) []byte {
+	err = fireErrorEvent(service.Event, err, context)
+	w := io.NewWriter(true)
+	w.WriteByte(io.TagError)
+	w.WriteString(getErrorMessage(err, service.Debug))
+	return w.Bytes()
 }
 
-func (service *BaseService) invoke(
-	name string,
-	args []reflect.Value,
+func (service *BaseService) endError(err error, context Context) []byte {
+	w := io.NewByteWriter(service.sendError(err, context))
+	w.WriteByte(io.TagEnd)
+	return w.Bytes()
+}
+
+func invoke(
+	name string, args []reflect.Value,
 	context *ServiceContext) (results []reflect.Value, err error) {
 	defer func() {
 		if e := recover(); e != nil {
@@ -390,11 +368,11 @@ func (service *BaseService) invoke(
 	if context.Oneway {
 		go func() {
 			defer recover()
-			service.callService(name, args, context)
+			callService(name, args, context)
 		}()
 		return nil, nil
 	}
-	results = service.callService(name, args, context)
+	results = callService(name, args, context)
 	n := len(results)
 	if n == 0 {
 		return results, nil
@@ -406,7 +384,8 @@ func (service *BaseService) invoke(
 	return results, err
 }
 
-func (service *BaseService) readArguments(
+func readArguments(
+	fixer fixer,
 	reader *io.Reader,
 	method *Method,
 	context *ServiceContext) (args []reflect.Value) {
@@ -437,51 +416,32 @@ func (service *BaseService) readArguments(
 	}
 	reader.ReadSlice(args[:count])
 	if !ft.IsVariadic() && n > count {
-		service.FixArguments(args, context)
+		fixer.FixArguments(args, context)
 	}
 	return
 }
 
-func (service *BaseService) doInvoke(
-	reader *io.Reader,
-	context *ServiceContext) []byte {
-	var results [][]byte
-	for {
-		reader.Reset()
-		name := reader.ReadString()
-		alias := strings.ToLower(name)
-		method := service.RemoteMethods[alias]
-		tag := reader.CheckTags([]byte{io.TagList, io.TagEnd, io.TagCall})
-		var args []reflect.Value
-		if tag == io.TagList {
-			reader.Reset()
-			args = service.readArguments(reader, method, context)
-			tag = reader.CheckTags([]byte{io.TagTrue, io.TagEnd, io.TagCall})
-			if tag == io.TagTrue {
-				context.ByRef = true
-				tag = reader.CheckTags([]byte{io.TagEnd, io.TagCall})
-			}
-		}
-		if method == nil {
-			method = service.RemoteMethods["*"]
-			context.IsMissingMethod = true
-		}
-		if method == nil {
-			err := errors.New("Can't find this method " + name)
-			results = append(results, service.sendError(err, context))
-		} else {
-			context.Method = method
-			result, err := service.beforeInvoke(name, args, context)
-			if err != nil {
-				results = append(results, service.sendError(err, context))
-			} else {
-				results = append(results, result)
-			}
-		}
-		if tag != io.TagCall {
-			break
-		}
+func (service *BaseService) beforeInvoke(
+	name string,
+	args []reflect.Value,
+	context *ServiceContext) (response []byte, err error) {
+	err = fireBeforeInvokeEvent(service.Event, name, args, context)
+	if err != nil {
+		return nil, err
 	}
+	var results []reflect.Value
+	results, err = service.handlerManager.invokeHandler(name, args, context)
+	if err != nil {
+		return nil, err
+	}
+	err = fireAfterInvokeEvent(service.Event, name, args, results, context)
+	if err != nil {
+		return nil, err
+	}
+	return doOutput(args, results, context), nil
+}
+
+func mergeResult(results [][]byte) []byte {
 	n := len(results)
 	if n == 1 {
 		return append(results[0], io.TagEnd)
@@ -492,6 +452,53 @@ func (service *BaseService) doInvoke(
 	}
 	writer.WriteByte(io.TagEnd)
 	return writer.Bytes()
+}
+
+func (service *BaseService) doSingleInvoke(
+	reader *io.Reader, context *ServiceContext) (result []byte, tag byte) {
+	name := reader.ReadString()
+	alias := strings.ToLower(name)
+	method := service.RemoteMethods[alias]
+	tag = reader.CheckTags([]byte{io.TagList, io.TagEnd, io.TagCall})
+	var args []reflect.Value
+	if tag == io.TagList {
+		reader.Reset()
+		args = readArguments(service.fixer, reader, method, context)
+		tag = reader.CheckTags([]byte{io.TagTrue, io.TagEnd, io.TagCall})
+		if tag == io.TagTrue {
+			context.ByRef = true
+			tag = reader.CheckTags([]byte{io.TagEnd, io.TagCall})
+		}
+	}
+	if method == nil {
+		method = service.RemoteMethods["*"]
+		context.IsMissingMethod = true
+	}
+	if method == nil {
+		err := errors.New("Can't find this method " + name)
+		return service.sendError(err, context), tag
+	}
+	context.Method = method
+	result, err := service.beforeInvoke(name, args, context)
+	if err != nil {
+		return service.sendError(err, context), tag
+	}
+	return result, tag
+}
+
+func (service *BaseService) doInvoke(
+	reader *io.Reader,
+	context *ServiceContext) []byte {
+	var results [][]byte
+	for {
+		result, tag := service.doSingleInvoke(reader, context)
+		results = append(results, result)
+		if tag != io.TagCall {
+			break
+		}
+		reader.Reset()
+	}
+	return mergeResult(results)
 }
 
 func (service *BaseService) doFunctionList(context *ServiceContext) []byte {
