@@ -60,7 +60,7 @@ type Args struct {
 
 type Hello int
 
-func (this *Hello) Hello(args *Args, result *string) error {
+func (*Hello) Hello(args *Args, result *string) error {
 	*result = "Hello " + args.Name + "!"
 	return nil
 }
