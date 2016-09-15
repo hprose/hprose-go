@@ -12,14 +12,17 @@
  *                                                        *
  * hprose unix service for Go.                            *
  *                                                        *
- * LastModified: Sep 14, 2016                             *
+ * LastModified: Sep 15, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 
 package rpc
 
-import "net"
+import (
+	"net"
+	"time"
+)
 
 // UnixService is the hprose unix service
 type UnixService struct {
@@ -45,10 +48,17 @@ func (service *UnixService) ServeUnixConn(conn *net.UnixConn) {
 // until the server is stop. The caller typically invokes ServeUnix in a go
 // statement.
 func (service *UnixService) ServeUnix(listener *net.UnixListener) {
+	var tempDelay time.Duration // how long to sleep on accept failure
 	for {
 		conn, err := listener.AcceptUnix()
 		if err != nil {
-			break
+			if ne, ok := err.(net.Error); ok && ne.Temporary() {
+				tempDelay = nextTempDelay(tempDelay)
+				fireErrorEvent(service.Event, err, nil)
+				time.Sleep(tempDelay)
+				continue
+			}
+			return
 		}
 		go service.ServeUnixConn(conn)
 	}

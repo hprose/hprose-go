@@ -69,11 +69,19 @@ func (service *TCPService) ServeTCPConn(conn *net.TCPConn) {
 // until the server is stop. The caller typically invokes ServeTCP in a go
 // statement.
 func (service *TCPService) ServeTCP(listener *net.TCPListener) {
+	var tempDelay time.Duration // how long to sleep on accept failure
 	for {
 		conn, err := listener.AcceptTCP()
 		if err != nil {
-			break
+			if ne, ok := err.(net.Error); ok && ne.Temporary() {
+				tempDelay = nextTempDelay(tempDelay)
+				fireErrorEvent(service.Event, err, nil)
+				time.Sleep(tempDelay)
+				continue
+			}
+			return
 		}
+		tempDelay = 0
 		go service.ServeTCPConn(conn)
 	}
 }

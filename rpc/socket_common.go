@@ -19,7 +19,10 @@
 
 package rpc
 
-import "net"
+import (
+	"net"
+	"time"
+)
 
 type packet struct {
 	fullDuplex bool
@@ -67,4 +70,16 @@ func sendData(conn net.Conn, data packet) (err error) {
 		_, err = conn.Write(data.body[p:])
 	}
 	return err
+}
+
+func nextTempDelay(tempDelay time.Duration) time.Duration {
+	if tempDelay == 0 {
+		tempDelay = 5 * time.Millisecond
+	} else {
+		tempDelay *= 2
+	}
+	if max := 1 * time.Second; tempDelay > max {
+		tempDelay = max
+	}
+	return tempDelay
 }
