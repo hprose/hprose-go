@@ -133,34 +133,34 @@ func GetIntBytes(buf []byte, i int64) []byte {
 	return buf[off:]
 }
 
-// GetUintBytes returns the []byte representation of i in base 10.
+// GetUintBytes returns the []byte representation of u in base 10.
 // buf length must be greater than or equal to 20
-func GetUintBytes(buf []byte, i uint64) []byte {
-	if i == 0 {
+func GetUintBytes(buf []byte, u uint64) []byte {
+	if u == 0 {
 		return []byte{'0'}
 	}
 	off := len(buf)
 	var q, p uint64
-	for i >= 100 {
-		q = i / 1000
-		p = (i - (q * 1000)) * 3
-		i = q
+	for u >= 100 {
+		q = u / 1000
+		p = (u - (q * 1000)) * 3
+		u = q
 		off -= 3
 		buf[off] = digit3[p]
 		buf[off+1] = digit3[p+1]
 		buf[off+2] = digit3[p+2]
 	}
-	if i >= 10 {
-		q = i / 100
-		p = (i - (q * 100)) * 2
-		i = q
+	if u >= 10 {
+		q = u / 100
+		p = (u - (q * 100)) * 2
+		u = q
 		off -= 2
 		buf[off] = digit2[p]
 		buf[off+1] = digit2[p+1]
 	}
-	if i > 0 {
+	if u > 0 {
 		off--
-		buf[off] = digits[i]
+		buf[off] = digits[u]
 	}
 	return buf[off:]
 }
