@@ -135,14 +135,16 @@ func (service *HTTPService) sendHeader(context *HTTPContext) (err error) {
 	header := context.Response.Header()
 	header.Set("Content-Type", "text/plain")
 	if service.P3P {
-		header.Set("P3P", `CP="CAO DSP COR CUR ADM DEV TAI PSA PSD IVAi IVDi `+
-			`CONi TELo OTPi OUR DELi SAMi OTRi UNRi PUBi IND PHY ONL `+
-			`UNI PUR FIN COM NAV INT DEM CNT STA POL HEA PRE GOV"`)
+		header.Set("P3P",
+			`CP="CAO DSP COR CUR ADM DEV TAI PSA PSD IVAi IVDi `+
+				`CONi TELo OTPi OUR DELi SAMi OTRi UNRi PUBi IND PHY ONL `+
+				`UNI PUR FIN COM NAV INT DEM CNT STA POL HEA PRE GOV"`)
 	}
 	if service.CrossDomain {
 		origin := context.Request.Header.Get("origin")
 		if origin != "" && origin != "null" {
-			if len(service.accessControlAllowOrigins) == 0 || service.accessControlAllowOrigins[origin] {
+			if len(service.accessControlAllowOrigins) == 0 ||
+				service.accessControlAllowOrigins[origin] {
 				header.Set("Access-Control-Allow-Origin", origin)
 				header.Set("Access-Control-Allow-Credentials", "true")
 			}
