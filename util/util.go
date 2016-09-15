@@ -12,7 +12,7 @@
  *                                                        *
  * some util for Go.                                      *
  *                                                        *
- * LastModified: Sep 14, 2016                             *
+ * LastModified: Sep 15, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -163,6 +163,71 @@ func GetUintBytes(buf []byte, i uint64) []byte {
 		buf[off] = digits[i]
 	}
 	return buf[off:]
+}
+
+// GetDateBytes returns the []byte representation of year, month and day.
+// The format of []byte returned is 20060102
+// buf length must be greater than or equal to 8
+func GetDateBytes(buf []byte, year int, month int, day int) []byte {
+	q := year / 100
+	p := q << 1
+	buf[0] = digit2[p]
+	buf[1] = digit2[p+1]
+	p = (year - q*100) << 1
+	buf[2] = digit2[p]
+	buf[3] = digit2[p+1]
+	p = month << 1
+	buf[4] = digit2[p]
+	buf[5] = digit2[p+1]
+	p = day << 1
+	buf[6] = digit2[p]
+	buf[7] = digit2[p+1]
+	return buf[:8]
+}
+
+// GetTimeBytes returns the []byte representation of hour, min and sec.
+// The format of []byte returned is 150405
+// buf length must be greater than or equal to 6
+func GetTimeBytes(buf []byte, hour int, min int, sec int) []byte {
+	p := hour << 1
+	buf[0] = digit2[p]
+	buf[1] = digit2[p+1]
+	p = min << 1
+	buf[2] = digit2[p]
+	buf[3] = digit2[p+1]
+	p = sec << 1
+	buf[4] = digit2[p]
+	buf[5] = digit2[p+1]
+	return buf[:6]
+}
+
+// GetNsecBytes returns the []byte representation of nsec.
+// The format of []byte returned is 123, 123456 or 123456789
+// buf length must be greater than or equal to 9
+func GetNsecBytes(buf []byte, nsec int) []byte {
+	q := nsec / 1000000
+	p := q * 3
+	nsec = nsec - q*1000000
+	buf[0] = digit3[p]
+	buf[1] = digit3[p+1]
+	buf[2] = digit3[p+2]
+	if nsec == 0 {
+		return buf[:3]
+	}
+	q = nsec / 1000
+	p = q * 3
+	nsec = nsec - q*1000
+	buf[3] = digit3[p]
+	buf[4] = digit3[p+1]
+	buf[5] = digit3[p+2]
+	if nsec == 0 {
+		return buf[:6]
+	}
+	p = nsec * 3
+	buf[6] = digit3[p]
+	buf[7] = digit3[p+1]
+	buf[8] = digit3[p+2]
+	return buf[:9]
 }
 
 // UTF16Length return the UTF16 length of str.

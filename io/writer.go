@@ -12,7 +12,7 @@
  *                                                        *
  * hprose writer for Go.                                  *
  *                                                        *
- * LastModified: Sep 14, 2016                             *
+ * LastModified: Sep 15, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -204,6 +204,20 @@ func (w *Writer) WriteBigFloat(bf *big.Float) {
 	w.writeByte(TagSemicolon)
 }
 
+func writeDate(w *Writer, buf []byte, year, month, day int) {
+	w.writeByte(TagDate)
+	w.write(util.GetDateBytes(buf, year, int(month), day))
+}
+
+func writeTime(w *Writer, buf []byte, hour, min, sec, nsec int) {
+	w.writeByte(TagTime)
+	w.write(util.GetTimeBytes(buf, hour, min, sec))
+	if nsec > 0 {
+		w.writeByte(TagPoint)
+		w.write(util.GetNsecBytes(buf, nsec))
+	}
+}
+
 // WriteTime to the writer
 func (w *Writer) WriteTime(t *time.Time) {
 	ptr := unsafe.Pointer(t)
@@ -214,26 +228,20 @@ func (w *Writer) WriteTime(t *time.Time) {
 	year, month, day := t.Date()
 	hour, min, sec := t.Clock()
 	nsec := t.Nanosecond()
-	tag := TagSemicolon
-	if t.Location() == time.UTC {
-		tag = TagUTC
-	}
-	var buf [27]byte
+	buf := make([]byte, 9)
 	if hour == 0 && min == 0 && sec == 0 && nsec == 0 {
-		datelen := formatDate(buf[:], year, int(month), day)
-		buf[datelen] = tag
-		w.write(buf[:datelen+1])
+		writeDate(w, buf, year, int(month), day)
 	} else if year == 1970 && month == 1 && day == 1 {
-		timelen := formatTime(buf[:], hour, min, sec, nsec)
-		buf[timelen] = tag
-		w.write(buf[:timelen+1])
+		writeTime(w, buf, hour, min, sec, nsec)
 	} else {
-		datelen := formatDate(buf[:], year, int(month), day)
-		timelen := formatTime(buf[datelen:], hour, min, sec, nsec)
-		datetimelen := datelen + timelen
-		buf[datetimelen] = tag
-		w.write(buf[:datetimelen+1])
+		writeDate(w, buf, year, int(month), day)
+		writeTime(w, buf, hour, min, sec, nsec)
 	}
+	loc := TagSemicolon
+	if t.Location() == time.UTC {
+		loc = TagUTC
+	}
+	w.writeByte(loc)
 }
 
 // WriteList to the writer
