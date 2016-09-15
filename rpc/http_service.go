@@ -167,10 +167,9 @@ func readAllFromHTTPRequest(request *http.Request) ([]byte, error) {
 	return nil, nil
 }
 
-// Serve is the hprose http handler method with the userData
-func (service *HTTPService) Serve(
-	response http.ResponseWriter, request *http.Request,
-	userData map[string]interface{}) {
+// ServeHTTP is the hprose http handler method
+func (service *HTTPService) ServeHTTP(
+	response http.ResponseWriter, request *http.Request) {
 	if service.clientAccessPolicyXMLHandler(response, request) ||
 		service.crossDomainXMLHandler(response, request) {
 		return
@@ -180,11 +179,6 @@ func (service *HTTPService) Serve(
 	context.ServiceContext.TransportContext = context
 	context.Response = response
 	context.Request = request
-	if userData != nil {
-		for k, v := range userData {
-			context.SetInterface(k, v)
-		}
-	}
 	var resp []byte
 	err := service.sendHeader(context)
 	if err == nil {
@@ -207,10 +201,4 @@ func (service *HTTPService) Serve(
 	}
 	response.Header().Set("Content-Length", util.Itoa(len(resp)))
 	response.Write(resp)
-}
-
-// ServeHTTP is the hprose http handler method
-func (service *HTTPService) ServeHTTP(
-	response http.ResponseWriter, request *http.Request) {
-	service.Serve(response, request, nil)
 }

@@ -70,16 +70,31 @@ func newHandlerManager() (hm *handlerManager) {
 		name string,
 		args []reflect.Value,
 		context Context) (results []reflect.Value, err error) {
+		defer func() {
+			if e := recover(); e != nil {
+				err = NewPanicError(e)
+			}
+		}()
 		return hm.override.invokeHandler(name, args, context)
 	}
 	hm.defaultBeforeFilterHandler = func(
 		request []byte,
 		context Context) (response []byte, err error) {
+		defer func() {
+			if e := recover(); e != nil {
+				err = NewPanicError(e)
+			}
+		}()
 		return hm.override.beforeFilterHandler(request, context)
 	}
 	hm.defaultAfterFilterHandler = func(
 		request []byte,
 		context Context) (response []byte, err error) {
+		defer func() {
+			if e := recover(); e != nil {
+				err = NewPanicError(e)
+			}
+		}()
 		return hm.override.afterFilterHandler(request, context)
 	}
 	hm.invokeHandler = hm.defaultInvokeHandler

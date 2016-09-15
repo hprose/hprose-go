@@ -154,9 +154,8 @@ func (service *FastHTTPService) sendHeader(
 	return nil
 }
 
-// Serve is the hprose fasthttp handler method with the userData
-func (service *FastHTTPService) Serve(
-	ctx *fasthttp.RequestCtx, userData map[string]interface{}) {
+// ServeFastHTTP is the hprose fasthttp handler method
+func (service *FastHTTPService) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
 	if service.clientAccessPolicyXMLHandler(ctx) ||
 		service.crossDomainXMLHandler(ctx) {
 		return
@@ -165,11 +164,6 @@ func (service *FastHTTPService) Serve(
 	context.ServiceContext = NewServiceContext(nil)
 	context.ServiceContext.TransportContext = context
 	context.RequestCtx = ctx
-	if userData != nil {
-		for k, v := range userData {
-			context.SetInterface(k, v)
-		}
-	}
 	var resp []byte
 	if err := service.sendHeader(context); err == nil {
 		switch util.ByteString(ctx.Method()) {
@@ -188,9 +182,4 @@ func (service *FastHTTPService) Serve(
 	context.RequestCtx = nil
 	ctx.Response.Header.Set("Content-Length", util.Itoa(len(resp)))
 	ctx.SetBody(resp)
-}
-
-// ServeFastHTTP is the hprose fasthttp handler method
-func (service *FastHTTPService) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
-	service.Serve(ctx, nil)
 }
