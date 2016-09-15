@@ -199,10 +199,19 @@ func (r *Reader) ReadBytesWithoutTag() (b []byte) {
 
 // ReadDateTimeWithoutTag from the reader
 func (r *Reader) ReadDateTimeWithoutTag() (dt time.Time) {
-	year, month, day, tag := readDate(&r.ByteReader)
+	year := r.read4Digit()
+	month := r.read2Digit()
+	day := r.read2Digit()
+	tag := r.readByte()
 	var hour, min, sec, nsec int
 	if tag == TagTime {
-		hour, min, sec, nsec, tag = readTime(&r.ByteReader)
+		hour = r.read2Digit()
+		min = r.read2Digit()
+		sec = r.read2Digit()
+		tag = r.readByte()
+		if tag == TagPoint {
+			nsec, tag = readNsec(&r.ByteReader)
+		}
 	}
 	var loc *time.Location
 	if tag == TagUTC {
@@ -219,7 +228,14 @@ func (r *Reader) ReadDateTimeWithoutTag() (dt time.Time) {
 
 // ReadTimeWithoutTag from the reader
 func (r *Reader) ReadTimeWithoutTag() (t time.Time) {
-	hour, min, sec, nsec, tag := readTime(&r.ByteReader)
+	hour := r.read2Digit()
+	min := r.read2Digit()
+	sec := r.read2Digit()
+	tag := r.readByte()
+	var nsec int
+	if tag == TagPoint {
+		nsec, tag = readNsec(&r.ByteReader)
+	}
 	var loc *time.Location
 	if tag == TagUTC {
 		loc = time.UTC

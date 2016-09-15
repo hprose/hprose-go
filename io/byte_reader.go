@@ -111,6 +111,18 @@ func (r *ByteReader) Next(n int) (data []byte) {
 	return
 }
 
+func (r *ByteReader) read2Digit() int {
+	n := int(r.readByte() - '0')
+	return n*10 + int(r.readByte()-'0')
+}
+
+func (r *ByteReader) read4Digit() int {
+	n := int(r.readByte() - '0')
+	n = n*10 + int(r.readByte()-'0')
+	n = n*10 + int(r.readByte()-'0')
+	return n*10 + int(r.readByte()-'0')
+}
+
 // ReadInt64 from ByteReader
 func ReadInt64(r *ByteReader, tag byte) (i int64) {
 	i = 0
@@ -277,49 +289,23 @@ func readBytes(r *ByteReader) (result []byte) {
 	return
 }
 
-func read2Digit(r *ByteReader) int {
-	n := int(r.readByte() - '0')
-	return n*10 + int(r.readByte()-'0')
-}
-
-func read4Digit(r *ByteReader) int {
-	n := int(r.readByte() - '0')
-	n = n*10 + int(r.readByte()-'0')
-	n = n*10 + int(r.readByte()-'0')
-	return n*10 + int(r.readByte()-'0')
-}
-
-func readTime(r *ByteReader) (hour int, min int, sec int, nsec int, tag byte) {
-	hour = read2Digit(r)
-	min = read2Digit(r)
-	sec = read2Digit(r)
+func readNsec(r *ByteReader) (nsec int, tag byte) {
+	nsec = int(r.readByte() - '0')
+	nsec = nsec*10 + int(r.readByte()-'0')
+	nsec = nsec*10 + int(r.readByte()-'0')
+	nsec *= 1000000
 	tag = r.readByte()
-	if tag == TagPoint {
-		nsec = int(r.readByte() - '0')
-		nsec = nsec*10 + int(r.readByte()-'0')
-		nsec = nsec*10 + int(r.readByte()-'0')
-		nsec *= 1000000
+	if (tag >= '0') && (tag <= '9') {
+		nsec += int(tag-'0') * 100000
+		nsec += int(r.readByte()-'0') * 10000
+		nsec += int(r.readByte()-'0') * 1000
 		tag = r.readByte()
 		if (tag >= '0') && (tag <= '9') {
-			nsec += int(tag-'0') * 100000
-			nsec += int(r.readByte()-'0') * 10000
-			nsec += int(r.readByte()-'0') * 1000
+			nsec += int(tag-'0') * 100
+			nsec += int(r.readByte()-'0') * 10
+			nsec += int(r.readByte() - '0')
 			tag = r.readByte()
-			if (tag >= '0') && (tag <= '9') {
-				nsec += int(tag-'0') * 100
-				nsec += int(r.readByte()-'0') * 10
-				nsec += int(r.readByte() - '0')
-				tag = r.readByte()
-			}
 		}
 	}
-	return
-}
-
-func readDate(r *ByteReader) (year int, month int, day int, tag byte) {
-	year = read4Digit(r)
-	month = read2Digit(r)
-	day = read2Digit(r)
-	tag = r.readByte()
 	return
 }
