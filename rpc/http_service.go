@@ -280,9 +280,8 @@ func (service *HTTPService) Serve(
 				response.WriteHeader(403)
 			}
 		case "POST":
-			req, err := readAllFromHTTPRequest(request)
-			request.Body.Close()
-			if err == nil {
+			var req []byte
+			if req, err = readAllFromHTTPRequest(request); err == nil {
 				resp, err = service.Handle(req, context.ServiceContext)
 			}
 		}
