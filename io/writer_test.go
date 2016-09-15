@@ -505,14 +505,14 @@ func TestSerializeSlice(t *testing.T) {
 	}
 }
 
-func TestWriteBoolSlice(t *testing.T) {
+func TestSerializeBoolSlice(t *testing.T) {
 	w := NewWriter(true)
 	testdata := map[*[]bool]string{
 		&[]bool{true, false, true}: "a3{tft}",
 		&[]bool{}:                  "a{}",
 	}
 	for k, v := range testdata {
-		w.WriteBoolSlice(*k)
+		w.Serialize(*k)
 		if w.String() != v {
 			t.Error(w.String())
 		}
@@ -520,14 +520,14 @@ func TestWriteBoolSlice(t *testing.T) {
 	}
 }
 
-func TestWriteIntSlice(t *testing.T) {
+func TestSerializeIntSlice(t *testing.T) {
 	w := NewWriter(true)
 	testdata := map[*[]int]string{
 		&[]int{1, 2, 3}: "a3{123}",
 		&[]int{}:        "a{}",
 	}
 	for k, v := range testdata {
-		w.WriteIntSlice(*k)
+		w.Serialize(*k)
 		if w.String() != v {
 			t.Error(w.String())
 		}
@@ -535,14 +535,14 @@ func TestWriteIntSlice(t *testing.T) {
 	}
 }
 
-func TestWriteInt8Slice(t *testing.T) {
+func TestSerializeInt8Slice(t *testing.T) {
 	w := NewWriter(true)
 	testdata := map[*[]int8]string{
 		&[]int8{1, 2, 3}: "a3{123}",
 		&[]int8{}:        "a{}",
 	}
 	for k, v := range testdata {
-		w.WriteInt8Slice(*k)
+		w.Serialize(*k)
 		if w.String() != v {
 			t.Error(w.String())
 		}
@@ -550,14 +550,14 @@ func TestWriteInt8Slice(t *testing.T) {
 	}
 }
 
-func TestWriteInt16Slice(t *testing.T) {
+func TestSerializeInt16Slice(t *testing.T) {
 	w := NewWriter(true)
 	testdata := map[*[]int16]string{
 		&[]int16{1, 2, 3}: "a3{123}",
 		&[]int16{}:        "a{}",
 	}
 	for k, v := range testdata {
-		w.WriteInt16Slice(*k)
+		w.Serialize(*k)
 		if w.String() != v {
 			t.Error(w.String())
 		}
@@ -565,14 +565,14 @@ func TestWriteInt16Slice(t *testing.T) {
 	}
 }
 
-func TestWriteInt32Slice(t *testing.T) {
+func TestSerializeInt32Slice(t *testing.T) {
 	w := NewWriter(true)
 	testdata := map[*[]int32]string{
 		&[]int32{1, 2, 3}: "a3{123}",
 		&[]int32{}:        "a{}",
 	}
 	for k, v := range testdata {
-		w.WriteInt32Slice(*k)
+		w.Serialize(*k)
 		if w.String() != v {
 			t.Error(w.String())
 		}
@@ -580,14 +580,14 @@ func TestWriteInt32Slice(t *testing.T) {
 	}
 }
 
-func TestWriteInt64Slice(t *testing.T) {
+func TestSerializeInt64Slice(t *testing.T) {
 	w := NewWriter(true)
 	testdata := map[*[]int64]string{
 		&[]int64{1, 2, 3}: "a3{123}",
 		&[]int64{}:        "a{}",
 	}
 	for k, v := range testdata {
-		w.WriteInt64Slice(*k)
+		w.Serialize(*k)
 		if w.String() != v {
 			t.Error(w.String())
 		}
@@ -595,14 +595,14 @@ func TestWriteInt64Slice(t *testing.T) {
 	}
 }
 
-func TestWriteUintSlice(t *testing.T) {
+func TestSerializeUintSlice(t *testing.T) {
 	w := NewWriter(true)
 	testdata := map[*[]uint]string{
 		&[]uint{1, 2, 3}: "a3{123}",
 		&[]uint{}:        "a{}",
 	}
 	for k, v := range testdata {
-		w.WriteUintSlice(*k)
+		w.Serialize(*k)
 		if w.String() != v {
 			t.Error(w.String())
 		}
@@ -610,14 +610,14 @@ func TestWriteUintSlice(t *testing.T) {
 	}
 }
 
-func TestWriteUint8Slice(t *testing.T) {
+func TestSerializeUint8Slice(t *testing.T) {
 	w := NewWriter(true)
 	testdata := map[*[]uint8]string{
-		&[]uint8{1, 2, 3}: "a3{123}",
-		&[]uint8{}:        "a{}",
+		&[]uint8{1, 2, 3}: `b3"` + string([]byte{1, 2, 3}) + `"`,
+		&[]uint8{}:        `b""`,
 	}
 	for k, v := range testdata {
-		w.WriteUint8Slice(*k)
+		w.Serialize(*k)
 		if w.String() != v {
 			t.Error(w.String())
 		}
@@ -625,14 +625,14 @@ func TestWriteUint8Slice(t *testing.T) {
 	}
 }
 
-func TestWriteUint16Slice(t *testing.T) {
+func TestSerializeUint16Slice(t *testing.T) {
 	w := NewWriter(true)
 	testdata := map[*[]uint16]string{
 		&[]uint16{1, 2, 3}: "a3{123}",
 		&[]uint16{}:        "a{}",
 	}
 	for k, v := range testdata {
-		w.WriteUint16Slice(*k)
+		w.Serialize(*k)
 		if w.String() != v {
 			t.Error(w.String())
 		}
@@ -640,14 +640,14 @@ func TestWriteUint16Slice(t *testing.T) {
 	}
 }
 
-func TestWriteUint32Slice(t *testing.T) {
+func TestSerializeUint32Slice(t *testing.T) {
 	w := NewWriter(true)
 	testdata := map[*[]uint32]string{
 		&[]uint32{1, 2, 3}: "a3{123}",
 		&[]uint32{}:        "a{}",
 	}
 	for k, v := range testdata {
-		w.WriteUint32Slice(*k)
+		w.Serialize(*k)
 		if w.String() != v {
 			t.Error(w.String())
 		}
@@ -655,14 +655,14 @@ func TestWriteUint32Slice(t *testing.T) {
 	}
 }
 
-func TestWriteUint64Slice(t *testing.T) {
+func TestSerializeUint64Slice(t *testing.T) {
 	w := NewWriter(true)
 	testdata := map[*[]uint64]string{
 		&[]uint64{1, 2, 3}: "a3{123}",
 		&[]uint64{}:        "a{}",
 	}
 	for k, v := range testdata {
-		w.WriteUint64Slice(*k)
+		w.Serialize(*k)
 		if w.String() != v {
 			t.Error(w.String())
 		}
@@ -670,14 +670,14 @@ func TestWriteUint64Slice(t *testing.T) {
 	}
 }
 
-func TestWriteUintptrSlice(t *testing.T) {
+func TestSerializeUintptrSlice(t *testing.T) {
 	w := NewWriter(true)
 	testdata := map[*[]uintptr]string{
 		&[]uintptr{1, 2, 3}: "a3{123}",
 		&[]uintptr{}:        "a{}",
 	}
 	for k, v := range testdata {
-		w.WriteUintptrSlice(*k)
+		w.Serialize(*k)
 		if w.String() != v {
 			t.Error(w.String())
 		}
@@ -685,14 +685,14 @@ func TestWriteUintptrSlice(t *testing.T) {
 	}
 }
 
-func TestWriteFloat32Slice(t *testing.T) {
+func TestSerializeFloat32Slice(t *testing.T) {
 	w := NewWriter(true)
 	testdata := map[*[]float32]string{
 		&[]float32{1, 2, 3}: "a3{d1;d2;d3;}",
 		&[]float32{}:        "a{}",
 	}
 	for k, v := range testdata {
-		w.WriteFloat32Slice(*k)
+		w.Serialize(*k)
 		if w.String() != v {
 			t.Error(w.String())
 		}
@@ -700,14 +700,14 @@ func TestWriteFloat32Slice(t *testing.T) {
 	}
 }
 
-func TestWriteFloat64Slice(t *testing.T) {
+func TestSerializeFloat64Slice(t *testing.T) {
 	w := NewWriter(true)
 	testdata := map[*[]float64]string{
 		&[]float64{1, 2, 3}: "a3{d1;d2;d3;}",
 		&[]float64{}:        "a{}",
 	}
 	for k, v := range testdata {
-		w.WriteFloat64Slice(*k)
+		w.Serialize(*k)
 		if w.String() != v {
 			t.Error(w.String())
 		}
@@ -715,14 +715,14 @@ func TestWriteFloat64Slice(t *testing.T) {
 	}
 }
 
-func TestWriteComplex64Slice(t *testing.T) {
+func TestSerializeComplex64Slice(t *testing.T) {
 	w := NewWriter(true)
 	testdata := map[*[]complex64]string{
 		&[]complex64{complex(0, 0), complex(1, 0), complex(0, 1)}: "a3{d0;d1;a2{d0;d1;}}",
 		&[]complex64{}: "a{}",
 	}
 	for k, v := range testdata {
-		w.WriteComplex64Slice(*k)
+		w.Serialize(*k)
 		if w.String() != v {
 			t.Error(w.String())
 		}
@@ -730,14 +730,14 @@ func TestWriteComplex64Slice(t *testing.T) {
 	}
 }
 
-func TestWriteComplex128Slice(t *testing.T) {
+func TestSerializeComplex128Slice(t *testing.T) {
 	w := NewWriter(true)
 	testdata := map[*[]complex128]string{
 		&[]complex128{complex(0, 0), complex(1, 0), complex(0, 1)}: "a3{d0;d1;a2{d0;d1;}}",
 		&[]complex128{}:                                            "a{}",
 	}
 	for k, v := range testdata {
-		w.WriteComplex128Slice(*k)
+		w.Serialize(*k)
 		if w.String() != v {
 			t.Error(w.String())
 		}
@@ -745,14 +745,14 @@ func TestWriteComplex128Slice(t *testing.T) {
 	}
 }
 
-func TestWriteStringSlice(t *testing.T) {
+func TestSerializeStringSlice(t *testing.T) {
 	w := NewWriter(true)
 	testdata := map[*[]string]string{
 		&[]string{"", "π", "hello"}: `a3{euπs5"hello"}`,
 		&[]string{}:                 "a{}",
 	}
 	for k, v := range testdata {
-		w.WriteStringSlice(*k)
+		w.Serialize(*k)
 		if w.String() != v {
 			t.Error(w.String())
 		}
@@ -760,14 +760,14 @@ func TestWriteStringSlice(t *testing.T) {
 	}
 }
 
-func TestWriteBytesSlice(t *testing.T) {
+func TestSerializeBytesSlice(t *testing.T) {
 	w := NewWriter(true)
 	testdata := map[*[][]byte]string{
 		&[][]byte{[]byte(""), []byte("π"), []byte("hello")}: `a3{b""b2"π"b5"hello"}`,
 		&[][]byte{}: "a{}",
 	}
 	for k, v := range testdata {
-		w.WriteBytesSlice(*k)
+		w.Serialize(*k)
 		if w.String() != v {
 			t.Error(w.String())
 		}
@@ -788,14 +788,6 @@ func BenchmarkSerializeIntSlice(b *testing.B) {
 	slice := []int{0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 1, 2, 3, 4, 0, 1, 2, 3, 4}
 	for i := 0; i < b.N; i++ {
 		w.Serialize(slice)
-	}
-}
-
-func BenchmarkWriteIntSlice(b *testing.B) {
-	w := NewWriter(true)
-	slice := []int{0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 1, 2, 3, 4, 0, 1, 2, 3, 4}
-	for i := 0; i < b.N; i++ {
-		w.WriteIntSlice(slice)
 	}
 }
 
