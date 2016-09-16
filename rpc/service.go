@@ -12,7 +12,7 @@
  *                                                        *
  * hprose service for Go.                                 *
  *                                                        *
- * LastModified: Sep 15, 2016                             *
+ * LastModified: Sep 16, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -40,6 +40,7 @@ type Service interface {
 	AddInstanceMethods(obj interface{}, options Options) Service
 	AddAllMethods(obj interface{}, options Options) Service
 	AddMissingMethod(method MissingMethod, options Options) Service
+	AddNetRPCMethods(rcvr interface{}, options Options) Service
 	Remove(name string) Service
 	Filter() Filter
 	FilterByIndex(index int) Filter
@@ -163,6 +164,12 @@ func (service *BaseService) AddAllMethods(obj interface{}, options Options) Serv
 // all methods not explicitly published will be redirected to this method.
 func (service *BaseService) AddMissingMethod(method MissingMethod, options Options) Service {
 	service.methodManager.AddMissingMethod(method, options)
+	return service
+}
+
+// AddNetRPCMethods is used for publishing methods defined for net/rpc.
+func (service *BaseService) AddNetRPCMethods(rcvr interface{}, options Options) Service {
+	service.methodManager.AddNetRPCMethods(rcvr, options)
 	return service
 }
 

@@ -12,7 +12,7 @@
  *                                                        *
  * hprose method manager for Go.                          *
  *                                                        *
- * LastModified: Sep 13, 2016                             *
+ * LastModified: Sep 16, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -246,4 +246,85 @@ func (mm *methodManager) Remove(name string) {
 		}
 	}
 	delete(mm.RemoteMethods, name)
+}
+
+// AddNetRPCMethods is used for publishing methods defined for net/rpc.
+//
+// For example:
+//
+//		package server
+//
+//		type Args struct {
+//			A, B int
+//		}
+//
+//		type Quotient struct {
+//			Quo, Rem int
+//		}
+//
+//		type Arith int
+//
+//		func (t *Arith) Multiply(args *Args, reply *int) error {
+//			*reply = args.A * args.B
+//			return nil
+//		}
+//
+//		func (t *Arith) Divide(args *Args, quo *Quotient) error {
+//			if args.B == 0 {
+//				return errors.New("divide by zero")
+//			}
+//			quo.Quo = args.A / args.B
+//			quo.Rem = args.A % args.B
+//			return nil
+//		}
+//
+// You can publish it in hprose like this:
+//
+//		service := rpc.NewHTTPService()
+//		service.AddNetRPCMethods(new(Arith), rpc.Options{})
+//		http.ListenAndServe(":8080", service)
+//
+//
+// Then define stub struct in client:
+//
+//		type Stub struct {
+//			// Synchronous call
+//			Multiply func(args *Args) int
+//			// Asynchronous call
+//			Divide func(args *Args) (<-chan *Quotient, <-chan error)
+//		}
+//
+// Then it can make a remote call:
+//
+//		client := rpc.NewClient("http://127.0.0.0:8080")
+//		var stub *Stub
+//		client.UseService(&stub)
+//		fmt.Println(stub.Multiply(&Args{8, 7}))
+//		quo, e := stub.Device(&Args{8, 7})
+//		if err := <-e; err != nil {
+//			log.Fatal("arith error:", err)
+//		}
+//		result := <-quo
+//		fmt.Println(result.Quo, result.Rem)
+//
+// You can also call it in other languages.
+//
+// Here is a simple example in JavaScript:
+//
+//		// The method name is case-insensitive
+//		var methods = ['multiply', 'divide'];
+//		var client = hprose.Client.create('http://127.0.0.1:8080/', methods);
+//		// The first letter of the field name is convert to lowercase.
+//      client.multiply({a:8, b:7}).then(function(product) {
+//			return client.divide({a:product, b:6});
+//		}).then(function(quotient) {
+//			// The first letter of the field name is convert to lowercase.
+//			console.log(quotient.quo, quotient.rem);
+//		}).catch(function(err) {
+//			// The returned err is here
+//			console.error(err);
+//		});
+//
+func (mm *methodManager) AddNetRPCMethods(rcvr interface{}, options Options) {
+
 }
