@@ -54,20 +54,18 @@ type httpFixer struct{}
 
 func (httpFixer) FixArguments(args []reflect.Value, context *ServiceContext) {
 	i := len(args) - 1
-	typ := args[i].Type()
-	if typ == httpContextType {
+	switch args[i].Type() {
+	case httpContextType:
 		if c, ok := context.TransportContext.(*HTTPContext); ok {
 			args[i] = reflect.ValueOf(c)
 		}
-		return
-	}
-	if typ == httpRequestType {
+	case httpRequestType:
 		if c, ok := context.TransportContext.(*HTTPContext); ok {
 			args[i] = reflect.ValueOf(c.Request)
 		}
-		return
+	default:
+		fixArguments(args, context)
 	}
-	fixArguments(args, context)
 }
 
 // NewHTTPService is the constructor of HTTPService

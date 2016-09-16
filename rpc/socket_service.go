@@ -77,20 +77,18 @@ type socketFixer struct{}
 
 func (socketFixer) FixArguments(args []reflect.Value, context *ServiceContext) {
 	i := len(args) - 1
-	typ := args[i].Type()
-	if typ == socketContextType {
+	switch args[i].Type() {
+	case socketContextType:
 		if c, ok := context.TransportContext.(*SocketContext); ok {
 			args[i] = reflect.ValueOf(c)
 		}
-		return
-	}
-	if typ == netConnType {
+	case netConnType:
 		if c, ok := context.TransportContext.(*SocketContext); ok {
 			args[i] = reflect.ValueOf(c.Conn)
 		}
-		return
+	default:
+		fixArguments(args, context)
 	}
-	fixArguments(args, context)
 }
 
 type acceptEvent interface {

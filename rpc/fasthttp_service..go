@@ -51,20 +51,18 @@ type fasthttpFixer struct{}
 
 func (fasthttpFixer) FixArguments(args []reflect.Value, context *ServiceContext) {
 	i := len(args) - 1
-	typ := args[i].Type()
-	if typ == fasthttpContextType {
+	switch args[i].Type() {
+	case fasthttpContextType:
 		if c, ok := context.TransportContext.(*FastHTTPContext); ok {
 			args[i] = reflect.ValueOf(c)
 		}
-		return
-	}
-	if typ == fasthttpRequestCtxType {
+	case fasthttpRequestCtxType:
 		if c, ok := context.TransportContext.(*FastHTTPContext); ok {
 			args[i] = reflect.ValueOf(c.RequestCtx)
 		}
-		return
+	default:
+		fixArguments(args, context)
 	}
-	fixArguments(args, context)
 }
 
 // NewFastHTTPService is the constructor of FastHTTPService
