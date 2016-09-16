@@ -12,7 +12,7 @@
  *                                                        *
  * hprose struct encoder for Go.                          *
  *                                                        *
- * LastModified: Sep 14, 2015                             *
+ * LastModified: Sep 16, 2015                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -29,12 +29,11 @@ import (
 )
 
 type fieldCache struct {
-	Name   string
-	Alias  string
-	Index  []int
-	Offset uintptr
-	Type   reflect.Type
-	Kind   reflect.Kind
+	Name  string
+	Alias string
+	Index []int
+	Type  reflect.Type
+	Kind  reflect.Kind
 }
 
 type structCache struct {
@@ -71,7 +70,6 @@ func getFieldAlias(f *reflect.StructField, tag string) (alias string) {
 func getSubFields(t reflect.Type, tag string, offset uintptr, index []int) []*fieldCache {
 	subFields := getFields(t, tag)
 	for _, subField := range subFields {
-		subField.Offset += offset
 		subField.Index = append(index, subField.Index...)
 	}
 	return subFields
@@ -105,7 +103,6 @@ func getFields(t reflect.Type, tag string) []*fieldCache {
 		field.Alias = alias
 		field.Type = ft
 		field.Kind = fkind
-		field.Offset = f.Offset
 		field.Index = f.Index
 		fields = append(fields, &field)
 	}
@@ -142,25 +139,24 @@ func initStructCacheData(cache *structCache) {
 func getStructCache(structType reflect.Type) *structCache {
 	typ := (*emptyInterface)(unsafe.Pointer(&structType)).ptr
 	structTypeCacheLocker.RLock()
+	if cache, ok := structTypeCache[typ]; ok {
+		structTypeCacheLocker.RUnlock()
+		return cache
+	}
+	structTypeCacheLocker.RUnlock()
+	structTypeCacheLocker.Lock()
 	cache, ok := structTypeCache[typ]
 	if !ok {
-		structTypeCacheLocker.RUnlock()
-		structTypeCacheLocker.Lock()
-		cache, ok = structTypeCache[typ]
-		if !ok {
-			cache = &structCache{}
-			cache.Alias = structType.Name()
-			cache.Fields = getFields(structType, "")
-			initStructCacheData(cache)
-			structTypeCache[typ] = cache
-			structTypesLocker.Lock()
-			structTypes[cache.Alias] = structType
-			structTypesLocker.Unlock()
-		}
-		structTypeCacheLocker.Unlock()
-	} else {
-		structTypeCacheLocker.RUnlock()
+		cache = &structCache{}
+		cache.Alias = structType.Name()
+		cache.Fields = getFields(structType, "")
+		initStructCacheData(cache)
+		structTypeCache[typ] = cache
+		structTypesLocker.Lock()
+		structTypes[cache.Alias] = structType
+		structTypesLocker.Unlock()
 	}
+	structTypeCacheLocker.Unlock()
 	return cache
 }
 

@@ -12,7 +12,7 @@
  *                                                        *
  * hprose writer for Go.                                  *
  *                                                        *
- * LastModified: Sep 15, 2016                             *
+ * LastModified: Sep 16, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -490,33 +490,27 @@ func writeMap(w *Writer, v reflect.Value) {
 	val := (*reflectValue)(unsafe.Pointer(&v))
 	mapEncoder := mapBodyEncoders[val.typ]
 	if mapEncoder != nil {
-		mapEncoder(w, unsafe.Pointer(&val.ptr))
+		if v.CanAddr() {
+			mapEncoder(w, unsafe.Pointer(val.ptr))
+		} else {
+			mapEncoder(w, unsafe.Pointer(&val.ptr))
+		}
 	} else {
 		writeMapBody(w, v)
 	}
 	writeMapFooter(w)
 }
 
-func writeMapPtr(w *Writer, v reflect.Value) {
-	count := v.Len()
-	if count == 0 {
-		writeEmptyMap(w)
-		return
-	}
-	writeMapHeader(w, count)
-	val := (*reflectValue)(unsafe.Pointer(&v))
-	mapEncoder := mapBodyEncoders[val.typ]
-	if mapEncoder != nil {
-		mapEncoder(w, unsafe.Pointer(val.ptr))
-	} else {
-		writeMapBody(w, v)
-	}
-	writeMapFooter(w)
-}
+const (
+	flagStickyRO uintptr = 1 << 5
+	flagEmbedRO  uintptr = 1 << 6
+	flagIndir    uintptr = 1 << 7
+	flagAddr     uintptr = 1 << 8
+)
 
 func writeStruct(w *Writer, v reflect.Value) {
 	val := (*reflectValue)(unsafe.Pointer(&v))
-	cache := getStructCache(v.Type().Elem())
+	cache := getStructCache(v.Type())
 	if w.structRef == nil {
 		w.structRef = map[uintptr]int{}
 	}
@@ -529,22 +523,15 @@ func writeStruct(w *Writer, v reflect.Value) {
 		index = len(w.structRef)
 		w.structRef[val.typ] = index
 	}
-	setWriterRef(w, val.ptr)
+	ptr := val.ptr
+	setWriterRef(w, ptr)
 	w.writeByte(TagObject)
 	var buf [20]byte
 	w.write(util.GetIntBytes(buf[:], int64(index)))
 	w.writeByte(TagOpenbrace)
 	fields := cache.Fields
 	for _, field := range fields {
-		var f reflect.Value
-		fp := (*reflectValue)(unsafe.Pointer(&f))
-		fp.typ = (*emptyInterface)(unsafe.Pointer(&field.Type)).ptr
-		fp.ptr = unsafe.Pointer(uintptr(val.ptr) + field.Offset)
-		fp.flag = uintptr(field.Kind)
-		if field.Kind == reflect.Ptr || field.Kind == reflect.Map {
-			fp.ptr = **(**unsafe.Pointer)(unsafe.Pointer(&fp.ptr))
-		}
-		valueEncoders[field.Kind](w, f)
+		valueEncoders[field.Kind](w, v.FieldByIndex(field.Index))
 	}
 	w.writeByte(TagClosebrace)
 }

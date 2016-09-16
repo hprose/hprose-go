@@ -12,7 +12,7 @@
  *                                                        *
  * hprose writer test for Go.                             *
  *                                                        *
- * LastModified: Sep 13, 2016                             *
+ * LastModified: Sep 16, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -1183,5 +1183,29 @@ func BenchmarkSerializeStruct(b *testing.B) {
 	w := NewWriter(false)
 	for i := 0; i < b.N; i++ {
 		w.Serialize(st)
+	}
+}
+
+func TestSerializeStructPtr(t *testing.T) {
+	type Quotient struct {
+		Quo, Rem int
+	}
+	q := Quotient{10, 1}
+	pq := &q
+	w := NewWriter(false)
+	w.Serialize(&pq)
+	s := `c8"Quotient"2{s3"quo"s3"rem"}o0{i10;1}`
+	if w.String() != s {
+		t.Error(w.String())
+	}
+}
+
+func TestSerializeBigIntPtr(t *testing.T) {
+	w := NewWriter(true)
+	bi := big.NewInt(123)
+	pbi := &bi
+	w.Serialize(&pbi)
+	if w.String() != "l123;" {
+		t.Error(w.String())
 	}
 }

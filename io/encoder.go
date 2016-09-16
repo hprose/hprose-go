@@ -12,7 +12,7 @@
  *                                                        *
  * hprose encoder for Go.                                 *
  *                                                        *
- * LastModified: Sep 14, 2016                             *
+ * LastModified: Sep 16, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -98,8 +98,7 @@ func stringEncoder(w *Writer, v reflect.Value) {
 
 func structEncoder(w *Writer, v reflect.Value) {
 	ptr := (*reflectValue)(unsafe.Pointer(&v)).ptr
-	pv := reflect.NewAt(v.Type(), ptr)
-	structPtrEncoder(w, pv, ptr)
+	structPtrEncoder(w, v, ptr)
 }
 
 func arrayPtrEncoder(w *Writer, v reflect.Value, ptr unsafe.Pointer) {
@@ -112,7 +111,7 @@ func arrayPtrEncoder(w *Writer, v reflect.Value, ptr unsafe.Pointer) {
 func mapPtrEncoder(w *Writer, v reflect.Value, ptr unsafe.Pointer) {
 	if !writeRef(w, ptr) {
 		setWriterRef(w, ptr)
-		writeMapPtr(w, v)
+		writeMap(w, v)
 	}
 }
 
@@ -144,15 +143,15 @@ func stringPtrEncoder(w *Writer, v reflect.Value, ptr unsafe.Pointer) {
 
 func structPtrEncoder(w *Writer, v reflect.Value, ptr unsafe.Pointer) {
 	switch *(*uintptr)(unsafe.Pointer(&v)) {
-	case bigIntPtrType:
+	case bigIntType:
 		w.WriteBigInt((*big.Int)(ptr))
-	case bigRatPtrType:
+	case bigRatType:
 		w.WriteBigRat((*big.Rat)(ptr))
-	case bigFloatPtrType:
+	case bigFloatType:
 		w.WriteBigFloat((*big.Float)(ptr))
-	case timePtrType:
+	case timeType:
 		w.WriteTime((*time.Time)(ptr))
-	case listPtrType:
+	case listType:
 		w.WriteList((*list.List)(ptr))
 	default:
 		if !writeRef(w, ptr) {
@@ -168,7 +167,7 @@ func ptrEncoder(w *Writer, v reflect.Value) {
 	}
 	e := v.Elem()
 	kind := e.Kind()
-	ptr := (*reflectValue)(unsafe.Pointer(&v)).ptr
+	ptr := (*reflectValue)(unsafe.Pointer(&e)).ptr
 	switch kind {
 	case reflect.Array:
 		arrayPtrEncoder(w, e, ptr)
@@ -179,7 +178,7 @@ func ptrEncoder(w *Writer, v reflect.Value) {
 	case reflect.String:
 		stringPtrEncoder(w, e, ptr)
 	case reflect.Struct:
-		structPtrEncoder(w, v, ptr)
+		structPtrEncoder(w, e, ptr)
 	default:
 		valueEncoders[kind](w, e)
 	}
