@@ -70,6 +70,7 @@ type BaseService struct {
 	*methodManager
 	*handlerManager
 	*filterManager
+	Clients
 	fixer
 	Event      ServiceEvent
 	Debug      bool
@@ -78,7 +79,6 @@ type BaseService struct {
 	Heartbeat  time.Duration
 	ErrorDelay time.Duration
 	UserData   map[string]interface{}
-	allTopics  map[string]map[string]*topic
 }
 
 // GetNextID is the default method for client uid
@@ -100,7 +100,6 @@ func NewBaseService() (service *BaseService) {
 	service.Timeout = 120 * 1000 * 1000
 	service.Heartbeat = 3 * 1000 * 1000
 	service.ErrorDelay = 10 * 1000 * 1000
-	service.allTopics = make(map[string]map[string]*topic)
 	service.AddFunction("#", GetNextID, Options{Simple: true})
 	service.override.invokeHandler = func(
 		name string, args []reflect.Value,

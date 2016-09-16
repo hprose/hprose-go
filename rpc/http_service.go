@@ -37,6 +37,19 @@ type HTTPContext struct {
 	Request  *http.Request
 }
 
+// NewHTTPContext is the constructor of HTTPContext
+func NewHTTPContext(
+	clients Clients,
+	response http.ResponseWriter,
+	request *http.Request) (context *HTTPContext) {
+	context = new(HTTPContext)
+	context.ServiceContext = NewServiceContext(clients)
+	context.ServiceContext.TransportContext = context
+	context.Response = response
+	context.Request = request
+	return
+}
+
 // HTTPService is the hprose http service
 type HTTPService struct {
 	baseHTTPService
@@ -172,11 +185,7 @@ func (service *HTTPService) ServeHTTP(
 		service.crossDomainXMLHandler(response, request) {
 		return
 	}
-	context := new(HTTPContext)
-	context.ServiceContext = NewServiceContext(nil)
-	context.ServiceContext.TransportContext = context
-	context.Response = response
-	context.Request = request
+	context := NewHTTPContext(service, response, request)
 	var resp []byte
 	err := service.sendHeader(context)
 	if err == nil {

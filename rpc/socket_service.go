@@ -12,7 +12,7 @@
  *                                                        *
  * hprose socket service for Go.                          *
  *                                                        *
- * LastModified: Sep 14, 2016                             *
+ * LastModified: Sep 16, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -209,7 +209,7 @@ func (handler *connHandler) serve(service *BaseService) {
 }
 
 func (handler *connHandler) handle(service *BaseService, data packet) {
-	context := NewSocketContext(nil, handler.conn)
+	context := NewSocketContext(service, handler.conn)
 	data.body = service.Handle(data.body, context.ServiceContext)
 	if data.fullDuplex {
 		handler.sendQueue <- data

@@ -34,6 +34,16 @@ type FastHTTPContext struct {
 	RequestCtx *fasthttp.RequestCtx
 }
 
+// NewFastHTTPContext is the constructor of FastHTTPContext
+func NewFastHTTPContext(
+	clients Clients, ctx *fasthttp.RequestCtx) (context *FastHTTPContext) {
+	context = new(FastHTTPContext)
+	context.ServiceContext = NewServiceContext(clients)
+	context.ServiceContext.TransportContext = context
+	context.RequestCtx = ctx
+	return
+}
+
 // FastHTTPService is the hprose fasthttp service
 type FastHTTPService struct {
 	baseHTTPService
@@ -158,10 +168,7 @@ func (service *FastHTTPService) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
 		service.crossDomainXMLHandler(ctx) {
 		return
 	}
-	context := new(FastHTTPContext)
-	context.ServiceContext = NewServiceContext(nil)
-	context.ServiceContext.TransportContext = context
-	context.RequestCtx = ctx
+	context := NewFastHTTPContext(service, ctx)
 	var resp []byte
 	if err := service.sendHeader(context); err == nil {
 		switch util.ByteString(ctx.Method()) {

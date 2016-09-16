@@ -97,55 +97,43 @@ func (service *WebSocketService) ServeHTTP(
 	}
 	conn, err := service.Upgrade(response, request, nil)
 	if err != nil {
-		context := new(HTTPContext)
-		context.ServiceContext = NewServiceContext(nil)
-		context.ServiceContext.TransportContext = context
-		context.Response = response
-		context.Request = request
+		context := NewHTTPContext(service, response, request)
 		resp := service.endError(err, context.ServiceContext)
 		response.Header().Set("Content-Length", util.Itoa(len(resp)))
 		response.Write(resp)
 		return
 	}
 	defer conn.Close()
+
 	mutex := sync.Mutex{}
 	for {
 		context := new(WebSocketContext)
-		context.HTTPContext = new(HTTPContext)
-		context.ServiceContext = NewServiceContext(nil)
-		context.ServiceContext.TransportContext = context
-		context.Response = response
-		context.Request = request
+		context.HTTPContext = NewHTTPContext(service, response, request)
 		context.WebSocket = conn
 		msgType, data, err := conn.ReadMessage()
 		if err != nil {
 			break
 		}
 		if msgType == websocket.BinaryMessage {
-			go func(
-				conn *websocket.Conn, data []byte, context *ServiceContext) {
+			go func() {
 				id := data[0:4]
-				data = service.Handle(data[4:], context)
-				err := func() error {
-					mutex.Lock()
-					defer mutex.Unlock()
-					writer, err := conn.NextWriter(websocket.BinaryMessage)
-					if err != nil {
-						return err
-					}
-					if _, err = writer.Write(id); err != nil {
-						return err
-					}
-					if _, err = writer.Write(data); err != nil {
-						return err
-					}
-					return writer.Close()
-				}()
-				if err != nil {
-					fireErrorEvent(service.Event, err, context)
-					conn.Close()
+				data = service.Handle(data[4:], context.ServiceContext)
+				mutex.Lock()
+				writer, err := conn.NextWriter(websocket.BinaryMessage)
+				if err == nil {
+					_, err = writer.Write(id)
 				}
-			}(conn, data, context.ServiceContext)
+				if err == nil {
+					_, err = writer.Write(data)
+				}
+				if err == nil {
+					err = writer.Close()
+				}
+				mutex.Unlock()
+				if err != nil {
+					fireErrorEvent(service.Event, err, context.ServiceContext)
+				}
+			}()
 		}
 	}
 }
