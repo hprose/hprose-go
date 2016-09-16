@@ -105,7 +105,7 @@ func (service *WebSocketService) ServeHTTP(
 	}
 	defer conn.Close()
 
-	mutex := sync.Mutex{}
+	mutex := new(sync.Mutex)
 	for {
 		context := new(WebSocketContext)
 		context.HTTPContext = NewHTTPContext(service, response, request)
@@ -115,25 +115,28 @@ func (service *WebSocketService) ServeHTTP(
 			break
 		}
 		if msgType == websocket.BinaryMessage {
-			go func() {
-				id := data[0:4]
-				data = service.Handle(data[4:], context.ServiceContext)
-				mutex.Lock()
-				writer, err := conn.NextWriter(websocket.BinaryMessage)
-				if err == nil {
-					_, err = writer.Write(id)
-				}
-				if err == nil {
-					_, err = writer.Write(data)
-				}
-				if err == nil {
-					err = writer.Close()
-				}
-				mutex.Unlock()
-				if err != nil {
-					fireErrorEvent(service.Event, err, context.ServiceContext)
-				}
-			}()
+			go service.handle(mutex, data, context)
 		}
+	}
+}
+
+func (service *WebSocketService) handle(
+	mutex *sync.Mutex, data []byte, context *WebSocketContext) {
+	id := data[0:4]
+	data = service.Handle(data[4:], context.ServiceContext)
+	mutex.Lock()
+	writer, err := context.WebSocket.NextWriter(websocket.BinaryMessage)
+	if err == nil {
+		_, err = writer.Write(id)
+	}
+	if err == nil {
+		_, err = writer.Write(data)
+	}
+	if err == nil {
+		err = writer.Close()
+	}
+	mutex.Unlock()
+	if err != nil {
+		fireErrorEvent(service.Event, err, context.ServiceContext)
 	}
 }
