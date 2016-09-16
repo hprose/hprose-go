@@ -24,6 +24,7 @@ import (
 	"net/http"
 	"reflect"
 
+	"github.com/gorilla/websocket"
 	"github.com/valyala/fasthttp"
 )
 
@@ -37,3 +38,5 @@ var fasthttpContextType = reflect.TypeOf((*FastHTTPContext)(nil))
 var fasthttpRequestCtxType = reflect.TypeOf((*fasthttp.RequestCtx)(nil))
 var socketContextType = reflect.TypeOf((*SocketContext)(nil))
 var netConnType = reflect.TypeOf((*net.Conn)(nil)).Elem()
+var websocketContextType = reflect.TypeOf((*WebSocketContext)(nil))
+var websocketConnType = reflect.TypeOf((*websocket.Conn)(nil))

@@ -175,7 +175,7 @@ func (service *FastHTTPService) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
 			resp = service.Handle(ctx.Request.Body(), context.ServiceContext)
 		}
 	} else {
-		resp = service.endError(err, context)
+		resp = service.endError(err, context.ServiceContext)
 	}
 	context.RequestCtx = nil
 	ctx.Response.Header.Set("Content-Length", util.Itoa(len(resp)))

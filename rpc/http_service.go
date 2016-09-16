@@ -195,7 +195,7 @@ func (service *HTTPService) ServeHTTP(
 		}
 	}
 	if err != nil {
-		resp = service.endError(err, context)
+		resp = service.endError(err, context.ServiceContext)
 	}
 	response.Header().Set("Content-Length", util.Itoa(len(resp)))
 	response.Write(resp)
