@@ -12,7 +12,7 @@
  *                                                        *
  * reflect types for Go.                                  *
  *                                                        *
- * LastModified: Sep 13, 2016                             *
+ * LastModified: Sep 16, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -27,6 +27,7 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
+var errorType = reflect.TypeOf((*error)(nil)).Elem()
 var interfaceType = reflect.TypeOf((*interface{})(nil)).Elem()
 var contextType = reflect.TypeOf((*Context)(nil)).Elem()
 var serviceContextType = reflect.TypeOf((*ServiceContext)(nil))

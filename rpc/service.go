@@ -233,23 +233,33 @@ func (service *BaseService) AddAfterFilterHandler(handler FilterHandler) Service
 
 func callService(
 	name string, args []reflect.Value,
-	context *ServiceContext) []reflect.Value {
+	context *ServiceContext) (results []reflect.Value, err error) {
 	remoteMethod := context.Method
 	function := remoteMethod.Function
 	if context.IsMissingMethod {
 		missingMethod := function.Interface().(MissingMethod)
-		return missingMethod(name, args, context)
+		return missingMethod(name, args, context), nil
 	}
 	ft := function.Type()
 	if ft.IsVariadic() {
-		return function.CallSlice(args)
+		results = function.CallSlice(args)
+	} else {
+		count := len(args)
+		n := ft.NumIn()
+		if n < count {
+			args = args[:n]
+		}
+		results = function.Call(args)
 	}
-	count := len(args)
-	n := ft.NumIn()
-	if n < count {
-		args = args[:n]
+	n := ft.NumOut()
+	if n == 0 {
+		return results, nil
 	}
-	return function.Call(args)
+	if ft.Out(n-1) == errorType {
+		err, _ = results[n-1].Interface().(error)
+		results = results[:n-1]
+	}
+	return results, err
 }
 
 func doOutput(
@@ -375,16 +385,7 @@ func invoke(
 		}()
 		return nil, nil
 	}
-	results = callService(name, args, context)
-	n := len(results)
-	if n == 0 {
-		return results, nil
-	}
-	err, ok := results[n-1].Interface().(error)
-	if ok {
-		results = results[:n-1]
-	}
-	return results, err
+	return callService(name, args, context)
 }
 
 func readArguments(

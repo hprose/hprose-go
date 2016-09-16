@@ -326,5 +326,45 @@ func (mm *methodManager) Remove(name string) {
 //		});
 //
 func (mm *methodManager) AddNetRPCMethods(rcvr interface{}, options Options) {
+	if rcvr == nil {
+		panic("rcvr can't be nil")
+	}
+	v := reflect.ValueOf(rcvr)
+	t := v.Type()
+	n := t.NumMethod()
+	for i := 0; i < n; i++ {
+		name := t.Method(i).Name
+		method := v.Method(i)
+		if method.CanInterface() {
+			mm.addNetRPCMethod(name, method, options)
+		}
+	}
+}
 
+func (mm *methodManager) addNetRPCMethod(
+	name string, method reflect.Value, options Options) {
+	ft := method.Type()
+	if ft.NumIn() != 2 || ft.IsVariadic() {
+		panic("the method " + name + " must has two arguments")
+	}
+	if ft.In(1).Kind() != reflect.Ptr {
+		panic("the second argument of method " + name + " must be a pointer")
+	}
+	if ft.NumOut() != 1 || ft.Out(0) != errorType {
+		panic("the method " + name + " must return type error.")
+	}
+	argsType := ft.In(0)
+	resultType := ft.In(1)
+	in := []reflect.Type{argsType}
+	out := []reflect.Type{resultType, errorType}
+	newft := reflect.FuncOf(in, out, false)
+	newMethod := reflect.MakeFunc(newft, func(
+		args []reflect.Value) (results []reflect.Value) {
+		result := reflect.New(resultType.Elem())
+		in := []reflect.Value{args[0], result}
+		err := method.Call(in)[0]
+		results = []reflect.Value{result, err}
+		return
+	})
+	mm.AddFunction(name, newMethod, options)
 }
