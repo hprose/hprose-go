@@ -501,13 +501,6 @@ func writeMap(w *Writer, v reflect.Value) {
 	writeMapFooter(w)
 }
 
-const (
-	flagStickyRO uintptr = 1 << 5
-	flagEmbedRO  uintptr = 1 << 6
-	flagIndir    uintptr = 1 << 7
-	flagAddr     uintptr = 1 << 8
-)
-
 func writeStruct(w *Writer, v reflect.Value) {
 	val := (*reflectValue)(unsafe.Pointer(&v))
 	cache := getStructCache(v.Type())
