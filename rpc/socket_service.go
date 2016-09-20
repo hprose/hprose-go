@@ -188,30 +188,24 @@ func (handler *connHandler) serve(service *BaseService) {
 			break
 		}
 		if data.fullDuplex {
-			go handler.fdHandle(service, data)
+			go handler.handle(service, data)
 		} else {
-			handler.hdHandle(service, data)
+			handler.handle(service, data)
 		}
 	}
-	// close(handler.sendQueue)
 	handler.conn.Close()
 }
 
-func (handler *connHandler) fdHandle(service *BaseService, data packet) {
+func (handler *connHandler) handle(service *BaseService, data packet) {
 	context := NewSocketContext(service, handler.conn)
 	data.body = service.Handle(data.body, context.ServiceContext)
-	handler.Lock()
-	err := sendData(handler.conn, data)
-	handler.Unlock()
-	if err != nil {
-		fireErrorEvent(service.Event, err, context.ServiceContext)
+	if data.fullDuplex {
+		handler.Lock()
 	}
-}
-
-func (handler *connHandler) hdHandle(service *BaseService, data packet) {
-	context := NewSocketContext(service, handler.conn)
-	data.body = service.Handle(data.body, context.ServiceContext)
 	err := sendData(handler.conn, data)
+	if data.fullDuplex {
+		handler.Unlock()
+	}
 	if err != nil {
 		fireErrorEvent(service.Event, err, context.ServiceContext)
 	}
