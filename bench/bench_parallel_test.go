@@ -6,14 +6,15 @@ import (
 	"net"
 	"net/rpc"
 	"net/rpc/jsonrpc"
+	"runtime"
 	"testing"
 
 	"github.com/hprose/hprose-go"
 	hproserpc "github.com/hprose/hprose-golang/rpc"
 )
 
-// BenchmarkHprose2 is ...
-func BenchmarkHprose2(b *testing.B) {
+// BenchmarkParallelHprose2 is ...
+func BenchmarkParallelHprose2(b *testing.B) {
 	b.StopTimer()
 	server := hproserpc.NewTCPServer("")
 	server.AddFunction("hello", hello, hproserpc.Options{})
@@ -23,14 +24,16 @@ func BenchmarkHprose2(b *testing.B) {
 	client.UseService(&ro)
 	defer server.Close()
 	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		ro.Hello("World")
-	}
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			ro.Hello("World")
+		}
+	})
 	b.StopTimer()
 }
 
-// BenchmarkHprose2Unix is ...
-func BenchmarkHprose2Unix(b *testing.B) {
+// BenchmarkParallelHprose2Unix is ...
+func BenchmarkParallelHprose2Unix(b *testing.B) {
 	b.StopTimer()
 	server := hproserpc.NewUnixServer("")
 	server.AddFunction("hello", hello, hproserpc.Options{})
@@ -40,14 +43,16 @@ func BenchmarkHprose2Unix(b *testing.B) {
 	client.UseService(&ro)
 	defer server.Close()
 	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		ro.Hello("World")
-	}
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			ro.Hello("World")
+		}
+	})
 	b.StopTimer()
 }
 
-// BenchmarkHprose is ...
-func BenchmarkHprose(b *testing.B) {
+// BenchmarkParallelHprose is ...
+func BenchmarkParallelHprose(b *testing.B) {
 	b.StopTimer()
 	server := hprose.NewTcpServer("")
 	server.AddFunction("hello", hello)
@@ -56,17 +61,17 @@ func BenchmarkHprose(b *testing.B) {
 	var ro *RO
 	client.UseService(&ro)
 	defer server.Stop()
-	// result, _ := ro.Hello("World")
-	// fmt.Println(result)
 	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		ro.Hello("World")
-	}
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			ro.Hello("World")
+		}
+	})
 	b.StopTimer()
 }
 
-// BenchmarkHproseUnix is ...
-func BenchmarkHproseUnix(b *testing.B) {
+// BenchmarkParallelHproseUnix is ...
+func BenchmarkParallelHproseUnix(b *testing.B) {
 	b.StopTimer()
 	server := hprose.NewUnixServer("")
 	server.AddFunction("hello", hello)
@@ -75,17 +80,18 @@ func BenchmarkHproseUnix(b *testing.B) {
 	var ro *RO
 	client.UseService(&ro)
 	defer server.Stop()
-	// result, _ := ro.Hello("World")
-	// fmt.Println(result)
 	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		ro.Hello("World")
-	}
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			ro.Hello("World")
+		}
+	})
 	b.StopTimer()
 }
 
-// BenchmarkGobRPC is ...
-func BenchmarkGobRPC(b *testing.B) {
+// BenchmarkParallelGobRPC is ...
+func BenchmarkParallelGobRPC(b *testing.B) {
+	runtime.GOMAXPROCS(runtime.NumCPU())
 	b.StopTimer()
 	server := rpc.NewServer()
 	server.Register(new(Hello))
@@ -104,17 +110,17 @@ func BenchmarkGobRPC(b *testing.B) {
 	defer client.Close()
 	var args = &Args{"World"}
 	var reply string
-	// client.Call("Hello.Hello", &args, &reply)
-	// fmt.Println(reply)
 	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		client.Call("Hello.Hello", &args, &reply)
-	}
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			client.Call("Hello.Hello", &args, &reply)
+		}
+	})
 	b.StopTimer()
 }
 
-// BenchmarkGobRPCUnix is ...
-func BenchmarkGobRPCUnix(b *testing.B) {
+// BenchmarkParallelGobRPCUnix is ...
+func BenchmarkParallelGobRPCUnix(b *testing.B) {
 	b.StopTimer()
 	server := rpc.NewServer()
 	server.Register(new(Hello))
@@ -133,17 +139,17 @@ func BenchmarkGobRPCUnix(b *testing.B) {
 	defer client.Close()
 	var args = &Args{"World"}
 	var reply string
-	// client.Call("Hello.Hello", &args, &reply)
-	// fmt.Println(reply)
 	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		client.Call("Hello.Hello", &args, &reply)
-	}
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			client.Call("Hello.Hello", &args, &reply)
+		}
+	})
 	b.StopTimer()
 }
 
-// BenchmarkJSONRPC is ...
-func BenchmarkJSONRPC(b *testing.B) {
+// BenchmarkParallelJSONRPC is ...
+func BenchmarkParallelJSONRPC(b *testing.B) {
 	b.StopTimer()
 	server := rpc.NewServer()
 	server.Register(new(Hello))
@@ -162,17 +168,17 @@ func BenchmarkJSONRPC(b *testing.B) {
 	defer client.Close()
 	var args = &Args{"World"}
 	var reply string
-	// client.Call("Hello.Hello", &args, &reply)
-	// fmt.Println(reply)
 	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		client.Call("Hello.Hello", &args, &reply)
-	}
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			client.Call("Hello.Hello", &args, &reply)
+		}
+	})
 	b.StopTimer()
 }
 
-// BenchmarkJSONRPCUnix is ...
-func BenchmarkJSONRPCUnix(b *testing.B) {
+// BenchmarkParallelJSONRPCUnix is ...
+func BenchmarkParallelJSONRPCUnix(b *testing.B) {
 	b.StopTimer()
 	server := rpc.NewServer()
 	server.Register(new(Hello))
@@ -191,11 +197,11 @@ func BenchmarkJSONRPCUnix(b *testing.B) {
 	defer client.Close()
 	var args = &Args{"World"}
 	var reply string
-	// client.Call("Hello.Hello", &args, &reply)
-	// fmt.Println(reply)
 	b.StartTimer()
-	for i := 0; i < b.N; i++ {
-		client.Call("Hello.Hello", &args, &reply)
-	}
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			client.Call("Hello.Hello", &args, &reply)
+		}
+	})
 	b.StopTimer()
 }

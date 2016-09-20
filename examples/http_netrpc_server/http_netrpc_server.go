@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"net/http"
+	"runtime"
 
 	"github.com/hprose/hprose-golang/rpc"
 )
@@ -37,6 +38,7 @@ func (t *Arith) Divide(args *Args, quo *Quotient) error {
 }
 
 func main() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
 	service := rpc.NewHTTPService()
 	service.AddNetRPCMethods(new(Arith), rpc.Options{})
 	http.ListenAndServe(":8080", service)
