@@ -12,7 +12,7 @@
  *                                                        *
  * hprose method manager for Go.                          *
  *                                                        *
- * LastModified: Sep 16, 2016                             *
+ * LastModified: Sep 20, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -22,6 +22,7 @@ package rpc
 import (
 	"reflect"
 	"strings"
+	"sync"
 )
 
 // Options is the options of the published service method
@@ -42,6 +43,7 @@ type Method struct {
 type methodManager struct {
 	MethodNames   []string
 	RemoteMethods map[string]*Method
+	sync.RWMutex
 }
 
 // newMethodManager is the constructor for methodManager
@@ -74,8 +76,10 @@ func (mm *methodManager) AddFunction(
 	if options.NameSpace != "" && name != "*" {
 		name = options.NameSpace + "_" + name
 	}
+	mm.Lock()
 	mm.MethodNames = append(mm.MethodNames, name)
 	mm.RemoteMethods[strings.ToLower(name)] = &Method{f, options}
+	mm.Unlock()
 }
 
 // AddFunctions is used for batch publishing service method
@@ -235,19 +239,6 @@ func (mm *methodManager) AddMissingMethod(
 	mm.AddFunction("*", method, options)
 }
 
-// Remove the published func or method by name
-func (mm *methodManager) Remove(name string) {
-	name = strings.ToLower(name)
-	n := len(mm.MethodNames)
-	for i := 0; i < n; i++ {
-		if strings.ToLower(mm.MethodNames[i]) == name {
-			mm.MethodNames = append(mm.MethodNames[:i], mm.MethodNames[i+1:]...)
-			break
-		}
-	}
-	delete(mm.RemoteMethods, name)
-}
-
 // AddNetRPCMethods is used for publishing methods defined for net/rpc.
 //
 // For example:
@@ -367,4 +358,19 @@ func (mm *methodManager) addNetRPCMethod(
 		return
 	})
 	mm.AddFunction(name, newMethod, options)
+}
+
+// Remove the published func or method by name
+func (mm *methodManager) Remove(name string) {
+	name = strings.ToLower(name)
+	mm.Lock()
+	n := len(mm.MethodNames)
+	for i := 0; i < n; i++ {
+		if strings.ToLower(mm.MethodNames[i]) == name {
+			mm.MethodNames = append(mm.MethodNames[:i], mm.MethodNames[i+1:]...)
+			break
+		}
+	}
+	delete(mm.RemoteMethods, name)
+	mm.Unlock()
 }
