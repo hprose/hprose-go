@@ -12,7 +12,7 @@
  *                                                        *
  * hprose socket common for Go.                           *
  *                                                        *
- * LastModified: Sep 14, 2016                             *
+ * LastModified: Sep 20, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -30,6 +30,17 @@ type packet struct {
 	body       []byte
 }
 
+func toUint32(b [4]byte) uint32 {
+	return uint32(b[0])<<24 | uint32(b[1])<<16 | uint32(b[2])<<8 | uint32(b[3])
+}
+
+func fromUint32(b []byte, i uint32) {
+	b[0] = byte(i >> 24)
+	b[1] = byte(i >> 16)
+	b[2] = byte(i >> 8)
+	b[3] = byte(i)
+}
+
 func sendData(conn net.Conn, data packet) (err error) {
 	n := len(data.body)
 	var l int
@@ -41,21 +52,17 @@ func sendData(conn net.Conn, data packet) (err error) {
 	default:
 		l = 512
 	}
-	if data.fullDuplex {
-		n |= 0x80000000
-	}
 	buf := make([]byte, l)
-	buf[0] = byte((n >> 24) & 0xff)
-	buf[1] = byte((n >> 16) & 0xff)
-	buf[2] = byte((n >> 8) & 0xff)
-	buf[3] = byte(n & 0xff)
 	i := 4
 	if data.fullDuplex {
+		fromUint32(buf, uint32(n|0x80000000))
 		buf[4] = data.id[0]
 		buf[5] = data.id[1]
 		buf[6] = data.id[2]
 		buf[7] = data.id[3]
 		i = 8
+	} else {
+		fromUint32(buf, uint32(n))
 	}
 	p := l - i
 	if n <= p {

@@ -12,7 +12,7 @@
  *                                                        *
  * hprose socket service for Go.                          *
  *                                                        *
- * LastModified: Sep 16, 2016                             *
+ * LastModified: Sep 20, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -23,6 +23,7 @@ import (
 	"bufio"
 	"net"
 	"reflect"
+	"sync"
 )
 
 // SocketContext is the hprose socket context for service
@@ -138,8 +139,8 @@ func fireCloseEvent(event ServiceEvent, context *SocketContext) (err error) {
 }
 
 type connHandler struct {
-	sendQueue chan packet
-	conn      net.Conn
+	sync.Mutex
+	conn net.Conn
 }
 
 func serveConn(service *BaseService, conn net.Conn) {
@@ -156,28 +157,16 @@ func serveConn(service *BaseService, conn net.Conn) {
 		return
 	}
 	handler := new(connHandler)
-	handler.sendQueue = make(chan packet, 10)
 	handler.conn = conn
-	go handler.init()
 	handler.serve(service)
 	if err := fireCloseEvent(event, context); err != nil {
 		fireErrorEvent(event, err, context)
 	}
 }
 
-func bytesToInt(b [4]byte) int {
-	return int(b[0])<<24 | int(b[1])<<16 | int(b[2])<<8 | int(b[3])
-}
-
-func (handler *connHandler) init() {
-	for data := range handler.sendQueue {
-		sendData(handler.conn, data)
-	}
-}
-
 func (handler *connHandler) serve(service *BaseService) {
 	var header [4]byte
-	var size int
+	var size uint32
 	var data packet
 	var err error
 	reader := bufio.NewReader(handler.conn)
@@ -185,10 +174,10 @@ func (handler *connHandler) serve(service *BaseService) {
 		if _, err = reader.Read(header[:]); err != nil {
 			break
 		}
-		size = bytesToInt(header)
-		data.fullDuplex = (size&0x8000000 != 0)
+		size = toUint32(header)
+		data.fullDuplex = (size&0x80000000 != 0)
 		if data.fullDuplex {
-			size &= 0x7FFFFFF
+			size &= 0x7FFFFFFF
 			data.fullDuplex = true
 			if _, err = reader.Read(data.id[:]); err != nil {
 				break
@@ -199,21 +188,31 @@ func (handler *connHandler) serve(service *BaseService) {
 			break
 		}
 		if data.fullDuplex {
-			go handler.handle(service, data)
+			go handler.fdHandle(service, data)
 		} else {
-			handler.handle(service, data)
+			handler.hdHandle(service, data)
 		}
 	}
-	close(handler.sendQueue)
+	// close(handler.sendQueue)
 	handler.conn.Close()
 }
 
-func (handler *connHandler) handle(service *BaseService, data packet) {
+func (handler *connHandler) fdHandle(service *BaseService, data packet) {
 	context := NewSocketContext(service, handler.conn)
 	data.body = service.Handle(data.body, context.ServiceContext)
-	if data.fullDuplex {
-		handler.sendQueue <- data
-	} else {
-		sendData(handler.conn, data)
+	handler.Lock()
+	err := sendData(handler.conn, data)
+	handler.Unlock()
+	if err != nil {
+		fireErrorEvent(service.Event, err, context.ServiceContext)
+	}
+}
+
+func (handler *connHandler) hdHandle(service *BaseService, data packet) {
+	context := NewSocketContext(service, handler.conn)
+	data.body = service.Handle(data.body, context.ServiceContext)
+	err := sendData(handler.conn, data)
+	if err != nil {
+		fireErrorEvent(service.Event, err, context.ServiceContext)
 	}
 }
