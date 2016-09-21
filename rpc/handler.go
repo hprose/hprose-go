@@ -12,7 +12,7 @@
  *                                                        *
  * hprose handler manager for Go.                         *
  *                                                        *
- * LastModified: Sep 13, 2016                             *
+ * LastModified: Sep 21, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -130,11 +130,11 @@ func getNextFilterHandler(
 }
 
 // AddInvokeHandler add the invoke handler
-func (hm *handlerManager) AddInvokeHandler(handler InvokeHandler) {
-	if handler == nil {
+func (hm *handlerManager) AddInvokeHandler(handler ...InvokeHandler) {
+	if len(handler) == 0 {
 		return
 	}
-	hm.invokeHandlers = append(hm.invokeHandlers, handler)
+	hm.invokeHandlers = append(hm.invokeHandlers, handler...)
 	next := hm.defaultInvokeHandler
 	for i := len(hm.invokeHandlers) - 1; i >= 0; i-- {
 		next = getNextInvokeHandler(next, hm.invokeHandlers[i])
@@ -143,11 +143,11 @@ func (hm *handlerManager) AddInvokeHandler(handler InvokeHandler) {
 }
 
 // AddBeforeFilterHandler add the filter handler before filters
-func (hm *handlerManager) AddBeforeFilterHandler(handler FilterHandler) {
-	if handler == nil {
+func (hm *handlerManager) AddBeforeFilterHandler(handler ...FilterHandler) {
+	if len(handler) == 0 {
 		return
 	}
-	hm.beforeFilterHandlers = append(hm.beforeFilterHandlers, handler)
+	hm.beforeFilterHandlers = append(hm.beforeFilterHandlers, handler...)
 	next := hm.defaultBeforeFilterHandler
 	for i := len(hm.beforeFilterHandlers) - 1; i >= 0; i-- {
 		next = getNextFilterHandler(next, hm.beforeFilterHandlers[i])
@@ -156,11 +156,11 @@ func (hm *handlerManager) AddBeforeFilterHandler(handler FilterHandler) {
 }
 
 // AddAfterFilterHandler add the filter handler after filters
-func (hm *handlerManager) AddAfterFilterHandler(handler FilterHandler) {
-	if handler == nil {
+func (hm *handlerManager) AddAfterFilterHandler(handler ...FilterHandler) {
+	if len(handler) == 0 {
 		return
 	}
-	hm.afterFilterHandlers = append(hm.afterFilterHandlers, handler)
+	hm.afterFilterHandlers = append(hm.afterFilterHandlers, handler...)
 	next := hm.defaultAfterFilterHandler
 	for i := len(hm.afterFilterHandlers) - 1; i >= 0; i-- {
 		next = getNextFilterHandler(next, hm.afterFilterHandlers[i])

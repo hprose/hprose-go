@@ -12,7 +12,7 @@
  *                                                        *
  * hprose service for Go.                                 *
  *                                                        *
- * LastModified: Sep 16, 2016                             *
+ * LastModified: Sep 22, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/hprose/hprose-golang/io"
@@ -48,9 +49,11 @@ type Service interface {
 	AddFilter(filter ...Filter) Service
 	RemoveFilterByIndex(index int) Service
 	RemoveFilter(filter ...Filter) Service
-	AddInvokeHandler(handler InvokeHandler) Service
-	AddBeforeFilterHandler(handler FilterHandler) Service
-	AddAfterFilterHandler(handler FilterHandler) Service
+	AddInvokeHandler(handler ...InvokeHandler) Service
+	AddBeforeFilterHandler(handler ...FilterHandler) Service
+	AddAfterFilterHandler(handler ...FilterHandler) Service
+	Publish(topic string, timeout time.Duration, heartbeat time.Duration) Service
+	Clients
 }
 
 type fixer interface {
@@ -79,6 +82,8 @@ type BaseService struct {
 	Heartbeat  time.Duration
 	ErrorDelay time.Duration
 	UserData   map[string]interface{}
+	topics     map[string]*topic
+	sync.RWMutex
 }
 
 // GetNextID is the default method for client uid
@@ -97,9 +102,10 @@ func NewBaseService() (service *BaseService) {
 	service.methodManager = newMethodManager()
 	service.handlerManager = newHandlerManager()
 	service.filterManager = &filterManager{}
-	service.Timeout = 120 * 1000 * 1000
-	service.Heartbeat = 3 * 1000 * 1000
-	service.ErrorDelay = 10 * 1000 * 1000
+	service.Timeout = 120 * 1000 * 1000 * 1000
+	service.Heartbeat = 3 * 1000 * 1000 * 1000
+	service.ErrorDelay = 10 * 1000 * 1000 * 1000
+	service.topics = make(map[string]*topic)
 	service.AddFunction("#", GetNextID, Options{Simple: true})
 	service.override.invokeHandler = func(
 		name string, args []reflect.Value,
@@ -213,20 +219,20 @@ func (service *BaseService) RemoveFilter(filter ...Filter) Service {
 }
 
 // AddInvokeHandler add the invoke handler to this Service
-func (service *BaseService) AddInvokeHandler(handler InvokeHandler) Service {
-	service.handlerManager.AddInvokeHandler(handler)
+func (service *BaseService) AddInvokeHandler(handler ...InvokeHandler) Service {
+	service.handlerManager.AddInvokeHandler(handler...)
 	return service
 }
 
 // AddBeforeFilterHandler add the filter handler before filters
-func (service *BaseService) AddBeforeFilterHandler(handler FilterHandler) Service {
-	service.handlerManager.AddBeforeFilterHandler(handler)
+func (service *BaseService) AddBeforeFilterHandler(handler ...FilterHandler) Service {
+	service.handlerManager.AddBeforeFilterHandler(handler...)
 	return service
 }
 
 // AddAfterFilterHandler add the filter handler after filters
-func (service *BaseService) AddAfterFilterHandler(handler FilterHandler) Service {
-	service.handlerManager.AddAfterFilterHandler(handler)
+func (service *BaseService) AddAfterFilterHandler(handler ...FilterHandler) Service {
+	service.handlerManager.AddAfterFilterHandler(handler...)
 	return service
 }
 
@@ -563,24 +569,170 @@ func (service *BaseService) Handle(request []byte, context Context) []byte {
 	return response
 }
 
-// func (service *BaseService) getTopics(topic string) (topics map[string]*topic) {
-// 	topics = service.allTopics[topic]
-// 	if topics == nil {
-// 		panic(errors.New("topic \"" + topic + "\" is not published."))
-// 	}
-// 	return
-// }
+func fireSubscribeEvent(
+	topic string,
+	id string,
+	service *BaseService) {
+	defer recover()
+	if event, ok := service.Event.(subscribeEvent); ok {
+		event.OnSubscribe(topic, id, service)
+	}
+}
 
-// func (service *BaseService) delTimer(topics map[string]*topic, id string) {
-// 	t := topics[id]
-// 	if t != nil && t.Timer != nil {
-// 		t.Timer.Stop()
-// 		t.Timer = nil
-// 	}
-// }
+func fireUnsubscribeEvent(
+	topic string,
+	id string,
+	service *BaseService) {
+	defer recover()
+	if event, ok := service.Event.(unsubscribeEvent); ok {
+		event.OnUnsubscribe(topic, id, service)
+	}
+}
 
-// func (service *BaseService) offline(
-// 	topics map[string]*topic, topic string, id string) {
-// 	service.delTimer(topics, id)
+func (service *BaseService) offline(t *topic, topic string, id string) {
+	if t.exist(id) {
+		t.remove(id)
+		fireUnsubscribeEvent(topic, id, service)
+	}
+}
 
-// }
+// Publish the hprose push topic
+func (service *BaseService) Publish(
+	topic string,
+	timeout time.Duration,
+	heartbeat time.Duration) Service {
+	if timeout <= 0 {
+		timeout = service.Timeout
+	}
+	if heartbeat <= 0 {
+		heartbeat = service.Heartbeat
+	}
+	t := newTopic(heartbeat)
+	service.Lock()
+	service.topics[topic] = t
+	service.Unlock()
+	return service.AddFunction(topic, func(id string) interface{} {
+		message := t.get(id)
+		if message == nil {
+			message = make(chan interface{})
+			t.put(id, message)
+			fireSubscribeEvent(topic, id, service)
+		}
+		select {
+		case result := <-message:
+			return result
+		case <-time.After(timeout):
+			service.offline(t, topic, id)
+			return nil
+		}
+	}, Options{})
+}
+
+func (service *BaseService) getTopic(topic string) (t *topic) {
+	service.RLock()
+	t = service.topics[topic]
+	service.RUnlock()
+	if t == nil {
+		panic("topic \"" + topic + "\" is not published.")
+	}
+	return
+}
+
+func (service *BaseService) unicast(t *topic,
+	topic string, id string, result interface{}, callback func(bool)) {
+	message := t.get(id)
+	if message == nil {
+		if callback != nil {
+			callback(false)
+		}
+		return
+	}
+	go func() {
+		select {
+		case message <- result:
+			if callback != nil {
+				callback(true)
+			}
+		case <-time.After(t.heartbeat):
+			service.offline(t, topic, id)
+			if callback != nil {
+				callback(false)
+			}
+		}
+	}()
+}
+
+// IDList returns the push client id list
+func (service *BaseService) IDList(topic string) []string {
+	return service.getTopic(topic).idlist()
+}
+
+// Exist returns true if the client id exist.
+func (service *BaseService) Exist(topic string, id string) bool {
+	return service.getTopic(topic).exist(id)
+}
+
+// Push result to clients
+func (service *BaseService) Push(topic string, result interface{}, id ...string) {
+	t := service.getTopic(topic)
+	n := len(id)
+	if n == 0 {
+		id = t.idlist()
+		n = len(id)
+		if n == 0 {
+			return
+		}
+	}
+	for i := 0; i < n; i++ {
+		service.unicast(t, topic, id[i], result, nil)
+	}
+}
+
+// Broadcast push result to all clients
+func (service *BaseService) Broadcast(topic string, result interface{}, callback func([]string)) {
+	service.Multicast(topic, service.IDList(topic), result, callback)
+}
+
+// Multicast result to the specified clients
+func (service *BaseService) Multicast(topic string, ids []string, result interface{}, callback func([]string)) {
+	t := service.getTopic(topic)
+	m := 0
+	n := len(ids)
+	sid := make(chan string)
+	go func() {
+		sended := make([]string, 0, n)
+		timer := time.After(t.heartbeat * 2)
+		for {
+			select {
+			case id, ok := <-sid:
+				if ok {
+					sended = append(sended, id)
+				} else {
+					callback(sended)
+					return
+				}
+			case <-timer:
+				callback(sended)
+				return
+			}
+		}
+	}()
+	for i := 0; i < n; i++ {
+		id := ids[i]
+		service.unicast(t, topic, id, result, func(ok bool) {
+			if ok {
+				sid <- id
+			}
+			m++
+			if m == n {
+				close(sid)
+			}
+		})
+	}
+}
+
+// Unicast result to then specified client
+func (service *BaseService) Unicast(
+	topic string, id string, result interface{}, callback func(bool)) {
+	service.unicast(service.getTopic(topic), topic, id, result, callback)
+}
