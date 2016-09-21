@@ -653,6 +653,7 @@ func (service *BaseService) unicast(t *topic,
 			if callback != nil {
 				callback(true)
 			}
+			break
 		case <-time.After(t.heartbeat):
 			service.offline(t, topic, id)
 			if callback != nil {
@@ -711,6 +712,7 @@ func (service *BaseService) Multicast(topic string, ids []string, result interfa
 					callback(sended)
 					return
 				}
+				break
 			case <-timer:
 				callback(sended)
 				return
