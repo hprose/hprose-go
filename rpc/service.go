@@ -699,25 +699,17 @@ func (service *BaseService) Multicast(topic string, ids []string, result interfa
 	t := service.getTopic(topic)
 	m := 0
 	n := len(ids)
+	if n == 0 {
+		callback(nil)
+		return
+	}
 	sid := make(chan string)
 	go func() {
 		sended := make([]string, 0, n)
-		timer := time.After(t.heartbeat * 2)
-		for {
-			select {
-			case id, ok := <-sid:
-				if ok {
-					sended = append(sended, id)
-				} else {
-					callback(sended)
-					return
-				}
-				break
-			case <-timer:
-				callback(sended)
-				return
-			}
+		for id := range sid {
+			sended = append(sended, id)
 		}
+		callback(sended)
 	}()
 	for i := 0; i < n; i++ {
 		id := ids[i]
