@@ -12,7 +12,7 @@
  *                                                        *
  * hprose socket service for Go.                          *
  *                                                        *
- * LastModified: Sep 20, 2016                             *
+ * LastModified: Sep 23, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -24,6 +24,7 @@ import (
 	"net"
 	"reflect"
 	"sync"
+	"time"
 )
 
 // SocketContext is the hprose socket context for service
@@ -46,11 +47,27 @@ type SocketService struct {
 	*BaseService
 }
 
+func socketFixArguments(args []reflect.Value, context *ServiceContext) {
+	i := len(args) - 1
+	switch args[i].Type() {
+	case socketContextType:
+		if c, ok := context.TransportContext.(*SocketContext); ok {
+			args[i] = reflect.ValueOf(c)
+		}
+	case netConnType:
+		if c, ok := context.TransportContext.(*SocketContext); ok {
+			args[i] = reflect.ValueOf(c.Conn)
+		}
+	default:
+		DefaultFixArguments(args, context)
+	}
+}
+
 // NewSocketService is the constructor of SocketService
 func NewSocketService() (service *SocketService) {
 	service = new(SocketService)
 	service.BaseService = NewBaseService()
-	service.fixer = socketFixer{}
+	service.FixArguments = socketFixArguments
 	return service
 }
 
@@ -65,30 +82,20 @@ func (service *SocketService) ServeConn(conn net.Conn) {
 // until the server is stop. The caller typically invokes Serve in a go
 // statement.
 func (service *SocketService) Serve(listener net.Listener) {
+	var tempDelay time.Duration // how long to sleep on accept failure
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			break
+			if ne, ok := err.(net.Error); ok && ne.Temporary() {
+				tempDelay = nextTempDelay(tempDelay)
+				fireErrorEvent(service.Event, err, nil)
+				time.Sleep(tempDelay)
+				continue
+			}
+			return
 		}
+		tempDelay = 0
 		go service.ServeConn(conn)
-	}
-}
-
-type socketFixer struct{}
-
-func (socketFixer) FixArguments(args []reflect.Value, context *ServiceContext) {
-	i := len(args) - 1
-	switch args[i].Type() {
-	case socketContextType:
-		if c, ok := context.TransportContext.(*SocketContext); ok {
-			args[i] = reflect.ValueOf(c)
-		}
-	case netConnType:
-		if c, ok := context.TransportContext.(*SocketContext); ok {
-			args[i] = reflect.ValueOf(c.Conn)
-		}
-	default:
-		fixArguments(args, context)
 	}
 }
 

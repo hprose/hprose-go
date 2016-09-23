@@ -56,11 +56,8 @@ type Service interface {
 	Clients
 }
 
-type fixer interface {
-	FixArguments(args []reflect.Value, context *ServiceContext)
-}
-
-func fixArguments(args []reflect.Value, context *ServiceContext) {
+// DefaultFixArguments is the default fix arguments function
+func DefaultFixArguments(args []reflect.Value, context *ServiceContext) {
 	i := len(args) - 1
 	typ := args[i].Type()
 	if typ == interfaceType || typ == contextType || typ == serviceContextType {
@@ -74,15 +71,15 @@ type BaseService struct {
 	*handlerManager
 	*filterManager
 	Clients
-	fixer
-	Event      ServiceEvent
-	Debug      bool
-	Simple     bool
-	Timeout    time.Duration
-	Heartbeat  time.Duration
-	ErrorDelay time.Duration
-	UserData   map[string]interface{}
-	topics     map[string]*topic
+	FixArguments func(args []reflect.Value, context *ServiceContext)
+	Event        ServiceEvent
+	Debug        bool
+	Simple       bool
+	Timeout      time.Duration
+	Heartbeat    time.Duration
+	ErrorDelay   time.Duration
+	UserData     map[string]interface{}
+	topics       map[string]*topic
 	sync.RWMutex
 }
 
@@ -394,7 +391,7 @@ func invoke(
 }
 
 func readArguments(
-	fixer fixer,
+	fixArguments func(args []reflect.Value, context *ServiceContext),
 	reader *io.Reader,
 	method *Method,
 	context *ServiceContext) (args []reflect.Value) {
@@ -425,7 +422,7 @@ func readArguments(
 	}
 	reader.ReadSlice(args[:count])
 	if !ft.IsVariadic() && n > count {
-		fixer.FixArguments(args, context)
+		fixArguments(args, context)
 	}
 	return
 }
@@ -472,7 +469,7 @@ func (service *BaseService) doSingleInvoke(
 	var args []reflect.Value
 	if tag == io.TagList {
 		reader.Reset()
-		args = readArguments(service.fixer, reader, method, context)
+		args = readArguments(service.FixArguments, reader, method, context)
 		tag = reader.CheckTags([]byte{io.TagTrue, io.TagEnd, io.TagCall})
 		if tag == io.TagTrue {
 			context.ByRef = true

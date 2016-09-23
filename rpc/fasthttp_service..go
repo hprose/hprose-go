@@ -12,7 +12,7 @@
  *                                                        *
  * hprose fasthttp service for Go.                        *
  *                                                        *
- * LastModified: Sep 15, 2016                             *
+ * LastModified: Sep 23, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -57,9 +57,7 @@ type fastSendHeaderEvent2 interface {
 	OnSendHeader(context *FastHTTPContext) error
 }
 
-type fasthttpFixer struct{}
-
-func (fasthttpFixer) FixArguments(args []reflect.Value, context *ServiceContext) {
+func fasthttpFixArguments(args []reflect.Value, context *ServiceContext) {
 	i := len(args) - 1
 	switch args[i].Type() {
 	case fasthttpContextType:
@@ -71,14 +69,14 @@ func (fasthttpFixer) FixArguments(args []reflect.Value, context *ServiceContext)
 			args[i] = reflect.ValueOf(c.RequestCtx)
 		}
 	default:
-		fixArguments(args, context)
+		DefaultFixArguments(args, context)
 	}
 }
 
 // NewFastHTTPService is the constructor of FastHTTPService
 func NewFastHTTPService() (service *FastHTTPService) {
 	service = (*FastHTTPService)(unsafe.Pointer(newBaseHTTPService()))
-	service.fixer = fasthttpFixer{}
+	service.FixArguments = fasthttpFixArguments
 	return
 }
 
@@ -88,9 +86,8 @@ func (service *FastHTTPService) xmlFileHandler(
 	if context == nil || strings.ToLower(requestPath) != path {
 		return false
 	}
-	header := ctx.Request.Header
-	ifModifiedSince := util.ByteString(header.Peek("if-modified-since"))
-	ifNoneMatch := util.ByteString(header.Peek("if-none-match"))
+	ifModifiedSince := util.ByteString(ctx.Request.Header.Peek("if-modified-since"))
+	ifNoneMatch := util.ByteString(ctx.Request.Header.Peek("if-none-match"))
 	if ifModifiedSince == service.lastModified && ifNoneMatch == service.etag {
 		ctx.SetStatusCode(304)
 	} else {

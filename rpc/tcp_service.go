@@ -39,7 +39,7 @@ type TCPService struct {
 func NewTCPService() (service *TCPService) {
 	service = new(TCPService)
 	service.BaseService = NewBaseService()
-	service.fixer = socketFixer{}
+	service.FixArguments = socketFixArguments
 	service.Linger = -1
 	service.NoDelay = true
 	service.KeepAlive = true

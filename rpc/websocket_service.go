@@ -12,7 +12,7 @@
  *                                                        *
  * hprose websocket service for Go.                       *
  *                                                        *
- * LastModified: Sep 16, 2016                             *
+ * LastModified: Sep 23, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -41,9 +41,7 @@ type WebSocketService struct {
 	*websocket.Upgrader
 }
 
-type websocketFixer struct{}
-
-func (websocketFixer) FixArguments(args []reflect.Value, context *ServiceContext) {
+func websocketFixArguments(args []reflect.Value, context *ServiceContext) {
 	i := len(args) - 1
 	switch args[i].Type() {
 	case websocketContextType:
@@ -63,7 +61,7 @@ func (websocketFixer) FixArguments(args []reflect.Value, context *ServiceContext
 			args[i] = reflect.ValueOf(c.HTTPContext.Request)
 		}
 	default:
-		fixArguments(args, context)
+		DefaultFixArguments(args, context)
 	}
 }
 
@@ -71,7 +69,7 @@ func (websocketFixer) FixArguments(args []reflect.Value, context *ServiceContext
 func NewWebSocketService() (service *WebSocketService) {
 	service = new(WebSocketService)
 	service.HTTPService = NewHTTPService()
-	service.fixer = websocketFixer{}
+	service.FixArguments = websocketFixArguments
 	service.Upgrader = &websocket.Upgrader{
 		CheckOrigin: func(request *http.Request) bool {
 			origin := request.Header.Get("origin")

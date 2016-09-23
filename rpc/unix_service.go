@@ -33,7 +33,7 @@ type UnixService struct {
 func NewUnixService() (service *UnixService) {
 	service = new(UnixService)
 	service.BaseService = NewBaseService()
-	service.fixer = socketFixer{}
+	service.FixArguments = socketFixArguments
 	return service
 }
 
@@ -60,6 +60,7 @@ func (service *UnixService) ServeUnix(listener *net.UnixListener) {
 			}
 			return
 		}
+		tempDelay = 0
 		go service.ServeUnixConn(conn)
 	}
 }

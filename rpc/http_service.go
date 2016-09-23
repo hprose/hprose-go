@@ -12,7 +12,7 @@
  *                                                        *
  * hprose http service for Go.                            *
  *                                                        *
- * LastModified: Sep 15, 2016                             *
+ * LastModified: Sep 23, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -63,9 +63,7 @@ type sendHeaderEvent2 interface {
 	OnSendHeader(context *HTTPContext) error
 }
 
-type httpFixer struct{}
-
-func (httpFixer) FixArguments(args []reflect.Value, context *ServiceContext) {
+func httpFixArguments(args []reflect.Value, context *ServiceContext) {
 	i := len(args) - 1
 	switch args[i].Type() {
 	case httpContextType:
@@ -77,14 +75,14 @@ func (httpFixer) FixArguments(args []reflect.Value, context *ServiceContext) {
 			args[i] = reflect.ValueOf(c.Request)
 		}
 	default:
-		fixArguments(args, context)
+		DefaultFixArguments(args, context)
 	}
 }
 
 // NewHTTPService is the constructor of HTTPService
 func NewHTTPService() (service *HTTPService) {
 	service = (*HTTPService)(unsafe.Pointer(newBaseHTTPService()))
-	service.fixer = httpFixer{}
+	service.FixArguments = httpFixArguments
 	return
 }
 
