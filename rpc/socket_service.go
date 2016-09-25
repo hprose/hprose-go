@@ -12,7 +12,7 @@
  *                                                        *
  * hprose socket service for Go.                          *
  *                                                        *
- * LastModified: Sep 23, 2016                             *
+ * LastModified: Sep 25, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -86,10 +86,8 @@ func (service *SocketService) Serve(listener net.Listener) {
 	for {
 		conn, err := listener.Accept()
 		if err != nil {
-			if ne, ok := err.(net.Error); ok && ne.Temporary() {
-				tempDelay = nextTempDelay(tempDelay)
-				fireErrorEvent(service.Event, err, nil)
-				time.Sleep(tempDelay)
+			tempDelay = nextTempDelay(err, service.Event, tempDelay)
+			if tempDelay > 0 {
 				continue
 			}
 			return

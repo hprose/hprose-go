@@ -12,7 +12,7 @@
  *                                                        *
  * hprose socket common for Go.                           *
  *                                                        *
- * LastModified: Sep 20, 2016                             *
+ * LastModified: Sep 25, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -79,14 +79,20 @@ func sendData(conn net.Conn, data packet) (err error) {
 	return err
 }
 
-func nextTempDelay(tempDelay time.Duration) time.Duration {
-	if tempDelay == 0 {
-		tempDelay = 5 * time.Millisecond
-	} else {
-		tempDelay *= 2
+func nextTempDelay(
+	err error, event ServiceEvent, tempDelay time.Duration) time.Duration {
+	if ne, ok := err.(net.Error); ok && ne.Temporary() {
+		if tempDelay == 0 {
+			tempDelay = 5 * time.Millisecond
+		} else {
+			tempDelay *= 2
+		}
+		if max := 1 * time.Second; tempDelay > max {
+			tempDelay = max
+		}
+		fireErrorEvent(event, err, nil)
+		time.Sleep(tempDelay)
+		return tempDelay
 	}
-	if max := 1 * time.Second; tempDelay > max {
-		tempDelay = max
-	}
-	return tempDelay
+	return 0
 }

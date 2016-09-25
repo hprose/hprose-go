@@ -12,7 +12,7 @@
  *                                                        *
  * hprose unix service for Go.                            *
  *                                                        *
- * LastModified: Sep 15, 2016                             *
+ * LastModified: Sep 25, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -52,10 +52,8 @@ func (service *UnixService) ServeUnix(listener *net.UnixListener) {
 	for {
 		conn, err := listener.AcceptUnix()
 		if err != nil {
-			if ne, ok := err.(net.Error); ok && ne.Temporary() {
-				tempDelay = nextTempDelay(tempDelay)
-				fireErrorEvent(service.Event, err, nil)
-				time.Sleep(tempDelay)
+			tempDelay = nextTempDelay(err, service.Event, tempDelay)
+			if tempDelay > 0 {
 				continue
 			}
 			return
