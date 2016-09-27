@@ -40,8 +40,8 @@ var DisableGlobalCookie = false
 type HTTPClient struct {
 	*BaseClient
 	*http.Client
-	*http.Header
 	*http.Transport
+	Header *http.Header
 }
 
 // NewHTTPClient is the constructor of HTTPClient
@@ -68,8 +68,7 @@ func newHTTPClient(uri ...string) Client {
 	return NewHTTPClient(uri...)
 }
 
-// SetURIList set a list of server addresses
-func (client *HTTPClient) SetURIList(uriList []string) {
+func checkURLList(client Client, uriList []string) {
 	for _, uri := range uriList {
 		if u, err := url.Parse(uri); err == nil {
 			if u.Scheme != "http" && u.Scheme != "https" {
@@ -80,6 +79,11 @@ func (client *HTTPClient) SetURIList(uriList []string) {
 			}
 		}
 	}
+}
+
+// SetURIList set a list of server addresses
+func (client *HTTPClient) SetURIList(uriList []string) {
+	checkURLList(client, uriList)
 	client.BaseClient.SetURIList(uriList)
 }
 
