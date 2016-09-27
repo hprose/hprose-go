@@ -12,7 +12,7 @@
  *                                                        *
  * byte reader for Go.                                    *
  *                                                        *
- * LastModified: Sep 14, 2016                             *
+ * LastModified: Sep 27, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -37,8 +37,8 @@ type ByteReader struct {
 	off int
 }
 
-// NewBytesReader is a constructor for ByteReader
-func NewBytesReader(buf []byte) (reader *ByteReader) {
+// NewByteReader is a constructor for ByteReader
+func NewByteReader(buf []byte) (reader *ByteReader) {
 	reader = new(ByteReader)
 	reader.buf = buf
 	return
