@@ -12,7 +12,7 @@
  *                                                        *
  * hprose fasthttp service for Go.                        *
  *                                                        *
- * LastModified: Sep 23, 2016                             *
+ * LastModified: Sep 27, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -176,7 +176,7 @@ func (service *FastHTTPService) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
 				ctx.SetStatusCode(403)
 			}
 		case "POST":
-			resp = service.Handle(ctx.Request.Body(), context.ServiceContext)
+			resp = service.Handle(ctx.PostBody(), context.ServiceContext)
 		}
 	} else {
 		resp = service.endError(err, context.ServiceContext)
