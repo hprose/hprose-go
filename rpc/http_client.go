@@ -68,7 +68,7 @@ func newHTTPClient(uri ...string) Client {
 	return NewHTTPClient(uri...)
 }
 
-func checkURLList(client Client, uriList []string) {
+func checkHTTPAddresses(client Client, uriList []string) {
 	for _, uri := range uriList {
 		if u, err := url.Parse(uri); err == nil {
 			if u.Scheme != "http" && u.Scheme != "https" {
@@ -83,7 +83,7 @@ func checkURLList(client Client, uriList []string) {
 
 // SetURIList set a list of server addresses
 func (client *HTTPClient) SetURIList(uriList []string) {
-	checkURLList(client, uriList)
+	checkHTTPAddresses(client, uriList)
 	client.BaseClient.SetURIList(uriList)
 }
 

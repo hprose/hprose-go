@@ -53,7 +53,7 @@ func newFastHTTPClient(uri ...string) Client {
 
 // SetURIList set a list of server addresses
 func (client *FastHTTPClient) SetURIList(uriList []string) {
-	checkURLList(client, uriList)
+	checkHTTPAddresses(client, uriList)
 	client.BaseClient.SetURIList(uriList)
 }
 
