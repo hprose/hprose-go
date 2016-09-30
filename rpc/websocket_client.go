@@ -46,9 +46,8 @@ type WebSocketClient struct {
 	*http.Header
 	MaxConcurrentRequests int
 	dialer                *websocket.Dialer
+	cond                  *sync.Cond
 	conn                  *websocket.Conn
-	wait                  chan bool
-	mutex                 sync.Mutex
 	nextid                uint32
 	requests              chan websocketReqeust
 	responses             map[uint32]chan websocketResponse
@@ -61,7 +60,7 @@ func NewWebSocketClient(uri ...string) (client *WebSocketClient) {
 	client.Header = new(http.Header)
 	client.MaxConcurrentRequests = 10
 	client.dialer = new(websocket.Dialer)
-	client.wait = make(chan bool)
+	client.cond = sync.NewCond(new(sync.Mutex))
 	client.SetURIList(uri)
 	client.SendAndReceive = client.sendAndReceive
 	return
@@ -90,15 +89,15 @@ func (client *WebSocketClient) SetURIList(uriList []string) {
 	client.BaseClient.SetURIList(uriList)
 }
 
-func (client *WebSocketClient) next() {
-	select {
-	case client.wait <- true:
-	default:
-	}
-}
+// func (client *WebSocketClient) next() {
+// 	select {
+// 	case client.wait <- true:
+// 	default:
+// 	}
+// }
 
 func (client *WebSocketClient) close(err error) {
-	client.mutex.Lock()
+	client.cond.L.Lock()
 	if err != nil && client.responses != nil {
 		for _, response := range client.responses {
 			response <- websocketResponse{nil, err}
@@ -109,8 +108,8 @@ func (client *WebSocketClient) close(err error) {
 		client.conn.Close()
 		client.conn = nil
 	}
-	client.mutex.Unlock()
-	close(client.wait)
+	client.cond.Broadcast()
+	client.cond.L.Unlock()
 }
 
 // Close the client
@@ -151,13 +150,13 @@ func (client *WebSocketClient) recvLoop() {
 		}
 		if msgType == websocket.BinaryMessage {
 			id := toUint32(data)
-			client.mutex.Lock()
+			client.cond.L.Lock()
 			client.responses[id] <- websocketResponse{data[4:], nil}
 			delete(client.responses, id)
 			if len(client.responses) < count {
-				client.next()
+				client.cond.Signal()
 			}
-			client.mutex.Unlock()
+			client.cond.L.Unlock()
 		}
 	}
 	close(client.requests)
@@ -185,18 +184,18 @@ func (client *WebSocketClient) sendAndReceive(
 	fromUint32(buf, id)
 	copy(buf[4:], data)
 	response := make(chan websocketResponse)
-	client.mutex.Lock()
+	client.cond.L.Lock()
 	if err := client.getConn(client.uri); err != nil {
-		client.mutex.Unlock()
+		client.cond.L.Unlock()
 		return nil, err
 	}
 	if len(client.responses) >= client.MaxConcurrentRequests {
-		client.mutex.Unlock()
-		<-client.wait
-		client.mutex.Lock()
+		//fmt.Println("before:", len(client.responses))
+		client.cond.Wait()
+		//fmt.Println("after:", len(client.responses))
 	}
 	client.responses[id] = response
-	client.mutex.Unlock()
+	client.cond.L.Unlock()
 	client.requests <- websocketReqeust{id, buf}
 	select {
 	case resp := <-response:
