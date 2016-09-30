@@ -214,7 +214,15 @@ func (client *BaseClient) UseService(remoteService interface{}, namespace ...str
 // Invoke the remote method synchronous
 func (client *BaseClient) Invoke(name string, args []reflect.Value, settings *InvokeSettings) (results []reflect.Value, err error) {
 	context := client.getContext(settings)
-	return client.handlerManager.invokeHandler(name, args, context)
+	results, err = client.handlerManager.invokeHandler(name, args, context)
+	if results == nil && len(context.ResultTypes) > 0 {
+		n := len(context.ResultTypes)
+		results = make([]reflect.Value, n)
+		for i := 0; i < n; i++ {
+			results[i] = reflect.New(context.ResultTypes[i]).Elem()
+		}
+	}
+	return
 }
 
 // Go invoke the remote method asynchronous
@@ -615,7 +623,7 @@ func getSyncRemoteMethod(
 		var err error
 		out, err = client.Invoke(name, in, settings)
 		if hasError {
-			out = append(out, reflect.ValueOf(err))
+			out = append(out, reflect.ValueOf(&err).Elem())
 		} else if err != nil {
 			if e, ok := err.(*PanicError); ok {
 				panic(fmt.Sprintf("%v\r\n%s", e.Panic, e.Stack))
@@ -639,7 +647,7 @@ func getAsyncRemoteMethod(
 			in = in[1:]
 			out, err := client.Invoke(name, in, settings)
 			if hasError {
-				out = append(out, reflect.ValueOf(err))
+				out = append(out, reflect.ValueOf(&err).Elem())
 			}
 			defer func() {
 				if e := recover(); e != nil {

@@ -170,13 +170,13 @@ func serveConn(service *BaseService, conn net.Conn) {
 }
 
 func (handler *connHandler) serve(service *BaseService) {
-	var header [4]byte
+	header := make([]byte, 4)
 	var size uint32
 	var data packet
 	var err error
 	reader := bufio.NewReader(handler.conn)
 	for {
-		if _, err = reader.Read(header[:]); err != nil {
+		if _, err = reader.Read(header); err != nil {
 			break
 		}
 		size = toUint32(header)

@@ -25,8 +25,10 @@ import (
 	"runtime"
 )
 
+var ErrTimeout = errors.New("timeout")
 var errServerIsAlreadyStarted = errors.New("The server is already started")
 var errServerIsNotStarted = errors.New("The server is not started")
+var errClientIsAlreadyClosed = errors.New("The Client is already closed")
 
 // PanicError represents a panic error
 type PanicError struct {
