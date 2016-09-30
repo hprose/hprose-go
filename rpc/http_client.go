@@ -12,7 +12,7 @@
  *                                                        *
  * hprose http client for Go.                             *
  *                                                        *
- * LastModified: Sep 27, 2016                             *
+ * LastModified: Sep 30, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -38,20 +38,17 @@ var DisableGlobalCookie = false
 
 // HTTPClient is hprose http client
 type HTTPClient struct {
-	*BaseClient
-	*http.Client
-	*http.Transport
-	Header *http.Header
+	BaseClient
+	http.Client
+	http.Transport
+	Header http.Header
 }
 
 // NewHTTPClient is the constructor of HTTPClient
 func NewHTTPClient(uri ...string) (client *HTTPClient) {
 	client = new(HTTPClient)
-	client.BaseClient = NewBaseClient()
-	client.Client = new(http.Client)
-	client.Header = new(http.Header)
-	client.Transport = new(http.Transport)
-	client.Client.Transport = client.Transport
+	initBaseClient(&client.BaseClient)
+	client.Client.Transport = &client.Transport
 	client.DisableCompression = true
 	client.DisableKeepAlives = false
 	client.MaxIdleConnsPerHost = 4
@@ -141,7 +138,7 @@ func (client *HTTPClient) sendAndReceive(
 	if err != nil {
 		return nil, err
 	}
-	for key, values := range *client.Header {
+	for key, values := range client.Header {
 		for _, value := range values {
 			req.Header.Add(key, value)
 		}

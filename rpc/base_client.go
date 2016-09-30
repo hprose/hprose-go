@@ -49,9 +49,7 @@ type BaseClient struct {
 	SendAndReceive func([]byte, *ClientContext) ([]byte, error)
 }
 
-// NewBaseClient is the constructor for BaseClient
-func NewBaseClient() (client *BaseClient) {
-	client = new(BaseClient)
+func initBaseClient(client *BaseClient) {
 	initHandlerManager(&client.handlerManager)
 	client.timeout = 30 * 1000 * 1000 * 1000
 	client.retry = 10
@@ -68,7 +66,13 @@ func NewBaseClient() (client *BaseClient) {
 		request []byte, context Context) (response []byte, err error) {
 		return client.afterFilter(request, context.(*ClientContext))
 	}
-	return client
+}
+
+// NewBaseClient is the constructor for BaseClient
+func NewBaseClient() (client *BaseClient) {
+	client = new(BaseClient)
+	initBaseClient(client)
+	return
 }
 
 func shuffleStringSlice(src []string) []string {

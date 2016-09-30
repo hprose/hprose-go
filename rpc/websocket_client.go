@@ -42,11 +42,11 @@ type websocketResponse struct {
 
 // WebSocketClient is hprose websocket client
 type WebSocketClient struct {
-	*BaseClient
-	*http.Header
+	BaseClient
+	http.Header
 	MaxConcurrentRequests int
-	dialer                *websocket.Dialer
-	cond                  *sync.Cond
+	dialer                websocket.Dialer
+	cond                  sync.Cond
 	conn                  *websocket.Conn
 	nextid                uint32
 	requests              chan websocketReqeust
@@ -57,11 +57,9 @@ type WebSocketClient struct {
 // NewWebSocketClient is the constructor of WebSocketClient
 func NewWebSocketClient(uri ...string) (client *WebSocketClient) {
 	client = new(WebSocketClient)
-	client.BaseClient = NewBaseClient()
-	client.Header = new(http.Header)
+	initBaseClient(&client.BaseClient)
 	client.MaxConcurrentRequests = 10
-	client.dialer = new(websocket.Dialer)
-	client.cond = sync.NewCond(new(sync.Mutex))
+	client.cond.L = &sync.Mutex{}
 	client.closed = false
 	client.SetURIList(uri)
 	client.SendAndReceive = client.sendAndReceive
@@ -165,7 +163,7 @@ func (client *WebSocketClient) recvLoop() {
 
 func (client *WebSocketClient) getConn(uri string) (err error) {
 	if client.conn == nil {
-		client.conn, _, err = client.dialer.Dial(uri, *client.Header)
+		client.conn, _, err = client.dialer.Dial(uri, client.Header)
 		if err != nil {
 			return err
 		}
