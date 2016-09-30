@@ -144,8 +144,11 @@ func (client *WebSocketClient) recvLoop() {
 		if msgType == websocket.BinaryMessage {
 			id := toUint32(data)
 			client.cond.L.Lock()
-			client.responses[id] <- websocketResponse{data[4:], nil}
-			delete(client.responses, id)
+			response := client.responses[id]
+			if response != nil {
+				response <- websocketResponse{data[4:], nil}
+				delete(client.responses, id)
+			}
 			if len(client.responses) < count {
 				client.cond.Signal()
 			}
@@ -195,6 +198,12 @@ func (client *WebSocketClient) sendAndReceive(
 	case resp := <-response:
 		return resp.data, resp.err
 	case <-time.After(client.timeout):
+		client.cond.L.Lock()
+		delete(client.responses, id)
+		if len(client.responses) < client.MaxConcurrentRequests {
+			client.cond.Signal()
+		}
+		client.cond.L.Unlock()
 		return nil, ErrTimeout
 	}
 }
