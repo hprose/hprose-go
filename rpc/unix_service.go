@@ -12,7 +12,7 @@
  *                                                        *
  * hprose unix service for Go.                            *
  *                                                        *
- * LastModified: Sep 25, 2016                             *
+ * LastModified: Sep 30, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -20,6 +20,7 @@
 package rpc
 
 import (
+	"crypto/tls"
 	"net"
 	"time"
 )
@@ -27,6 +28,7 @@ import (
 // UnixService is the hprose unix service
 type UnixService struct {
 	*BaseService
+	TLSConfig *tls.Config
 }
 
 // NewUnixService is the constructor of UnixService
@@ -41,7 +43,13 @@ func NewUnixService() (service *UnixService) {
 // the connection until the client hangs up. The caller typically invokes
 // ServeUnixConn in a go statement.
 func (service *UnixService) ServeUnixConn(conn *net.UnixConn) {
-	serveConn(service.BaseService, conn)
+	if service.TLSConfig != nil {
+		tlsConn := tls.Server(conn, service.TLSConfig)
+		tlsConn.Handshake()
+		serveConn(service.BaseService, tlsConn)
+	} else {
+		serveConn(service.BaseService, conn)
+	}
 }
 
 // ServeUnix runs on the UnixListener. ServeUnix blocks, serving the listener
