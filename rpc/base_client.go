@@ -37,8 +37,8 @@ import (
 
 // BaseClient is the hprose base client
 type BaseClient struct {
-	*handlerManager
-	*filterManager
+	handlerManager
+	filterManager
 	uri            string
 	uriList        []string
 	index          int32
@@ -52,8 +52,7 @@ type BaseClient struct {
 // NewBaseClient is the constructor for BaseClient
 func NewBaseClient() (client *BaseClient) {
 	client = new(BaseClient)
-	client.handlerManager = newHandlerManager()
-	client.filterManager = &filterManager{}
+	initHandlerManager(&client.handlerManager)
 	client.timeout = 30 * 1000 * 1000 * 1000
 	client.retry = 10
 	client.override.invokeHandler = func(

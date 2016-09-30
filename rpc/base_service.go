@@ -12,7 +12,7 @@
  *                                                        *
  * hprose base service for Go.                            *
  *                                                        *
- * LastModified: Sep 23, 2016                             *
+ * LastModified: Sep 30, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -34,9 +34,9 @@ import (
 
 // BaseService is the hprose base service
 type BaseService struct {
-	*methodManager
-	*handlerManager
-	*filterManager
+	methodManager
+	handlerManager
+	filterManager
 	Clients
 	FixArguments func(args []reflect.Value, context *ServiceContext)
 	Event        ServiceEvent
@@ -69,12 +69,9 @@ func GetNextID() (uid string) {
 	return
 }
 
-// NewBaseService is the constructor for BaseService
-func NewBaseService() (service *BaseService) {
-	service = new(BaseService)
-	service.methodManager = newMethodManager()
-	service.handlerManager = newHandlerManager()
-	service.filterManager = &filterManager{}
+func initBaseService(service *BaseService) {
+	initMethodManager(&service.methodManager)
+	initHandlerManager(&service.handlerManager)
 	service.Timeout = 120 * 1000 * 1000 * 1000
 	service.Heartbeat = 3 * 1000 * 1000 * 1000
 	service.ErrorDelay = 10 * 1000 * 1000 * 1000
@@ -93,7 +90,6 @@ func NewBaseService() (service *BaseService) {
 		request []byte, context Context) (response []byte, err error) {
 		return service.afterFilter(request, context.(*ServiceContext))
 	}
-	return service
 }
 
 // AddFunction publish a func or bound method

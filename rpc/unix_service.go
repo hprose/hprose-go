@@ -27,14 +27,14 @@ import (
 
 // UnixService is the hprose unix service
 type UnixService struct {
-	*BaseService
+	BaseService
 	TLSConfig *tls.Config
 }
 
 // NewUnixService is the constructor of UnixService
 func NewUnixService() (service *UnixService) {
 	service = new(UnixService)
-	service.BaseService = NewBaseService()
+	initBaseService(&service.BaseService)
 	service.FixArguments = socketFixArguments
 	return service
 }
@@ -46,9 +46,9 @@ func (service *UnixService) ServeUnixConn(conn *net.UnixConn) {
 	if service.TLSConfig != nil {
 		tlsConn := tls.Server(conn, service.TLSConfig)
 		tlsConn.Handshake()
-		serveConn(service.BaseService, tlsConn)
+		serveConn(&service.BaseService, tlsConn)
 	} else {
-		serveConn(service.BaseService, conn)
+		serveConn(&service.BaseService, conn)
 	}
 }
 

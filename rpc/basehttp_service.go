@@ -12,7 +12,7 @@
  *                                                        *
  * hprose basehttp service for Go.                        *
  *                                                        *
- * LastModified: Sep 15, 2016                             *
+ * LastModified: Sep 30, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -27,7 +27,7 @@ import (
 )
 
 type baseHTTPService struct {
-	*BaseService
+	BaseService
 	P3P                          bool
 	GET                          bool
 	CrossDomain                  bool
@@ -40,18 +40,16 @@ type baseHTTPService struct {
 	clientAccessPolicyXMLContent []byte
 }
 
-func newBaseHTTPService() (service *baseHTTPService) {
+func initBaseHTTPService(service *baseHTTPService) {
 	t := time.Now().UTC()
 	rand.Seed(t.UnixNano())
-	service = new(baseHTTPService)
-	service.BaseService = NewBaseService()
+	initBaseService(&service.BaseService)
 	service.P3P = true
 	service.GET = true
 	service.CrossDomain = true
 	service.accessControlAllowOrigins = make(map[string]bool)
 	service.lastModified = t.Format(time.RFC1123)
 	service.etag = `"` + strconv.FormatInt(rand.Int63(), 16) + `"`
-	return
 }
 
 // AddAccessControlAllowOrigin add access control allow origin

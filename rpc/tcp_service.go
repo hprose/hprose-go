@@ -12,7 +12,7 @@
  *                                                        *
  * hprose tcp service for Go.                             *
  *                                                        *
- * LastModified: Sep 25, 2016                             *
+ * LastModified: Sep 30, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -27,7 +27,7 @@ import (
 
 // TCPService is the hprose tcp service
 type TCPService struct {
-	*BaseService
+	BaseService
 	Linger          int
 	NoDelay         bool
 	KeepAlive       bool
@@ -38,7 +38,7 @@ type TCPService struct {
 // NewTCPService is the constructor of TCPService
 func NewTCPService() (service *TCPService) {
 	service = new(TCPService)
-	service.BaseService = NewBaseService()
+	initBaseService(&service.BaseService)
 	service.FixArguments = socketFixArguments
 	service.Linger = -1
 	service.NoDelay = true
@@ -59,9 +59,9 @@ func (service *TCPService) ServeTCPConn(conn *net.TCPConn) {
 	if service.TLSConfig != nil {
 		tlsConn := tls.Server(conn, service.TLSConfig)
 		tlsConn.Handshake()
-		serveConn(service.BaseService, tlsConn)
+		serveConn(&service.BaseService, tlsConn)
 	} else {
-		serveConn(service.BaseService, conn)
+		serveConn(&service.BaseService, conn)
 	}
 }
 

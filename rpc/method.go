@@ -46,12 +46,9 @@ type methodManager struct {
 	sync.RWMutex
 }
 
-// newMethodManager is the constructor for methodManager
-func newMethodManager() (methods *methodManager) {
-	methods = new(methodManager)
+func initMethodManager(methods *methodManager) {
 	methods.MethodNames = make([]string, 0, 64)
 	methods.RemoteMethods = make(map[string]*Method)
-	return
 }
 
 // AddFunction publish a func or bound method

@@ -12,7 +12,7 @@
  *                                                        *
  * hprose socket service for Go.                          *
  *                                                        *
- * LastModified: Sep 25, 2016                             *
+ * LastModified: Sep 30, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -44,7 +44,7 @@ func NewSocketContext(clients Clients, conn net.Conn) (context *SocketContext) {
 
 // SocketService is the hprose socket service
 type SocketService struct {
-	*BaseService
+	BaseService
 }
 
 func socketFixArguments(args []reflect.Value, context *ServiceContext) {
@@ -66,7 +66,7 @@ func socketFixArguments(args []reflect.Value, context *ServiceContext) {
 // NewSocketService is the constructor of SocketService
 func NewSocketService() (service *SocketService) {
 	service = new(SocketService)
-	service.BaseService = NewBaseService()
+	initBaseService(&service.BaseService)
 	service.FixArguments = socketFixArguments
 	return service
 }
@@ -75,7 +75,7 @@ func NewSocketService() (service *SocketService) {
 // connection until the client hangs up. The caller typically invokes ServeConn
 // in a go statement.
 func (service *SocketService) ServeConn(conn net.Conn) {
-	serveConn(service.BaseService, conn)
+	serveConn(&service.BaseService, conn)
 }
 
 // Serve runs on the Listener. Serve blocks, serving the listener

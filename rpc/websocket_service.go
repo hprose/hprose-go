@@ -12,7 +12,7 @@
  *                                                        *
  * hprose websocket service for Go.                       *
  *                                                        *
- * LastModified: Sep 23, 2016                             *
+ * LastModified: Sep 30, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -37,8 +37,8 @@ type WebSocketContext struct {
 
 // WebSocketService is the hprose websocket service
 type WebSocketService struct {
-	*HTTPService
-	*websocket.Upgrader
+	HTTPService
+	websocket.Upgrader
 }
 
 func websocketFixArguments(args []reflect.Value, context *ServiceContext) {
@@ -68,20 +68,18 @@ func websocketFixArguments(args []reflect.Value, context *ServiceContext) {
 // NewWebSocketService is the constructor of WebSocketService
 func NewWebSocketService() (service *WebSocketService) {
 	service = new(WebSocketService)
-	service.HTTPService = NewHTTPService()
+	initBaseHTTPService(&service.baseHTTPService)
 	service.FixArguments = websocketFixArguments
-	service.Upgrader = &websocket.Upgrader{
-		CheckOrigin: func(request *http.Request) bool {
-			origin := request.Header.Get("origin")
-			if origin != "" && origin != "null" {
-				if len(service.accessControlAllowOrigins) == 0 ||
-					service.accessControlAllowOrigins[origin] {
-					return true
-				}
-				return false
+	service.CheckOrigin = func(request *http.Request) bool {
+		origin := request.Header.Get("origin")
+		if origin != "" && origin != "null" {
+			if len(service.accessControlAllowOrigins) == 0 ||
+				service.accessControlAllowOrigins[origin] {
+				return true
 			}
-			return true
-		},
+			return false
+		}
+		return true
 	}
 	return
 }

@@ -63,9 +63,7 @@ type handlerManager struct {
 	}
 }
 
-// newHandlerManager is the constructor of HandlerManager
-func newHandlerManager() (hm *handlerManager) {
-	hm = new(handlerManager)
+func initHandlerManager(hm *handlerManager) {
 	hm.defaultInvokeHandler = func(
 		name string,
 		args []reflect.Value,

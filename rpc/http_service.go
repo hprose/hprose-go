@@ -12,7 +12,7 @@
  *                                                        *
  * hprose http service for Go.                            *
  *                                                        *
- * LastModified: Sep 23, 2016                             *
+ * LastModified: Sep 30, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -25,7 +25,6 @@ import (
 	"net/http"
 	"reflect"
 	"strings"
-	"unsafe"
 
 	"github.com/hprose/hprose-golang/util"
 )
@@ -81,7 +80,8 @@ func httpFixArguments(args []reflect.Value, context *ServiceContext) {
 
 // NewHTTPService is the constructor of HTTPService
 func NewHTTPService() (service *HTTPService) {
-	service = (*HTTPService)(unsafe.Pointer(newBaseHTTPService()))
+	service = new(HTTPService)
+	initBaseHTTPService(&service.baseHTTPService)
 	service.FixArguments = httpFixArguments
 	return
 }

@@ -12,7 +12,7 @@
  *                                                        *
  * hprose fasthttp service for Go.                        *
  *                                                        *
- * LastModified: Sep 27, 2016                             *
+ * LastModified: Sep 30, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -22,7 +22,6 @@ package rpc
 import (
 	"reflect"
 	"strings"
-	"unsafe"
 
 	"github.com/hprose/hprose-golang/util"
 	"github.com/valyala/fasthttp"
@@ -75,7 +74,8 @@ func fasthttpFixArguments(args []reflect.Value, context *ServiceContext) {
 
 // NewFastHTTPService is the constructor of FastHTTPService
 func NewFastHTTPService() (service *FastHTTPService) {
-	service = (*FastHTTPService)(unsafe.Pointer(newBaseHTTPService()))
+	service = new(FastHTTPService)
+	initBaseHTTPService(&service.baseHTTPService)
 	service.FixArguments = fasthttpFixArguments
 	return
 }
