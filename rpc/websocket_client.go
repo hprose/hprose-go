@@ -89,13 +89,6 @@ func (client *WebSocketClient) SetURIList(uriList []string) {
 	client.BaseClient.SetURIList(uriList)
 }
 
-// func (client *WebSocketClient) next() {
-// 	select {
-// 	case client.wait <- true:
-// 	default:
-// 	}
-// }
-
 func (client *WebSocketClient) close(err error) {
 	client.cond.L.Lock()
 	if err != nil && client.responses != nil {
