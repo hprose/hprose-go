@@ -31,21 +31,29 @@ import (
 
 // HTTPContext is the hprose http context
 type HTTPContext struct {
-	*ServiceContext
+	ServiceContext
 	Response http.ResponseWriter
 	Request  *http.Request
 }
 
+func initHTTPContext(
+	context *HTTPContext,
+	service Service,
+	response http.ResponseWriter,
+	request *http.Request) {
+	initServiceContext(&context.ServiceContext, service)
+	context.TransportContext = context
+	context.Response = response
+	context.Request = request
+}
+
 // NewHTTPContext is the constructor of HTTPContext
 func NewHTTPContext(
-	clients Clients,
+	service Service,
 	response http.ResponseWriter,
 	request *http.Request) (context *HTTPContext) {
 	context = new(HTTPContext)
-	context.ServiceContext = NewServiceContext(clients)
-	context.ServiceContext.TransportContext = context
-	context.Response = response
-	context.Request = request
+	initHTTPContext(context, service, response, request)
 	return
 }
 
@@ -190,19 +198,19 @@ func (service *HTTPService) ServeHTTP(
 		switch request.Method {
 		case "GET":
 			if service.GET {
-				resp = service.doFunctionList(context.ServiceContext)
+				resp = service.doFunctionList(&context.ServiceContext)
 			} else {
 				response.WriteHeader(403)
 			}
 		case "POST":
 			var req []byte
 			if req, err = readAllFromHTTPRequest(request); err == nil {
-				resp = service.Handle(req, context.ServiceContext)
+				resp = service.Handle(req, &context.ServiceContext)
 			}
 		}
 	}
 	if err != nil {
-		resp = service.endError(err, context.ServiceContext)
+		resp = service.endError(err, &context.ServiceContext)
 	}
 	response.Header().Set("Content-Length", util.Itoa(len(resp)))
 	response.Write(resp)

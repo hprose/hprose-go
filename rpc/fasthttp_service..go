@@ -29,16 +29,16 @@ import (
 
 // FastHTTPContext is the hprose fasthttp context
 type FastHTTPContext struct {
-	*ServiceContext
+	ServiceContext
 	RequestCtx *fasthttp.RequestCtx
 }
 
 // NewFastHTTPContext is the constructor of FastHTTPContext
 func NewFastHTTPContext(
-	clients Clients, ctx *fasthttp.RequestCtx) (context *FastHTTPContext) {
+	service Service, ctx *fasthttp.RequestCtx) (context *FastHTTPContext) {
 	context = new(FastHTTPContext)
-	context.ServiceContext = NewServiceContext(clients)
-	context.ServiceContext.TransportContext = context
+	initServiceContext(&context.ServiceContext, service)
+	context.TransportContext = context
 	context.RequestCtx = ctx
 	return
 }
@@ -171,15 +171,15 @@ func (service *FastHTTPService) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
 		switch util.ByteString(ctx.Method()) {
 		case "GET":
 			if service.GET {
-				resp = service.doFunctionList(context.ServiceContext)
+				resp = service.doFunctionList(&context.ServiceContext)
 			} else {
 				ctx.SetStatusCode(403)
 			}
 		case "POST":
-			resp = service.Handle(ctx.PostBody(), context.ServiceContext)
+			resp = service.Handle(ctx.PostBody(), &context.ServiceContext)
 		}
 	} else {
-		resp = service.endError(err, context.ServiceContext)
+		resp = service.endError(err, &context.ServiceContext)
 	}
 	context.RequestCtx = nil
 	ctx.Response.Header.Set("Content-Length", util.Itoa(len(resp)))

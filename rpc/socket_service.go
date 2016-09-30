@@ -29,14 +29,14 @@ import (
 
 // SocketContext is the hprose socket context for service
 type SocketContext struct {
-	*ServiceContext
+	ServiceContext
 	net.Conn
 }
 
 // NewSocketContext is the constructor for SocketContext
-func NewSocketContext(clients Clients, conn net.Conn) (context *SocketContext) {
+func NewSocketContext(service Service, conn net.Conn) (context *SocketContext) {
 	context = new(SocketContext)
-	context.ServiceContext = NewServiceContext(clients)
+	initServiceContext(&context.ServiceContext, service)
 	context.TransportContext = context
 	context.Conn = conn
 	return
@@ -203,7 +203,7 @@ func (handler *connHandler) serve(service *BaseService) {
 
 func (handler *connHandler) handle(service *BaseService, data packet) {
 	context := NewSocketContext(service, handler.conn)
-	data.body = service.Handle(data.body, context.ServiceContext)
+	data.body = service.Handle(data.body, &context.ServiceContext)
 	if data.fullDuplex {
 		handler.Lock()
 	}
@@ -212,6 +212,6 @@ func (handler *connHandler) handle(service *BaseService, data packet) {
 		handler.Unlock()
 	}
 	if err != nil {
-		fireErrorEvent(service.Event, err, context.ServiceContext)
+		fireErrorEvent(service.Event, err, &context.ServiceContext)
 	}
 }

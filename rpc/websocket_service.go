@@ -31,7 +31,7 @@ import (
 
 // WebSocketContext is the hprose websocket context
 type WebSocketContext struct {
-	*HTTPContext
+	HTTPContext
 	WebSocket *websocket.Conn
 }
 
@@ -54,11 +54,11 @@ func websocketFixArguments(args []reflect.Value, context *ServiceContext) {
 		}
 	case httpContextType:
 		if c, ok := context.TransportContext.(*WebSocketContext); ok {
-			args[i] = reflect.ValueOf(c.HTTPContext)
+			args[i] = reflect.ValueOf(&c.HTTPContext)
 		}
 	case httpRequestType:
 		if c, ok := context.TransportContext.(*WebSocketContext); ok {
-			args[i] = reflect.ValueOf(c.HTTPContext.Request)
+			args[i] = reflect.ValueOf(c.Request)
 		}
 	default:
 		DefaultFixArguments(args, context)
@@ -94,7 +94,7 @@ func (service *WebSocketService) ServeHTTP(
 	conn, err := service.Upgrade(response, request, nil)
 	if err != nil {
 		context := NewHTTPContext(service, response, request)
-		resp := service.endError(err, context.ServiceContext)
+		resp := service.endError(err, &context.ServiceContext)
 		response.Header().Set("Content-Length", util.Itoa(len(resp)))
 		response.Write(resp)
 		return
@@ -104,7 +104,7 @@ func (service *WebSocketService) ServeHTTP(
 	mutex := new(sync.Mutex)
 	for {
 		context := new(WebSocketContext)
-		context.HTTPContext = NewHTTPContext(service, response, request)
+		initHTTPContext(&context.HTTPContext, service, response, request)
 		context.WebSocket = conn
 		msgType, data, err := conn.ReadMessage()
 		if err != nil {
@@ -119,7 +119,7 @@ func (service *WebSocketService) ServeHTTP(
 func (service *WebSocketService) handle(
 	mutex *sync.Mutex, data []byte, context *WebSocketContext) {
 	id := data[0:4]
-	data = service.Handle(data[4:], context.ServiceContext)
+	data = service.Handle(data[4:], &context.ServiceContext)
 	mutex.Lock()
 	writer, err := context.WebSocket.NextWriter(websocket.BinaryMessage)
 	if err == nil {
@@ -133,6 +133,6 @@ func (service *WebSocketService) handle(
 	}
 	mutex.Unlock()
 	if err != nil {
-		fireErrorEvent(service.Event, err, context.ServiceContext)
+		fireErrorEvent(service.Event, err, &context.ServiceContext)
 	}
 }

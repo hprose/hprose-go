@@ -21,18 +21,22 @@ package rpc
 
 // ServiceContext is the hprose service context
 type ServiceContext struct {
-	*BaseContext
+	BaseContext
 	*Method
-	Clients
+	Service
 	TransportContext Context
 	IsMissingMethod  bool
 	ByRef            bool
 }
 
+func initServiceContext(context *ServiceContext, service Service) {
+	initBaseContext(&context.BaseContext)
+	context.Service = service
+}
+
 // NewServiceContext is the constructor of ServiceContext
-func NewServiceContext(clients Clients) (context *ServiceContext) {
+func NewServiceContext(service Service) (context *ServiceContext) {
 	context = new(ServiceContext)
-	context.BaseContext = NewBaseContext()
-	context.Clients = clients
+	initServiceContext(context, service)
 	return
 }
