@@ -28,7 +28,7 @@ func main() {
 	done := make(chan bool)
 	for i := 0; i < 50000; i++ {
 		go func() {
-			fmt.Println(stub.Hello("world"))
+			stub.Hello("world")
 			if atomic.AddInt32(&n, -1) == 0 {
 				done <- true
 			}

@@ -184,15 +184,17 @@ func (client *WebSocketClient) sendAndReceive(
 	fromUint32(buf, id)
 	copy(buf[4:], data)
 	response := make(chan websocketResponse)
-	client.cond.L.Lock()
+	for {
+		client.cond.L.Lock()
+		if len(client.responses) < client.MaxConcurrentRequests {
+			break
+		}
+		client.cond.Wait()
+		client.cond.L.Unlock()
+	}
 	if err := client.getConn(client.uri); err != nil {
 		client.cond.L.Unlock()
 		return nil, err
-	}
-	if len(client.responses) >= client.MaxConcurrentRequests {
-		//fmt.Println("before:", len(client.responses))
-		client.cond.Wait()
-		//fmt.Println("after:", len(client.responses))
 	}
 	client.responses[id] = response
 	client.cond.L.Unlock()
