@@ -51,6 +51,7 @@ type WebSocketClient struct {
 	nextid                uint32
 	requests              chan websocketReqeust
 	responses             map[uint32]chan websocketResponse
+	closed                bool
 }
 
 // NewWebSocketClient is the constructor of WebSocketClient
@@ -61,6 +62,7 @@ func NewWebSocketClient(uri ...string) (client *WebSocketClient) {
 	client.MaxConcurrentRequests = 10
 	client.dialer = new(websocket.Dialer)
 	client.cond = sync.NewCond(new(sync.Mutex))
+	client.closed = false
 	client.SetURIList(uri)
 	client.SendAndReceive = client.sendAndReceive
 	return
@@ -101,12 +103,15 @@ func (client *WebSocketClient) close(err error) {
 		client.conn.Close()
 		client.conn = nil
 	}
-	client.cond.Broadcast()
+	for i := client.MaxConcurrentRequests; i > 0; i-- {
+		client.cond.Signal()
+	}
 	client.cond.L.Unlock()
 }
 
 // Close the client
 func (client *WebSocketClient) Close() {
+	client.closed = true
 	client.close(errClientIsAlreadyClosed)
 }
 
@@ -187,6 +192,10 @@ func (client *WebSocketClient) sendAndReceive(
 		}
 		client.cond.Wait()
 	}
+	if client.closed {
+		client.cond.L.Unlock()
+		return nil, errClientIsAlreadyClosed
+	}
 	if err := client.getConn(client.uri); err != nil {
 		client.cond.L.Unlock()
 		return nil, err
@@ -197,7 +206,7 @@ func (client *WebSocketClient) sendAndReceive(
 	select {
 	case resp := <-response:
 		return resp.data, resp.err
-	case <-time.After(client.timeout):
+	case <-time.After(context.Timeout):
 		client.cond.L.Lock()
 		delete(client.responses, id)
 		if len(client.responses) < client.MaxConcurrentRequests {
