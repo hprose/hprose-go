@@ -28,6 +28,7 @@ import (
 // FastHTTPClient is hprose fasthttp client
 type FastHTTPClient struct {
 	BaseClient
+	limiter
 	fasthttp.Client
 	Header      fasthttp.RequestHeader
 	compression bool
@@ -38,6 +39,7 @@ type FastHTTPClient struct {
 func NewFastHTTPClient(uri ...string) (client *FastHTTPClient) {
 	client = new(FastHTTPClient)
 	client.initBaseClient()
+	client.initLimiter()
 	client.compression = false
 	client.keepAlive = true
 	client.SetURIList(uri)
@@ -82,6 +84,9 @@ func (client *FastHTTPClient) SetCompression(enable bool) {
 
 func (client *FastHTTPClient) sendAndReceive(
 	data []byte, context *ClientContext) ([]byte, error) {
+	client.cond.L.Lock()
+	client.limit()
+	client.cond.L.Unlock()
 	req := fasthttp.AcquireRequest()
 	client.Header.CopyTo(&req.Header)
 	req.Header.SetMethod("POST")
@@ -98,13 +103,16 @@ func (client *FastHTTPClient) sendAndReceive(
 		req.Header.Set("Content-Encoding", "gzip")
 	}
 	resp := fasthttp.AcquireResponse()
-	if err := client.Client.DoTimeout(req, resp, context.Timeout); err != nil {
-		fasthttp.ReleaseRequest(req)
-		fasthttp.ReleaseResponse(resp)
-		return nil, err
+	err := client.Client.DoTimeout(req, resp, context.Timeout)
+	if err != nil {
+		data = nil
+	} else {
+		data = resp.Body()
 	}
-	body := resp.Body()
 	fasthttp.ReleaseRequest(req)
 	fasthttp.ReleaseResponse(resp)
-	return body, nil
+	client.cond.L.Lock()
+	client.unlimit()
+	client.cond.L.Unlock()
+	return data, err
 }

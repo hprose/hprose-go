@@ -11,7 +11,7 @@ import (
 // Stub is ...
 type Stub struct {
 	Hello      func(string) (string, error)
-	AsyncHello func(func(string), string) `name:"hello"`
+	AsyncHello func(func(string, error), string) `name:"hello"`
 }
 
 func main() {
@@ -19,20 +19,19 @@ func main() {
 	client.SetTimeout(1 * time.Second)
 	var stub *Stub
 	client.UseService(&stub)
-	stub.AsyncHello(func(result string) {
-		fmt.Println(result)
+	stub.AsyncHello(func(result string, err error) {
+		fmt.Println(result, err)
 	}, "async world")
 	fmt.Println(stub.Hello("world"))
 	start := time.Now()
 	var n int32 = 50000
 	done := make(chan bool)
 	for i := 0; i < 50000; i++ {
-		go func() {
-			stub.Hello("world")
+		stub.AsyncHello(func(result string, err error) {
 			if atomic.AddInt32(&n, -1) == 0 {
 				done <- true
 			}
-		}()
+		}, "async world")
 	}
 	<-done
 	stop := time.Now()

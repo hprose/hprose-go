@@ -12,7 +12,7 @@
  *                                                        *
  * hprose filter interface for Go.                        *
  *                                                        *
- * LastModified: Sep 20, 2016                             *
+ * LastModified: Oct 2, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -29,14 +29,14 @@ type Filter interface {
 
 // filterManager is the filter manager
 type filterManager struct {
-	filters []Filter
-	sync.RWMutex
+	filters  []Filter
+	fmLocker sync.RWMutex
 }
 
 // Filter return the first filter
 func (fm *filterManager) Filter() Filter {
-	fm.RLock()
-	defer fm.RUnlock()
+	fm.fmLocker.RLock()
+	defer fm.fmLocker.RUnlock()
 	if len(fm.filters) == 0 {
 		return nil
 	}
@@ -45,8 +45,8 @@ func (fm *filterManager) Filter() Filter {
 
 // FilterByIndex return the filter by index
 func (fm *filterManager) FilterByIndex(index int) Filter {
-	fm.RLock()
-	defer fm.RUnlock()
+	fm.fmLocker.RLock()
+	defer fm.fmLocker.RUnlock()
 	n := len(fm.filters)
 	if index < 0 && index >= n {
 		return nil
@@ -56,27 +56,27 @@ func (fm *filterManager) FilterByIndex(index int) Filter {
 
 // SetFilter will replace the current filter settings
 func (fm *filterManager) SetFilter(filter ...Filter) {
-	fm.Lock()
+	fm.fmLocker.Lock()
 	fm.filters = make([]Filter, len(filter))
 	fm.AddFilter(filter...)
-	fm.Unlock()
+	fm.fmLocker.Unlock()
 }
 
 // AddFilter add the filter to this FilterManager
 func (fm *filterManager) AddFilter(filter ...Filter) {
-	fm.Lock()
+	fm.fmLocker.Lock()
 	if len(filter) > 0 {
 		fm.filters = append(fm.filters, filter...)
 	}
-	fm.Unlock()
+	fm.fmLocker.Unlock()
 }
 
 // RemoveFilterByIndex remove the filter by the index
 func (fm *filterManager) RemoveFilterByIndex(index int) {
-	fm.Lock()
+	fm.fmLocker.Lock()
 	n := len(fm.filters)
 	if index < 0 && index >= n {
-		fm.Unlock()
+		fm.fmLocker.Unlock()
 		return
 	}
 	if index == n-1 {
@@ -84,7 +84,7 @@ func (fm *filterManager) RemoveFilterByIndex(index int) {
 	} else {
 		fm.filters = append(fm.filters[:index], fm.filters[index+1:]...)
 	}
-	fm.Unlock()
+	fm.fmLocker.Unlock()
 }
 
 func (fm *filterManager) removeFilter(filter Filter) {
@@ -104,19 +104,19 @@ func (fm *filterManager) RemoveFilter(filter ...Filter) {
 }
 
 func (fm *filterManager) inputFilter(data []byte, context Context) []byte {
-	fm.RLock()
+	fm.fmLocker.RLock()
+	defer fm.fmLocker.RUnlock()
 	for i := len(fm.filters) - 1; i >= 0; i-- {
 		data = fm.filters[i].InputFilter(data, context)
 	}
-	fm.RUnlock()
 	return data
 }
 
 func (fm *filterManager) outputFilter(data []byte, context Context) []byte {
-	fm.RLock()
+	fm.fmLocker.RLock()
+	defer fm.fmLocker.RUnlock()
 	for i := range fm.filters {
 		data = fm.filters[i].OutputFilter(data, context)
 	}
-	fm.RUnlock()
 	return data
 }

@@ -23,7 +23,6 @@ import (
 	"crypto/tls"
 	"net/http"
 	"net/url"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -43,23 +42,21 @@ type websocketResponse struct {
 // WebSocketClient is hprose websocket client
 type WebSocketClient struct {
 	BaseClient
+	limiter
 	http.Header
-	MaxConcurrentRequests int
-	dialer                websocket.Dialer
-	cond                  sync.Cond
-	conn                  *websocket.Conn
-	nextid                uint32
-	requests              chan websocketReqeust
-	responses             map[uint32]chan websocketResponse
-	closed                bool
+	dialer    websocket.Dialer
+	conn      *websocket.Conn
+	nextid    uint32
+	requests  chan websocketReqeust
+	responses map[uint32]chan websocketResponse
+	closed    bool
 }
 
 // NewWebSocketClient is the constructor of WebSocketClient
 func NewWebSocketClient(uri ...string) (client *WebSocketClient) {
 	client = new(WebSocketClient)
 	client.initBaseClient()
-	client.MaxConcurrentRequests = 10
-	client.cond.L = &sync.Mutex{}
+	client.initLimiter()
 	client.closed = false
 	client.SetURIList(uri)
 	client.SendAndReceive = client.sendAndReceive
@@ -101,9 +98,7 @@ func (client *WebSocketClient) close(err error) {
 		client.conn.Close()
 		client.conn = nil
 	}
-	for i := client.MaxConcurrentRequests; i > 0; i-- {
-		client.cond.Signal()
-	}
+	client.reset()
 	client.cond.L.Unlock()
 }
 
@@ -137,7 +132,6 @@ func (client *WebSocketClient) sendLoop() {
 
 func (client *WebSocketClient) recvLoop() {
 	conn := client.conn
-	count := client.MaxConcurrentRequests
 	for {
 		msgType, data, err := conn.ReadMessage()
 		if err != nil {
@@ -152,9 +146,7 @@ func (client *WebSocketClient) recvLoop() {
 				response <- websocketResponse{data[4:], nil}
 				delete(client.responses, id)
 			}
-			if len(client.responses) < count {
-				client.cond.Signal()
-			}
+			client.unlimit()
 			client.cond.L.Unlock()
 		}
 	}
@@ -184,12 +176,7 @@ func (client *WebSocketClient) sendAndReceive(
 	copy(buf[4:], data)
 	response := make(chan websocketResponse)
 	client.cond.L.Lock()
-	for {
-		if len(client.responses) < client.MaxConcurrentRequests {
-			break
-		}
-		client.cond.Wait()
-	}
+	client.limit()
 	if client.closed {
 		client.cond.L.Unlock()
 		return nil, errClientIsAlreadyClosed
@@ -207,9 +194,7 @@ func (client *WebSocketClient) sendAndReceive(
 	case <-time.After(context.Timeout):
 		client.cond.L.Lock()
 		delete(client.responses, id)
-		if len(client.responses) < client.MaxConcurrentRequests {
-			client.cond.Signal()
-		}
+		client.unlimit()
 		client.cond.L.Unlock()
 		return nil, ErrTimeout
 	}

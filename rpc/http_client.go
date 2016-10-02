@@ -39,6 +39,7 @@ var DisableGlobalCookie = false
 // HTTPClient is hprose http client
 type HTTPClient struct {
 	BaseClient
+	limiter
 	http.Client
 	http.Transport
 	Header http.Header
@@ -48,6 +49,7 @@ type HTTPClient struct {
 func NewHTTPClient(uri ...string) (client *HTTPClient) {
 	client = new(HTTPClient)
 	client.initBaseClient()
+	client.initLimiter()
 	client.Client.Transport = &client.Transport
 	client.DisableCompression = true
 	client.DisableKeepAlives = false
@@ -134,6 +136,9 @@ func (client *HTTPClient) readAll(
 
 func (client *HTTPClient) sendAndReceive(
 	data []byte, context *ClientContext) ([]byte, error) {
+	client.cond.L.Lock()
+	client.limit()
+	client.cond.L.Unlock()
 	req, err := http.NewRequest("POST", client.uri, hio.NewByteReader(data))
 	if err != nil {
 		return nil, err
@@ -151,8 +156,11 @@ func (client *HTTPClient) sendAndReceive(
 		return nil, err
 	}
 	data, err = ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, err
+	if err == nil {
+		err = resp.Body.Close()
 	}
-	return data, resp.Body.Close()
+	client.cond.L.Lock()
+	client.unlimit()
+	client.cond.L.Unlock()
+	return data, err
 }
