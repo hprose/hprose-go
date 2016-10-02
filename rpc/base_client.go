@@ -12,7 +12,7 @@
  *                                                        *
  * hprose rpc base client for Go.                         *
  *                                                        *
- * LastModified: Sep 27, 2016                             *
+ * LastModified: Oct 2, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -49,8 +49,15 @@ type BaseClient struct {
 	SendAndReceive func([]byte, *ClientContext) ([]byte, error)
 }
 
-func initBaseClient(client *BaseClient) {
-	initHandlerManager(&client.handlerManager)
+// NewBaseClient is the constructor for BaseClient
+func NewBaseClient() (client *BaseClient) {
+	client = new(BaseClient)
+	client.initBaseClient()
+	return
+}
+
+func (client *BaseClient) initBaseClient() {
+	client.initHandlerManager()
 	client.timeout = 30 * 1000 * 1000 * 1000
 	client.retry = 10
 	client.override.invokeHandler = func(
@@ -66,23 +73,6 @@ func initBaseClient(client *BaseClient) {
 		request []byte, context Context) (response []byte, err error) {
 		return client.afterFilter(request, context.(*ClientContext))
 	}
-}
-
-// NewBaseClient is the constructor for BaseClient
-func NewBaseClient() (client *BaseClient) {
-	client = new(BaseClient)
-	initBaseClient(client)
-	return
-}
-
-func shuffleStringSlice(src []string) []string {
-	dest := make([]string, len(src))
-	rand.Seed(time.Now().UTC().UnixNano())
-	perm := rand.Perm(len(src))
-	for i, v := range perm {
-		dest[v] = src[i]
-	}
-	return dest
 }
 
 // URI returns the current hprose service address.
@@ -101,6 +91,16 @@ func (client *BaseClient) SetURI(uri string) {
 // URIList returns all of the hprose service addresses
 func (client *BaseClient) URIList() []string {
 	return client.uriList
+}
+
+func shuffleStringSlice(src []string) []string {
+	dest := make([]string, len(src))
+	rand.Seed(time.Now().UTC().UnixNano())
+	perm := rand.Perm(len(src))
+	for i, v := range perm {
+		dest[v] = src[i]
+	}
+	return dest
 }
 
 // SetURIList set a list of server addresses

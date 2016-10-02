@@ -12,7 +12,7 @@
  *                                                        *
  * hprose http client for Go.                             *
  *                                                        *
- * LastModified: Sep 30, 2016                             *
+ * LastModified: Oct 2, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -47,7 +47,7 @@ type HTTPClient struct {
 // NewHTTPClient is the constructor of HTTPClient
 func NewHTTPClient(uri ...string) (client *HTTPClient) {
 	client = new(HTTPClient)
-	initBaseClient(&client.BaseClient)
+	client.initBaseClient()
 	client.Client.Transport = &client.Transport
 	client.DisableCompression = true
 	client.DisableKeepAlives = false

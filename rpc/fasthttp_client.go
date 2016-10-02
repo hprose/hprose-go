@@ -12,7 +12,7 @@
  *                                                        *
  * hprose http client for Go.                             *
  *                                                        *
- * LastModified: Sep 30, 2016                             *
+ * LastModified: Oct 2, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -37,7 +37,7 @@ type FastHTTPClient struct {
 // NewFastHTTPClient is the constructor of FastHTTPClient
 func NewFastHTTPClient(uri ...string) (client *FastHTTPClient) {
 	client = new(FastHTTPClient)
-	initBaseClient(&client.BaseClient)
+	client.initBaseClient()
 	client.compression = false
 	client.keepAlive = true
 	client.SetURIList(uri)

@@ -12,7 +12,7 @@
  *                                                        *
  * hprose unix service for Go.                            *
  *                                                        *
- * LastModified: Sep 30, 2016                             *
+ * LastModified: Oct 2, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -27,16 +27,20 @@ import (
 
 // UnixService is the hprose unix service
 type UnixService struct {
-	BaseService
+	SocketService
 	TLSConfig *tls.Config
 }
 
 // NewUnixService is the constructor of UnixService
 func NewUnixService() (service *UnixService) {
 	service = new(UnixService)
-	initBaseService(&service.BaseService)
-	service.FixArguments = socketFixArguments
+	service.initUnixService()
 	return service
+}
+
+func (service *UnixService) initUnixService() {
+	service.initBaseService()
+	service.FixArguments = socketFixArguments
 }
 
 // ServeUnixConn runs on a single tcp connection. ServeUnixConn blocks, serving
@@ -46,10 +50,17 @@ func (service *UnixService) ServeUnixConn(conn *net.UnixConn) {
 	if service.TLSConfig != nil {
 		tlsConn := tls.Server(conn, service.TLSConfig)
 		tlsConn.Handshake()
-		serveConn(&service.BaseService, tlsConn)
+		service.serveConn(tlsConn)
 	} else {
-		serveConn(&service.BaseService, conn)
+		service.serveConn(conn)
 	}
+}
+
+// ServeConn runs on a single net connection. ServeConn blocks, serving the
+// connection until the client hangs up. The caller typically invokes
+// ServeConn in a go statement.
+func (service *UnixService) ServeConn(conn net.Conn) {
+	service.ServeUnixConn(conn.(*net.UnixConn))
 }
 
 // ServeUnix runs on the UnixListener. ServeUnix blocks, serving the listener
@@ -69,4 +80,11 @@ func (service *UnixService) ServeUnix(listener *net.UnixListener) {
 		tempDelay = 0
 		go service.ServeUnixConn(conn)
 	}
+}
+
+// Serve runs on the Listener. Serve blocks, serving the listener
+// until the server is stop. The caller typically invokes Serve in a go
+// statement.
+func (service *UnixService) Serve(listener net.Listener) {
+	service.ServeUnix(listener.(*net.UnixListener))
 }

@@ -12,7 +12,7 @@
  *                                                        *
  * hprose base service for Go.                            *
  *                                                        *
- * LastModified: Sep 30, 2016                             *
+ * LastModified: Oct 2, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -69,9 +69,9 @@ func GetNextID() (uid string) {
 	return
 }
 
-func initBaseService(service *BaseService) {
-	initMethodManager(&service.methodManager)
-	initHandlerManager(&service.handlerManager)
+func (service *BaseService) initBaseService() {
+	service.initMethodManager()
+	service.initHandlerManager()
 	service.Timeout = 120 * 1000 * 1000 * 1000
 	service.Heartbeat = 3 * 1000 * 1000 * 1000
 	service.ErrorDelay = 10 * 1000 * 1000 * 1000

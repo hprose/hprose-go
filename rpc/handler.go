@@ -12,7 +12,7 @@
  *                                                        *
  * hprose handler manager for Go.                         *
  *                                                        *
- * LastModified: Sep 21, 2016                             *
+ * LastModified: Oct 2, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -63,7 +63,7 @@ type handlerManager struct {
 	}
 }
 
-func initHandlerManager(hm *handlerManager) {
+func (hm *handlerManager) initHandlerManager() {
 	hm.defaultInvokeHandler = func(
 		name string,
 		args []reflect.Value,

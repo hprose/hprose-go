@@ -12,7 +12,7 @@
  *                                                        *
  * hprose unix server for Go.                             *
  *                                                        *
- * LastModified: Sep 14, 2016                             *
+ * LastModified: Oct 2, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -27,8 +27,8 @@ import (
 
 // UnixServer is a hprose unix server
 type UnixServer struct {
-	*UnixService
-	*starter
+	UnixService
+	starter
 	uri      string
 	listener *net.UnixListener
 }
@@ -39,8 +39,8 @@ func NewUnixServer(uri string) (server *UnixServer) {
 		uri = "unix:/tmp/hprose.sock"
 	}
 	server = new(UnixServer)
-	server.UnixService = NewUnixService()
-	server.starter = &starter{server: server}
+	server.initUnixService()
+	server.starter.server = server
 	server.uri = uri
 	return
 }

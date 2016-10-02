@@ -12,7 +12,7 @@
  *                                                        *
  * hprose websocket client for Go.                        *
  *                                                        *
- * LastModified: Sep 30, 2016                             *
+ * LastModified: Oct 2, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -57,7 +57,7 @@ type WebSocketClient struct {
 // NewWebSocketClient is the constructor of WebSocketClient
 func NewWebSocketClient(uri ...string) (client *WebSocketClient) {
 	client = new(WebSocketClient)
-	initBaseClient(&client.BaseClient)
+	client.initBaseClient()
 	client.MaxConcurrentRequests = 10
 	client.cond.L = &sync.Mutex{}
 	client.closed = false
@@ -70,7 +70,7 @@ func newWebSocketClient(uri ...string) Client {
 	return NewWebSocketClient(uri...)
 }
 
-func checkWebSocketAddresses(client Client, uriList []string) {
+func checkWebSocketAddresses(client *WebSocketClient, uriList []string) {
 	for _, uri := range uriList {
 		if u, err := url.Parse(uri); err == nil {
 			if u.Scheme != "ws" && u.Scheme != "wss" {

@@ -12,7 +12,7 @@
  *                                                        *
  * hprose socket service for Go.                          *
  *                                                        *
- * LastModified: Sep 30, 2016                             *
+ * LastModified: Oct 2, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -24,7 +24,6 @@ import (
 	"net"
 	"reflect"
 	"sync"
-	"time"
 )
 
 // SocketContext is the hprose socket context for service
@@ -36,15 +35,10 @@ type SocketContext struct {
 // NewSocketContext is the constructor for SocketContext
 func NewSocketContext(service Service, conn net.Conn) (context *SocketContext) {
 	context = new(SocketContext)
-	initServiceContext(&context.ServiceContext, service)
+	context.initServiceContext(service)
 	context.TransportContext = context
 	context.Conn = conn
 	return
-}
-
-// SocketService is the hprose socket service
-type SocketService struct {
-	BaseService
 }
 
 func socketFixArguments(args []reflect.Value, context *ServiceContext) {
@@ -63,37 +57,29 @@ func socketFixArguments(args []reflect.Value, context *ServiceContext) {
 	}
 }
 
-// NewSocketService is the constructor of SocketService
-func NewSocketService() (service *SocketService) {
-	service = new(SocketService)
-	initBaseService(&service.BaseService)
-	service.FixArguments = socketFixArguments
-	return service
+// SocketService is the hprose socket service
+type SocketService struct {
+	BaseService
 }
 
-// ServeConn runs on a single net connection. ServeConn blocks, serving the
-// connection until the client hangs up. The caller typically invokes ServeConn
-// in a go statement.
-func (service *SocketService) ServeConn(conn net.Conn) {
-	serveConn(&service.BaseService, conn)
-}
-
-// Serve runs on the Listener. Serve blocks, serving the listener
-// until the server is stop. The caller typically invokes Serve in a go
-// statement.
-func (service *SocketService) Serve(listener net.Listener) {
-	var tempDelay time.Duration // how long to sleep on accept failure
-	for {
-		conn, err := listener.Accept()
-		if err != nil {
-			tempDelay = nextTempDelay(err, service.Event, tempDelay)
-			if tempDelay > 0 {
-				continue
-			}
-			return
+func (service *SocketService) serveConn(conn net.Conn) {
+	context := NewSocketContext(nil, conn)
+	event := service.Event
+	defer func() {
+		if e := recover(); e != nil {
+			err := NewPanicError(e)
+			fireErrorEvent(event, err, context)
 		}
-		tempDelay = 0
-		go service.ServeConn(conn)
+	}()
+	if err := fireAcceptEvent(event, context); err != nil {
+		fireErrorEvent(event, err, context)
+		return
+	}
+	handler := new(connHandler)
+	handler.conn = conn
+	handler.serve(service)
+	if err := fireCloseEvent(event, context); err != nil {
+		fireErrorEvent(event, err, context)
 	}
 }
 
@@ -148,28 +134,7 @@ type connHandler struct {
 	conn net.Conn
 }
 
-func serveConn(service *BaseService, conn net.Conn) {
-	context := NewSocketContext(nil, conn)
-	event := service.Event
-	defer func() {
-		if e := recover(); e != nil {
-			err := NewPanicError(e)
-			fireErrorEvent(event, err, context)
-		}
-	}()
-	if err := fireAcceptEvent(event, context); err != nil {
-		fireErrorEvent(event, err, context)
-		return
-	}
-	handler := new(connHandler)
-	handler.conn = conn
-	handler.serve(service)
-	if err := fireCloseEvent(event, context); err != nil {
-		fireErrorEvent(event, err, context)
-	}
-}
-
-func (handler *connHandler) serve(service *BaseService) {
+func (handler *connHandler) serve(service *SocketService) {
 	header := make([]byte, 4)
 	var size uint32
 	var data packet
@@ -201,7 +166,7 @@ func (handler *connHandler) serve(service *BaseService) {
 	handler.conn.Close()
 }
 
-func (handler *connHandler) handle(service *BaseService, data packet) {
+func (handler *connHandler) handle(service *SocketService, data packet) {
 	context := NewSocketContext(service, handler.conn)
 	data.body = service.Handle(data.body, &context.ServiceContext)
 	if data.fullDuplex {

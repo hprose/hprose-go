@@ -12,7 +12,7 @@
  *                                                        *
  * hprose basehttp service for Go.                        *
  *                                                        *
- * LastModified: Sep 30, 2016                             *
+ * LastModified: Oct 2, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -40,10 +40,10 @@ type baseHTTPService struct {
 	clientAccessPolicyXMLContent []byte
 }
 
-func initBaseHTTPService(service *baseHTTPService) {
+func (service *baseHTTPService) initBaseHTTPService() {
 	t := time.Now().UTC()
 	rand.Seed(t.UnixNano())
-	initBaseService(&service.BaseService)
+	service.initBaseService()
 	service.P3P = true
 	service.GET = true
 	service.CrossDomain = true

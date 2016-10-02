@@ -12,7 +12,7 @@
  *                                                        *
  * hprose method manager for Go.                          *
  *                                                        *
- * LastModified: Sep 20, 2016                             *
+ * LastModified: Oct 2, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -46,9 +46,9 @@ type methodManager struct {
 	sync.RWMutex
 }
 
-func initMethodManager(methods *methodManager) {
-	methods.MethodNames = make([]string, 0, 64)
-	methods.RemoteMethods = make(map[string]*Method)
+func (mm *methodManager) initMethodManager() {
+	mm.MethodNames = make([]string, 0, 64)
+	mm.RemoteMethods = make(map[string]*Method)
 }
 
 // AddFunction publish a func or bound method

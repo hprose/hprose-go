@@ -12,7 +12,7 @@
  *                                                        *
  * hprose http service for Go.                            *
  *                                                        *
- * LastModified: Sep 30, 2016                             *
+ * LastModified: Oct 2, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -36,25 +36,24 @@ type HTTPContext struct {
 	Request  *http.Request
 }
 
-func initHTTPContext(
-	context *HTTPContext,
-	service Service,
-	response http.ResponseWriter,
-	request *http.Request) {
-	initServiceContext(&context.ServiceContext, service)
-	context.TransportContext = context
-	context.Response = response
-	context.Request = request
-}
-
 // NewHTTPContext is the constructor of HTTPContext
 func NewHTTPContext(
 	service Service,
 	response http.ResponseWriter,
 	request *http.Request) (context *HTTPContext) {
 	context = new(HTTPContext)
-	initHTTPContext(context, service, response, request)
+	context.initHTTPContext(service, response, request)
 	return
+}
+
+func (context *HTTPContext) initHTTPContext(
+	service Service,
+	response http.ResponseWriter,
+	request *http.Request) {
+	context.initServiceContext(service)
+	context.TransportContext = context
+	context.Response = response
+	context.Request = request
 }
 
 // HTTPService is the hprose http service
@@ -89,7 +88,7 @@ func httpFixArguments(args []reflect.Value, context *ServiceContext) {
 // NewHTTPService is the constructor of HTTPService
 func NewHTTPService() (service *HTTPService) {
 	service = new(HTTPService)
-	initBaseHTTPService(&service.baseHTTPService)
+	service.initBaseHTTPService()
 	service.FixArguments = httpFixArguments
 	return
 }

@@ -12,7 +12,7 @@
  *                                                        *
  * hprose tcp service for Go.                             *
  *                                                        *
- * LastModified: Sep 30, 2016                             *
+ * LastModified: Oct 2, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -27,7 +27,7 @@ import (
 
 // TCPService is the hprose tcp service
 type TCPService struct {
-	BaseService
+	SocketService
 	Linger          int
 	NoDelay         bool
 	KeepAlive       bool
@@ -38,12 +38,16 @@ type TCPService struct {
 // NewTCPService is the constructor of TCPService
 func NewTCPService() (service *TCPService) {
 	service = new(TCPService)
-	initBaseService(&service.BaseService)
+	service.initTCPService()
+	return service
+}
+
+func (service *TCPService) initTCPService() {
+	service.initBaseService()
 	service.FixArguments = socketFixArguments
 	service.Linger = -1
 	service.NoDelay = true
 	service.KeepAlive = true
-	return service
 }
 
 // ServeTCPConn runs on a single tcp connection. ServeTCPConn blocks, serving
@@ -59,10 +63,17 @@ func (service *TCPService) ServeTCPConn(conn *net.TCPConn) {
 	if service.TLSConfig != nil {
 		tlsConn := tls.Server(conn, service.TLSConfig)
 		tlsConn.Handshake()
-		serveConn(&service.BaseService, tlsConn)
+		service.serveConn(tlsConn)
 	} else {
-		serveConn(&service.BaseService, conn)
+		service.serveConn(conn)
 	}
+}
+
+// ServeConn runs on a single net connection. ServeConn blocks, serving the
+// connection until the client hangs up. The caller typically invokes
+// ServeConn in a go statement.
+func (service *TCPService) ServeConn(conn net.Conn) {
+	service.ServeTCPConn(conn.(*net.TCPConn))
 }
 
 // ServeTCP runs on the TCPListener. ServeTCP blocks, serving the listener
@@ -82,4 +93,11 @@ func (service *TCPService) ServeTCP(listener *net.TCPListener) {
 		tempDelay = 0
 		go service.ServeTCPConn(conn)
 	}
+}
+
+// Serve runs on the Listener. Serve blocks, serving the listener
+// until the server is stop. The caller typically invokes Serve in a go
+// statement.
+func (service *TCPService) Serve(listener net.Listener) {
+	service.ServeTCP(listener.(*net.TCPListener))
 }

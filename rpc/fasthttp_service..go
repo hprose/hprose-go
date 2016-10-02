@@ -12,7 +12,7 @@
  *                                                        *
  * hprose fasthttp service for Go.                        *
  *                                                        *
- * LastModified: Sep 30, 2016                             *
+ * LastModified: Oct 2, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -37,7 +37,7 @@ type FastHTTPContext struct {
 func NewFastHTTPContext(
 	service Service, ctx *fasthttp.RequestCtx) (context *FastHTTPContext) {
 	context = new(FastHTTPContext)
-	initServiceContext(&context.ServiceContext, service)
+	context.initServiceContext(service)
 	context.TransportContext = context
 	context.RequestCtx = ctx
 	return
@@ -75,7 +75,7 @@ func fasthttpFixArguments(args []reflect.Value, context *ServiceContext) {
 // NewFastHTTPService is the constructor of FastHTTPService
 func NewFastHTTPService() (service *FastHTTPService) {
 	service = new(FastHTTPService)
-	initBaseHTTPService(&service.baseHTTPService)
+	service.initBaseHTTPService()
 	service.FixArguments = fasthttpFixArguments
 	return
 }

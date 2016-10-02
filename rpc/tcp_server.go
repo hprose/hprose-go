@@ -12,7 +12,7 @@
  *                                                        *
  * hprose tcp server for Go.                              *
  *                                                        *
- * LastModified: Sep 14, 2016                             *
+ * LastModified: Oct 2, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -26,8 +26,8 @@ import (
 
 // TCPServer is a hprose tcp server
 type TCPServer struct {
-	*TCPService
-	*starter
+	TCPService
+	starter
 	uri      string
 	listener *net.TCPListener
 }
@@ -38,8 +38,8 @@ func NewTCPServer(uri string) (server *TCPServer) {
 		uri = "tcp://127.0.0.1:0"
 	}
 	server = new(TCPServer)
-	server.TCPService = NewTCPService()
-	server.starter = &starter{server: server}
+	server.initTCPService()
+	server.starter.server = server
 	server.uri = uri
 	return
 }
