@@ -317,7 +317,7 @@ func (client *BaseClient) failswitch() {
 
 func (client *BaseClient) getContext(settings *InvokeSettings) *ClientContext {
 	context := new(ClientContext)
-	context.BaseContext = NewBaseContext()
+	context.initBaseContext()
 	context.Client = client
 	if settings == nil {
 		context.Timeout = client.timeout

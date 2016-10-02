@@ -12,7 +12,7 @@
  *                                                        *
  * hprose rpc client for Go.                              *
  *                                                        *
- * LastModified: Sep 25, 2016                             *
+ * LastModified: Oct 2, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -72,9 +72,8 @@ type Client interface {
 
 // ClientContext is the hprose client context
 type ClientContext struct {
-	*BaseContext
+	BaseContext
 	InvokeSettings
 	Retried int
 	Client  Client
 }
-
