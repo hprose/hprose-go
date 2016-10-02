@@ -12,7 +12,7 @@
  *                                                        *
  * rpc error for Go.                                      *
  *                                                        *
- * LastModified: Sep 13, 2016                             *
+ * LastModified: Oct 2, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -25,6 +25,7 @@ import (
 	"runtime"
 )
 
+// ErrTimeout represents a timeout error
 var ErrTimeout = errors.New("timeout")
 var errServerIsAlreadyStarted = errors.New("The server is already started")
 var errServerIsNotStarted = errors.New("The server is not started")
