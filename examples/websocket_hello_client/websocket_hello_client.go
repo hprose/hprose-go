@@ -16,7 +16,7 @@ type Stub struct {
 
 func main() {
 	client := rpc.NewWebSocketClient("ws://127.0.0.1:8080/")
-	client.SetTimeout(1 * time.Second)
+	client.MaxConcurrentRequests = 128
 	var stub *Stub
 	client.UseService(&stub)
 	stub.AsyncHello(func(result string, err error) {
@@ -24,9 +24,9 @@ func main() {
 	}, "async world")
 	fmt.Println(stub.Hello("world"))
 	start := time.Now()
-	var n int32 = 50000
+	var n int32 = 500000
 	done := make(chan bool)
-	for i := 0; i < 50000; i++ {
+	for i := 0; i < 500000; i++ {
 		stub.AsyncHello(func(result string, err error) {
 			if atomic.AddInt32(&n, -1) == 0 {
 				done <- true
