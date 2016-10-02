@@ -638,6 +638,17 @@ func getSyncRemoteMethod(
 	}
 }
 
+func fireClientErrorEvent(client *BaseClient, name string, err error) {
+	if e := recover(); e != nil {
+		err = NewPanicError(e)
+	}
+	if err != nil {
+		if event, ok := client.event.(onErrorEvent); ok {
+			event.OnError(name, err)
+		}
+	}
+}
+
 func getAsyncRemoteMethod(
 	client *BaseClient,
 	name string,
@@ -652,16 +663,7 @@ func getAsyncRemoteMethod(
 			if hasError {
 				out = append(out, reflect.ValueOf(&err).Elem())
 			}
-			defer func() {
-				if e := recover(); e != nil {
-					err = NewPanicError(e)
-				}
-				if err != nil {
-					if event, ok := client.event.(onErrorEvent); ok {
-						event.OnError(name, err)
-					}
-				}
-			}()
+			defer fireClientErrorEvent(client, name, err)
 			callback.Call(out)
 		}()
 		return nil
