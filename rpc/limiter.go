@@ -23,7 +23,7 @@ import "sync"
 
 type limiter struct {
 	cond                  sync.Cond
-	reqcount              int
+	requestCount          int
 	MaxConcurrentRequests int
 }
 
@@ -34,22 +34,22 @@ func (limiter *limiter) initLimiter() {
 
 func (limiter *limiter) limit() {
 	for {
-		if limiter.reqcount < limiter.MaxConcurrentRequests {
+		if limiter.requestCount < limiter.MaxConcurrentRequests {
 			break
 		}
 		limiter.cond.Wait()
 	}
-	limiter.reqcount++
+	limiter.requestCount++
 }
 
 func (limiter *limiter) unlimit() {
-	limiter.reqcount--
+	limiter.requestCount--
 	limiter.cond.Signal()
 }
 
 func (limiter *limiter) reset() {
-	limiter.reqcount = 0
-	for i := 0; i < limiter.MaxConcurrentRequests; i++ {
+	limiter.requestCount = 0
+	for i := limiter.MaxConcurrentRequests; i > 0; i-- {
 		limiter.cond.Signal()
 	}
 }
