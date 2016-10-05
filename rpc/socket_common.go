@@ -12,7 +12,7 @@
  *                                                        *
  * hprose socket common for Go.                           *
  *                                                        *
- * LastModified: Oct 3, 2016                              *
+ * LastModified: Oct 5, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -69,7 +69,7 @@ func recvData(reader io.Reader, data *packet) (err error) {
 
 var bufferPool = make(chan []byte, runtime.NumCPU()*2)
 
-func getBuffer() (buf []byte) {
+func acquireBuffer() (buf []byte) {
 	select {
 	case buf = <-bufferPool:
 		return
@@ -78,7 +78,7 @@ func getBuffer() (buf []byte) {
 	}
 }
 
-func putBuffer(buf []byte) {
+func releaseBuffer(buf []byte) {
 	select {
 	case bufferPool <- buf:
 	default:
@@ -88,7 +88,7 @@ func putBuffer(buf []byte) {
 func sendData(writer io.Writer, data packet) (err error) {
 	n := len(data.body)
 	i := 4
-	buf := getBuffer()
+	buf := acquireBuffer()
 	if data.fullDuplex {
 		fromUint32(buf, uint32(n|0x80000000))
 		buf[4] = data.id[0]
@@ -103,11 +103,11 @@ func sendData(writer io.Writer, data packet) (err error) {
 	if n <= p {
 		copy(buf[i:], data.body)
 		_, err = writer.Write(buf[:n+i])
-		putBuffer(buf)
+		releaseBuffer(buf)
 	} else {
 		copy(buf[i:], data.body[:p])
 		_, err = writer.Write(buf)
-		putBuffer(buf)
+		releaseBuffer(buf)
 		if err != nil {
 			return err
 		}

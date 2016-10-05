@@ -12,7 +12,7 @@
  *                                                        *
  * hprose socket client for Go.                           *
  *                                                        *
- * LastModified: Oct 3, 2016                              *
+ * LastModified: Oct 5, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/

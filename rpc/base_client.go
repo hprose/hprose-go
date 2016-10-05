@@ -217,7 +217,7 @@ func (client *BaseClient) UseService(remoteService interface{}, namespace ...str
 
 var clientContextPool = make(chan *ClientContext, runtime.NumCPU())
 
-func getClientContext() (context *ClientContext) {
+func acquireClientContext() (context *ClientContext) {
 	select {
 	case context = <-clientContextPool:
 		return
@@ -226,7 +226,7 @@ func getClientContext() (context *ClientContext) {
 	}
 }
 
-func putClientContext(context *ClientContext) {
+func releaseClientContext(context *ClientContext) {
 	select {
 	case clientContextPool <- context:
 	default:
@@ -256,7 +256,7 @@ func (client *BaseClient) initClientContext(
 
 // Invoke the remote method synchronous
 func (client *BaseClient) Invoke(name string, args []reflect.Value, settings *InvokeSettings) (results []reflect.Value, err error) {
-	context := getClientContext()
+	context := acquireClientContext()
 	client.initClientContext(context, settings)
 	results, err = client.handlerManager.invokeHandler(name, args, context)
 	if results == nil && len(context.ResultTypes) > 0 {
@@ -266,7 +266,7 @@ func (client *BaseClient) Invoke(name string, args []reflect.Value, settings *In
 			results[i] = reflect.New(context.ResultTypes[i]).Elem()
 		}
 	}
-	putClientContext(context)
+	releaseClientContext(context)
 	return
 }
 

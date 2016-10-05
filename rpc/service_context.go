@@ -12,7 +12,7 @@
  *                                                        *
  * hprose service context for Go.                         *
  *                                                        *
- * LastModified: Oct 2, 2016                              *
+ * LastModified: Oct 5, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -31,7 +31,10 @@ type ServiceContext struct {
 
 func (context *ServiceContext) initServiceContext(service Service) {
 	context.initBaseContext()
+	context.Method = nil
 	context.Service = service
+	context.IsMissingMethod = false
+	context.ByRef = false
 }
 
 // NewServiceContext is the constructor of ServiceContext

@@ -12,7 +12,7 @@
  *                                                        *
  * hprose socket service for Go.                          *
  *                                                        *
- * LastModified: Oct 3, 2016                              *
+ * LastModified: Oct 5, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -23,6 +23,7 @@ import (
 	"bufio"
 	"net"
 	"reflect"
+	"runtime"
 	"sync"
 )
 
@@ -32,9 +33,26 @@ type SocketContext struct {
 	net.Conn
 }
 
-// NewSocketContext is the constructor for SocketContext
-func NewSocketContext(service Service, conn net.Conn) (context *SocketContext) {
-	context = new(SocketContext)
+var socketContextPool = make(chan *SocketContext, runtime.NumCPU()*2)
+
+func acquireSocketContext() (context *SocketContext) {
+	select {
+	case context = <-socketContextPool:
+		return
+	default:
+		return new(SocketContext)
+	}
+}
+
+func releaseSocketContext(context *SocketContext) {
+	select {
+	case socketContextPool <- context:
+	default:
+	}
+}
+
+func (context *SocketContext) initSocketContext(
+	service Service, conn net.Conn) {
 	context.initServiceContext(service)
 	context.TransportContext = context
 	context.Conn = conn
@@ -63,7 +81,8 @@ type SocketService struct {
 }
 
 func (service *SocketService) serveConn(conn net.Conn) {
-	context := NewSocketContext(nil, conn)
+	context := new(SocketContext)
+	context.initSocketContext(service, conn)
 	event := service.Event
 	defer func() {
 		if e := recover(); e != nil {
@@ -151,7 +170,8 @@ func (handler *connHandler) serve(service *SocketService) {
 }
 
 func (handler *connHandler) handle(service *SocketService, data packet) {
-	context := NewSocketContext(service, handler.conn)
+	context := acquireSocketContext()
+	context.initSocketContext(service, handler.conn)
 	data.body = service.Handle(data.body, &context.ServiceContext)
 	if data.fullDuplex {
 		handler.Lock()
@@ -163,4 +183,5 @@ func (handler *connHandler) handle(service *SocketService, data packet) {
 	if err != nil {
 		fireErrorEvent(service.Event, err, &context.ServiceContext)
 	}
+	releaseSocketContext(context)
 }
