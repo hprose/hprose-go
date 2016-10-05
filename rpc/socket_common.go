@@ -12,7 +12,7 @@
  *                                                        *
  * hprose socket common for Go.                           *
  *                                                        *
- * LastModified: Sep 25, 2016                             *
+ * LastModified: Oct 3, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -20,7 +20,9 @@
 package rpc
 
 import (
+	"io"
 	"net"
+	"runtime"
 	"time"
 )
 
@@ -41,19 +43,52 @@ func fromUint32(b []byte, i uint32) {
 	b[3] = byte(i)
 }
 
-func sendData(conn net.Conn, data packet) (err error) {
-	n := len(data.body)
-	var l int
-	switch {
-	case n > 1020 && n <= 1400:
-		l = 2048
-	case n > 508:
-		l = 1024
-	default:
-		l = 512
+func recvData(reader io.Reader, data *packet) (err error) {
+	header := data.id[:]
+	if _, err = reader.Read(header); err != nil {
+		return
 	}
-	buf := make([]byte, l)
+	size := toUint32(header)
+	data.fullDuplex = (size&0x80000000 != 0)
+	if data.fullDuplex {
+		size &= 0x7FFFFFFF
+		data.fullDuplex = true
+		data.body = nil
+		if _, err = reader.Read(data.id[:]); err != nil {
+			return
+		}
+	}
+	if cap(data.body) >= int(size) {
+		data.body = data.body[:size]
+	} else {
+		data.body = make([]byte, size)
+	}
+	_, err = reader.Read(data.body)
+	return
+}
+
+var bufferPool = make(chan []byte, runtime.NumCPU()*2)
+
+func getBuffer() (buf []byte) {
+	select {
+	case buf = <-bufferPool:
+		return
+	default:
+		return make([]byte, 2048)
+	}
+}
+
+func putBuffer(buf []byte) {
+	select {
+	case bufferPool <- buf:
+	default:
+	}
+}
+
+func sendData(writer io.Writer, data packet) (err error) {
+	n := len(data.body)
 	i := 4
+	buf := getBuffer()
 	if data.fullDuplex {
 		fromUint32(buf, uint32(n|0x80000000))
 		buf[4] = data.id[0]
@@ -64,17 +99,19 @@ func sendData(conn net.Conn, data packet) (err error) {
 	} else {
 		fromUint32(buf, uint32(n))
 	}
-	p := l - i
+	p := 2048 - i
 	if n <= p {
 		copy(buf[i:], data.body)
-		_, err = conn.Write(buf[:n+i])
+		_, err = writer.Write(buf[:n+i])
+		putBuffer(buf)
 	} else {
 		copy(buf[i:], data.body[:p])
-		_, err = conn.Write(buf)
+		_, err = writer.Write(buf)
+		putBuffer(buf)
 		if err != nil {
 			return err
 		}
-		_, err = conn.Write(data.body[p:])
+		_, err = writer.Write(data.body[p:])
 	}
 	return err
 }
