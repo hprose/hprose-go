@@ -18,10 +18,11 @@ func BenchmarkHprose2(b *testing.B) {
 	server := hproserpc.NewTCPServer("")
 	server.AddFunction("hello", hello, hproserpc.Options{})
 	server.Handle()
-	client := hprose.NewClient(server.URI())
+	client := hproserpc.NewTCPClient(server.URI())
 	var ro *RO
 	client.UseService(&ro)
 	defer server.Close()
+	defer client.Close()
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		ro.Hello("World")
@@ -35,10 +36,11 @@ func BenchmarkHprose2Unix(b *testing.B) {
 	server := hproserpc.NewUnixServer("")
 	server.AddFunction("hello", hello, hproserpc.Options{})
 	server.Handle()
-	client := hprose.NewClient(server.URI())
+	client := hproserpc.NewUnixClient(server.URI())
 	var ro *RO
 	client.UseService(&ro)
 	defer server.Close()
+	defer client.Close()
 	b.StartTimer()
 	for i := 0; i < b.N; i++ {
 		ro.Hello("World")
