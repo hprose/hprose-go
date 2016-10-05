@@ -12,7 +12,7 @@
  *                                                        *
  * hprose rpc base client for Go.                         *
  *                                                        *
- * LastModified: Oct 2, 2016                              *
+ * LastModified: Oct 5, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -26,6 +26,7 @@ import (
 	"io"
 	"math/rand"
 	"reflect"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync/atomic"
@@ -214,9 +215,49 @@ func (client *BaseClient) UseService(remoteService interface{}, namespace ...str
 	buildRemoteService(client, v, ns)
 }
 
+var clientContextPool = make(chan *ClientContext, runtime.NumCPU())
+
+func getClientContext() (context *ClientContext) {
+	select {
+	case context = <-clientContextPool:
+		return
+	default:
+		return new(ClientContext)
+	}
+}
+
+func putClientContext(context *ClientContext) {
+	select {
+	case clientContextPool <- context:
+	default:
+	}
+}
+
+func (client *BaseClient) initClientContext(
+	context *ClientContext, settings *InvokeSettings) {
+	context.initBaseContext()
+	context.Client = client
+	context.Retried = 0
+	if settings == nil {
+		context.InvokeSettings = InvokeSettings{
+			Timeout: client.timeout,
+			Retry:   client.retry,
+		}
+	} else {
+		context.InvokeSettings = *settings
+		if settings.Timeout <= 0 {
+			context.Timeout = client.timeout
+		}
+		if settings.Retry <= 0 {
+			context.Retry = client.retry
+		}
+	}
+}
+
 // Invoke the remote method synchronous
 func (client *BaseClient) Invoke(name string, args []reflect.Value, settings *InvokeSettings) (results []reflect.Value, err error) {
-	context := client.getContext(settings)
+	context := getClientContext()
+	client.initClientContext(context, settings)
 	results, err = client.handlerManager.invokeHandler(name, args, context)
 	if results == nil && len(context.ResultTypes) > 0 {
 		n := len(context.ResultTypes)
@@ -225,6 +266,7 @@ func (client *BaseClient) Invoke(name string, args []reflect.Value, settings *In
 			results[i] = reflect.New(context.ResultTypes[i]).Elem()
 		}
 	}
+	putClientContext(context)
 	return
 }
 
@@ -313,25 +355,6 @@ func (client *BaseClient) failswitch() {
 	if event, ok := client.event.(onFailswitchEvent); ok {
 		event.OnFailswitch(client)
 	}
-}
-
-func (client *BaseClient) getContext(settings *InvokeSettings) *ClientContext {
-	context := new(ClientContext)
-	context.initBaseContext()
-	context.Client = client
-	if settings == nil {
-		context.Timeout = client.timeout
-		context.Retry = client.retry
-	} else {
-		context.InvokeSettings = *settings
-		if settings.Timeout <= 0 {
-			context.Timeout = client.timeout
-		}
-		if settings.Retry <= 0 {
-			context.Retry = client.retry
-		}
-	}
-	return context
 }
 
 func (client *BaseClient) encode(
