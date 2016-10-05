@@ -51,13 +51,6 @@ type BaseClient struct {
 	SendAndReceive func([]byte, *ClientContext) ([]byte, error)
 }
 
-// NewBaseClient is the constructor for BaseClient
-func NewBaseClient() (client *BaseClient) {
-	client = new(BaseClient)
-	client.initBaseClient()
-	return
-}
-
 func (client *BaseClient) initBaseClient() {
 	client.initHandlerManager()
 	client.timeout = 30 * 1000 * 1000 * 1000
