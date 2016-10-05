@@ -49,13 +49,6 @@ func (context *BaseContext) initBaseContext() {
 	context.userData = make(map[string]interface{})
 }
 
-// NewBaseContext is the constructor of BaseContext
-func NewBaseContext() (context *BaseContext) {
-	context = new(BaseContext)
-	context.initBaseContext()
-	return
-}
-
 // UserData return the user data
 func (context *BaseContext) UserData() map[string]interface{} {
 	return context.userData
