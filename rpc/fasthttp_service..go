@@ -12,7 +12,7 @@
  *                                                        *
  * hprose fasthttp service for Go.                        *
  *                                                        *
- * LastModified: Oct 2, 2016                              *
+ * LastModified: Oct 5, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -21,6 +21,7 @@ package rpc
 
 import (
 	"reflect"
+	"runtime"
 	"strings"
 
 	"github.com/hprose/hprose-golang/util"
@@ -33,19 +34,17 @@ type FastHTTPContext struct {
 	RequestCtx *fasthttp.RequestCtx
 }
 
-// NewFastHTTPContext is the constructor of FastHTTPContext
-func NewFastHTTPContext(
-	service Service, ctx *fasthttp.RequestCtx) (context *FastHTTPContext) {
-	context = new(FastHTTPContext)
+func (context *FastHTTPContext) initFastHTTPContext(
+	service Service, ctx *fasthttp.RequestCtx) {
 	context.initServiceContext(service)
 	context.TransportContext = context
 	context.RequestCtx = ctx
-	return
 }
 
 // FastHTTPService is the hprose fasthttp service
 type FastHTTPService struct {
 	baseHTTPService
+	contextPool chan *FastHTTPContext
 }
 
 type fastSendHeaderEvent interface {
@@ -76,8 +75,35 @@ func fasthttpFixArguments(args []reflect.Value, context *ServiceContext) {
 func NewFastHTTPService() (service *FastHTTPService) {
 	service = new(FastHTTPService)
 	service.initBaseHTTPService()
+	service.contextPool = make(chan *FastHTTPContext, runtime.NumCPU()*16)
 	service.FixArguments = fasthttpFixArguments
 	return
+}
+
+// ContextPoolSize returns the context pool size
+func (service *FastHTTPService) ContextPoolSize() int {
+	return cap(service.contextPool)
+}
+
+// SetContextPoolSize sets the context pool size
+func (service *FastHTTPService) SetContextPoolSize(value int) {
+	service.contextPool = make(chan *FastHTTPContext, value)
+}
+
+func (service *FastHTTPService) acquireContext() (context *FastHTTPContext) {
+	select {
+	case context = <-service.contextPool:
+		return
+	default:
+		return new(FastHTTPContext)
+	}
+}
+
+func (service *FastHTTPService) releaseContext(context *FastHTTPContext) {
+	select {
+	case service.contextPool <- context:
+	default:
+	}
 }
 
 func (service *FastHTTPService) xmlFileHandler(
@@ -165,7 +191,8 @@ func (service *FastHTTPService) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
 		service.crossDomainXMLHandler(ctx) {
 		return
 	}
-	context := NewFastHTTPContext(service, ctx)
+	context := service.acquireContext()
+	context.initFastHTTPContext(service, ctx)
 	var resp []byte
 	if err := service.sendHeader(context); err == nil {
 		switch util.ByteString(ctx.Method()) {
@@ -182,6 +209,7 @@ func (service *FastHTTPService) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
 		resp = service.endError(err, &context.ServiceContext)
 	}
 	context.RequestCtx = nil
+	service.releaseContext(context)
 	ctx.Response.Header.Set("Content-Length", util.Itoa(len(resp)))
 	ctx.SetBody(resp)
 }

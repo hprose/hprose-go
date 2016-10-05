@@ -39,8 +39,8 @@ type SocketClient struct {
 	ReadBuffer  int
 	WriteBuffer int
 	IdleTimeout time.Duration
-	tlsConfig   *tls.Config
-	pool        chan *connEntry
+	TLSConfig   *tls.Config
+	connPool    chan *connEntry
 	connCount   int32
 	nextid      uint32
 	createConn  func() net.Conn
@@ -49,20 +49,25 @@ type SocketClient struct {
 
 func (client *SocketClient) initSocketClient() {
 	client.initBaseClient()
+	client.ReadBuffer = 0
+	client.WriteBuffer = 0
 	client.IdleTimeout = 30 * time.Second
-	client.pool = make(chan *connEntry, runtime.NumCPU()*2)
+	client.TLSConfig = nil
+	client.connPool = make(chan *connEntry, runtime.NumCPU()*2)
+	client.connCount = 0
+	client.nextid = 0
 	client.cond.L = &sync.Mutex{}
 	client.SetFullDuplex(false)
 }
 
 // TLSClientConfig returns the tls.Config in hprose client
 func (client *SocketClient) TLSClientConfig() *tls.Config {
-	return client.tlsConfig
+	return client.TLSConfig
 }
 
 // SetTLSClientConfig sets the tls.Config
 func (client *SocketClient) SetTLSClientConfig(config *tls.Config) {
-	client.tlsConfig = config
+	client.TLSConfig = config
 }
 
 // SetFullDuplex sets full duplex or half duplex mode of hprose socket client
@@ -76,25 +81,25 @@ func (client *SocketClient) SetFullDuplex(fullDuplex bool) {
 
 // MaxPoolSize returns the max conn pool size of hprose socket client
 func (client *SocketClient) MaxPoolSize() int {
-	return cap(client.pool)
+	return cap(client.connPool)
 }
 
 // SetMaxPoolSize sets the max conn pool size of hprose socket client
 func (client *SocketClient) SetMaxPoolSize(size int) {
 	pool := make(chan *connEntry, size)
-	for i := 0; i < len(client.pool); i++ {
+	for i := 0; i < len(client.connPool); i++ {
 		select {
-		case pool <- <-client.pool:
+		case pool <- <-client.connPool:
 		default:
 		}
 	}
-	client.pool = pool
+	client.connPool = pool
 }
 
 func (client *SocketClient) getConn() net.Conn {
 	for {
 		select {
-		case entry, closed := <-client.pool:
+		case entry, closed := <-client.connPool:
 			if !closed {
 				panic(errClientIsAlreadyClosed)
 			}
@@ -119,7 +124,7 @@ func (client *SocketClient) fetchConn() net.Conn {
 			client.cond.L.Unlock()
 			return conn
 		}
-		if atomic.AddInt32(&client.connCount, 1) <= int32(cap(client.pool)) {
+		if int(atomic.AddInt32(&client.connCount, 1)) <= cap(client.connPool) {
 			client.cond.L.Unlock()
 			return client.createConn()
 		}
@@ -136,7 +141,7 @@ func ifErrorPanic(err error) {
 
 // Close the client
 func (client *SocketClient) Close() {
-	close(client.pool)
+	close(client.connPool)
 }
 
 func (client *SocketClient) fullDuplexSendAndReceive(
@@ -179,7 +184,7 @@ func (client *SocketClient) halfDuplexSendAndReceive(
 		entry.conn = nil
 		entry.timer = nil
 	})
-	client.pool <- entry
+	client.connPool <- entry
 	client.cond.Signal()
 	return dataPacket.body, nil
 }

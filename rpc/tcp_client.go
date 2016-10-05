@@ -12,7 +12,7 @@
  *                                                        *
  * hprose tcp client for Go.                              *
  *                                                        *
- * LastModified: Oct 3, 2016                              *
+ * LastModified: Oct 5, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -82,8 +82,8 @@ func (client *TCPClient) createTCPConn() net.Conn {
 	if client.WriteBuffer > 0 {
 		ifErrorPanic(conn.SetWriteBuffer(client.WriteBuffer))
 	}
-	if client.tlsConfig != nil {
-		return tls.Client(conn, client.tlsConfig)
+	if client.TLSConfig != nil {
+		return tls.Client(conn, client.TLSConfig)
 	}
 	return conn
 }

@@ -21,6 +21,7 @@ package rpc
 
 import (
 	"bufio"
+	"crypto/tls"
 	"net"
 	"reflect"
 	"runtime"
@@ -31,24 +32,6 @@ import (
 type SocketContext struct {
 	ServiceContext
 	net.Conn
-}
-
-var socketContextPool = make(chan *SocketContext, runtime.NumCPU()*2)
-
-func acquireSocketContext() (context *SocketContext) {
-	select {
-	case context = <-socketContextPool:
-		return
-	default:
-		return new(SocketContext)
-	}
-}
-
-func releaseSocketContext(context *SocketContext) {
-	select {
-	case socketContextPool <- context:
-	default:
-	}
 }
 
 func (context *SocketContext) initSocketContext(
@@ -78,6 +61,41 @@ func socketFixArguments(args []reflect.Value, context *ServiceContext) {
 // SocketService is the hprose socket service
 type SocketService struct {
 	BaseService
+	TLSConfig   *tls.Config
+	contextPool chan *SocketContext
+}
+
+func (service *SocketService) initSocketService() {
+	service.initBaseService()
+	service.contextPool = make(chan *SocketContext, runtime.NumCPU()*8)
+	service.FixArguments = socketFixArguments
+	service.TLSConfig = nil
+}
+
+// ContextPoolSize returns the context pool size
+func (service *SocketService) ContextPoolSize() int {
+	return cap(service.contextPool)
+}
+
+// SetContextPoolSize sets the context pool size
+func (service *SocketService) SetContextPoolSize(value int) {
+	service.contextPool = make(chan *SocketContext, value)
+}
+
+func (service *SocketService) acquireContext() (context *SocketContext) {
+	select {
+	case context = <-service.contextPool:
+		return
+	default:
+		return new(SocketContext)
+	}
+}
+
+func (service *SocketService) releaseContext(context *SocketContext) {
+	select {
+	case service.contextPool <- context:
+	default:
+	}
 }
 
 func (service *SocketService) serveConn(conn net.Conn) {
@@ -170,7 +188,7 @@ func (handler *connHandler) serve(service *SocketService) {
 }
 
 func (handler *connHandler) handle(service *SocketService, data packet) {
-	context := acquireSocketContext()
+	context := service.acquireContext()
 	context.initSocketContext(service, handler.conn)
 	data.body = service.Handle(data.body, &context.ServiceContext)
 	if data.fullDuplex {
@@ -183,5 +201,5 @@ func (handler *connHandler) handle(service *SocketService, data packet) {
 	if err != nil {
 		fireErrorEvent(service.Event, err, &context.ServiceContext)
 	}
-	releaseSocketContext(context)
+	service.releaseContext(context)
 }

@@ -12,7 +12,7 @@
  *                                                        *
  * hprose unix service for Go.                            *
  *                                                        *
- * LastModified: Oct 2, 2016                              *
+ * LastModified: Oct 5, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -28,19 +28,13 @@ import (
 // UnixService is the hprose unix service
 type UnixService struct {
 	SocketService
-	TLSConfig *tls.Config
 }
 
 // NewUnixService is the constructor of UnixService
 func NewUnixService() (service *UnixService) {
 	service = new(UnixService)
-	service.initUnixService()
+	service.initSocketService()
 	return service
-}
-
-func (service *UnixService) initUnixService() {
-	service.initBaseService()
-	service.FixArguments = socketFixArguments
 }
 
 // ServeUnixConn runs on a single tcp connection. ServeUnixConn blocks, serving

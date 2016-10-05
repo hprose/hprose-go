@@ -12,7 +12,7 @@
  *                                                        *
  * hprose http service for Go.                            *
  *                                                        *
- * LastModified: Oct 2, 2016                              *
+ * LastModified: Oct 5, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -24,6 +24,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	"reflect"
+	"runtime"
 	"strings"
 
 	"github.com/hprose/hprose-golang/util"
@@ -34,16 +35,6 @@ type HTTPContext struct {
 	ServiceContext
 	Response http.ResponseWriter
 	Request  *http.Request
-}
-
-// NewHTTPContext is the constructor of HTTPContext
-func NewHTTPContext(
-	service Service,
-	response http.ResponseWriter,
-	request *http.Request) (context *HTTPContext) {
-	context = new(HTTPContext)
-	context.initHTTPContext(service, response, request)
-	return
 }
 
 func (context *HTTPContext) initHTTPContext(
@@ -59,6 +50,7 @@ func (context *HTTPContext) initHTTPContext(
 // HTTPService is the hprose http service
 type HTTPService struct {
 	baseHTTPService
+	contextPool chan *HTTPContext
 }
 
 type sendHeaderEvent interface {
@@ -89,8 +81,35 @@ func httpFixArguments(args []reflect.Value, context *ServiceContext) {
 func NewHTTPService() (service *HTTPService) {
 	service = new(HTTPService)
 	service.initBaseHTTPService()
+	service.contextPool = make(chan *HTTPContext, runtime.NumCPU()*16)
 	service.FixArguments = httpFixArguments
 	return
+}
+
+// ContextPoolSize returns the context pool size
+func (service *HTTPService) ContextPoolSize() int {
+	return cap(service.contextPool)
+}
+
+// SetContextPoolSize sets the context pool size
+func (service *HTTPService) SetContextPoolSize(value int) {
+	service.contextPool = make(chan *HTTPContext, value)
+}
+
+func (service *HTTPService) acquireContext() (context *HTTPContext) {
+	select {
+	case context = <-service.contextPool:
+		return
+	default:
+		return new(HTTPContext)
+	}
+}
+
+func (service *HTTPService) releaseContext(context *HTTPContext) {
+	select {
+	case service.contextPool <- context:
+	default:
+	}
 }
 
 func (service *HTTPService) xmlFileHandler(
@@ -190,7 +209,8 @@ func (service *HTTPService) ServeHTTP(
 		service.crossDomainXMLHandler(response, request) {
 		return
 	}
-	context := NewHTTPContext(service, response, request)
+	context := service.acquireContext()
+	context.initHTTPContext(service, response, request)
 	var resp []byte
 	err := service.sendHeader(context)
 	if err == nil {
@@ -211,6 +231,7 @@ func (service *HTTPService) ServeHTTP(
 	if err != nil {
 		resp = service.endError(err, &context.ServiceContext)
 	}
+	service.releaseContext(context)
 	response.Header().Set("Content-Length", util.Itoa(len(resp)))
 	response.Write(resp)
 }

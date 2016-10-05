@@ -47,6 +47,7 @@ type BaseClient struct {
 	retry          int
 	timeout        time.Duration
 	event          ClientEvent
+	contextPool    chan *ClientContext
 	SendAndReceive func([]byte, *ClientContext) ([]byte, error)
 }
 
@@ -61,6 +62,7 @@ func (client *BaseClient) initBaseClient() {
 	client.initHandlerManager()
 	client.timeout = 30 * 1000 * 1000 * 1000
 	client.retry = 10
+	client.contextPool = make(chan *ClientContext, runtime.NumCPU())
 	client.override.invokeHandler = func(
 		name string, args []reflect.Value,
 		context Context) (results []reflect.Value, err error) {
@@ -215,20 +217,18 @@ func (client *BaseClient) UseService(remoteService interface{}, namespace ...str
 	buildRemoteService(client, v, ns)
 }
 
-var clientContextPool = make(chan *ClientContext, runtime.NumCPU())
-
-func acquireClientContext() (context *ClientContext) {
+func (client *BaseClient) acquireContext() (context *ClientContext) {
 	select {
-	case context = <-clientContextPool:
+	case context = <-client.contextPool:
 		return
 	default:
 		return new(ClientContext)
 	}
 }
 
-func releaseClientContext(context *ClientContext) {
+func (client *BaseClient) releaseContext(context *ClientContext) {
 	select {
-	case clientContextPool <- context:
+	case client.contextPool <- context:
 	default:
 	}
 }
@@ -256,7 +256,7 @@ func (client *BaseClient) initClientContext(
 
 // Invoke the remote method synchronous
 func (client *BaseClient) Invoke(name string, args []reflect.Value, settings *InvokeSettings) (results []reflect.Value, err error) {
-	context := acquireClientContext()
+	context := client.acquireContext()
 	client.initClientContext(context, settings)
 	results, err = client.handlerManager.invokeHandler(name, args, context)
 	if results == nil && len(context.ResultTypes) > 0 {
@@ -266,7 +266,7 @@ func (client *BaseClient) Invoke(name string, args []reflect.Value, settings *In
 			results[i] = reflect.New(context.ResultTypes[i]).Elem()
 		}
 	}
-	releaseClientContext(context)
+	client.releaseContext(context)
 	return
 }
 

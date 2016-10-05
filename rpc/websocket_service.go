@@ -12,7 +12,7 @@
  *                                                        *
  * hprose websocket service for Go.                       *
  *                                                        *
- * LastModified: Oct 2, 2016                              *
+ * LastModified: Oct 5, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -22,6 +22,7 @@ package rpc
 import (
 	"net/http"
 	"reflect"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -39,6 +40,7 @@ type WebSocketContext struct {
 type WebSocketService struct {
 	HTTPService
 	websocket.Upgrader
+	contextPool chan *WebSocketContext
 }
 
 func websocketFixArguments(args []reflect.Value, context *ServiceContext) {
@@ -69,6 +71,7 @@ func websocketFixArguments(args []reflect.Value, context *ServiceContext) {
 func NewWebSocketService() (service *WebSocketService) {
 	service = new(WebSocketService)
 	service.initBaseHTTPService()
+	service.contextPool = make(chan *WebSocketContext, runtime.NumCPU()*32)
 	service.FixArguments = websocketFixArguments
 	service.CheckOrigin = func(request *http.Request) bool {
 		origin := request.Header.Get("origin")
@@ -84,6 +87,32 @@ func NewWebSocketService() (service *WebSocketService) {
 	return
 }
 
+// ContextPoolSize returns the context pool size
+func (service *WebSocketService) ContextPoolSize() int {
+	return cap(service.contextPool)
+}
+
+// SetContextPoolSize sets the context pool size
+func (service *WebSocketService) SetContextPoolSize(value int) {
+	service.contextPool = make(chan *WebSocketContext, value)
+}
+
+func (service *WebSocketService) acquireContext() (context *WebSocketContext) {
+	select {
+	case context = <-service.contextPool:
+		return
+	default:
+		return new(WebSocketContext)
+	}
+}
+
+func (service *WebSocketService) releaseContext(context *WebSocketContext) {
+	select {
+	case service.contextPool <- context:
+	default:
+	}
+}
+
 // ServeHTTP is the hprose http handler method
 func (service *WebSocketService) ServeHTTP(
 	response http.ResponseWriter, request *http.Request) {
@@ -93,8 +122,10 @@ func (service *WebSocketService) ServeHTTP(
 	}
 	conn, err := service.Upgrade(response, request, nil)
 	if err != nil {
-		context := NewHTTPContext(service, response, request)
+		context := service.HTTPService.acquireContext()
+		context.initHTTPContext(service, response, request)
 		resp := service.endError(err, &context.ServiceContext)
+		service.HTTPService.releaseContext(context)
 		response.Header().Set("Content-Length", util.Itoa(len(resp)))
 		response.Write(resp)
 		return
@@ -103,21 +134,25 @@ func (service *WebSocketService) ServeHTTP(
 
 	mutex := new(sync.Mutex)
 	for {
-		context := new(WebSocketContext)
-		context.initHTTPContext(service, response, request)
-		context.WebSocket = conn
 		msgType, data, err := conn.ReadMessage()
 		if err != nil {
 			break
 		}
 		if msgType == websocket.BinaryMessage {
-			go service.handle(mutex, data, context)
+			go service.handle(data, mutex, response, request, conn)
 		}
 	}
 }
 
 func (service *WebSocketService) handle(
-	mutex *sync.Mutex, data []byte, context *WebSocketContext) {
+	data []byte,
+	mutex *sync.Mutex,
+	response http.ResponseWriter,
+	request *http.Request,
+	conn *websocket.Conn) {
+	context := service.acquireContext()
+	context.initHTTPContext(service, response, request)
+	context.WebSocket = conn
 	id := data[0:4]
 	data = service.Handle(data[4:], &context.ServiceContext)
 	mutex.Lock()
@@ -135,4 +170,5 @@ func (service *WebSocketService) handle(
 	if err != nil {
 		fireErrorEvent(service.Event, err, &context.ServiceContext)
 	}
+	service.releaseContext(context)
 }
