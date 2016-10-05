@@ -12,7 +12,7 @@
  *                                                        *
  * hprose server for Go.                                  *
  *                                                        *
- * LastModified: Sep 15, 2016                             *
+ * LastModified: Oct 5, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -48,11 +48,11 @@ func (starter *starter) Start() (err error) {
 			return err
 		}
 		starter.c = make(chan os.Signal, 1)
-		signal.Notify(starter.c, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT, syscall.SIGSTOP, syscall.SIGKILL)
+		signal.Notify(starter.c, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT, syscall.SIGKILL)
 		s := <-starter.c
 		starter.server.Close()
 		switch s {
-		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGSTOP, syscall.SIGINT, syscall.SIGKILL:
+		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT, syscall.SIGKILL:
 			signal.Stop(starter.c)
 			return
 		}
@@ -66,5 +66,5 @@ func (starter *starter) Restart() {
 
 // Stop the hprose server
 func (starter *starter) Stop() {
-	starter.c <- syscall.SIGSTOP
+	starter.c <- syscall.SIGQUIT
 }
