@@ -12,7 +12,7 @@
  *                                                        *
  * hprose unix server for Go.                             *
  *                                                        *
- * LastModified: Oct 2, 2016                              *
+ * LastModified: Oct 3, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -21,8 +21,7 @@ package rpc
 
 import (
 	"net"
-	"os"
-	"strings"
+	"net/url"
 )
 
 // UnixServer is a hprose unix server
@@ -58,15 +57,15 @@ func (server *UnixServer) Handle() (err error) {
 	if server.listener != nil {
 		return errServerIsAlreadyStarted
 	}
-	scheme, path := parseUnixURI(server.uri)
+	u, err := url.Parse(server.uri)
 	if err != nil {
 		return err
 	}
-	addr, err := net.ResolveUnixAddr(scheme, path)
+	addr, err := net.ResolveUnixAddr(u.Scheme, u.Path)
 	if err != nil {
 		return err
 	}
-	if server.listener, err = net.ListenUnix(scheme, addr); err != nil {
+	if server.listener, err = net.ListenUnix(u.Scheme, addr); err != nil {
 		return err
 	}
 	go server.ServeUnix(server.listener)
@@ -80,13 +79,4 @@ func (server *UnixServer) Close() {
 		server.listener = nil
 		listener.Close()
 	}
-}
-
-func (server *UnixServer) signal() chan os.Signal {
-	return server.c
-}
-
-func parseUnixURI(uri string) (scheme, path string) {
-	t := strings.SplitN(uri, ":", 2)
-	return t[0], t[1]
 }
