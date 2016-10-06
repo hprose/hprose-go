@@ -31,7 +31,7 @@ import (
 var errorType = reflect.TypeOf((*error)(nil)).Elem()
 var interfaceType = reflect.TypeOf((*interface{})(nil)).Elem()
 var contextType = reflect.TypeOf((*Context)(nil)).Elem()
-var serviceContextType = reflect.TypeOf((*ServiceContext)(nil))
+var serviceContextType = reflect.TypeOf((*ServiceContext)(nil)).Elem()
 var httpContextType = reflect.TypeOf((*HTTPContext)(nil))
 var httpRequestType = reflect.TypeOf((*http.Request)(nil))
 var fasthttpContextType = reflect.TypeOf((*FastHTTPContext)(nil))

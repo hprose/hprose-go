@@ -12,7 +12,7 @@
  *                                                        *
  * hprose socket service for Go.                          *
  *                                                        *
- * LastModified: Oct 5, 2016                              *
+ * LastModified: Oct 6, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -30,27 +30,26 @@ import (
 
 // SocketContext is the hprose socket context for service
 type SocketContext struct {
-	ServiceContext
+	serviceContext
 	net.Conn
 }
 
 func (context *SocketContext) initSocketContext(
 	service Service, conn net.Conn) {
 	context.initServiceContext(service)
-	context.TransportContext = context
 	context.Conn = conn
 	return
 }
 
-func socketFixArguments(args []reflect.Value, context *ServiceContext) {
+func socketFixArguments(args []reflect.Value, context ServiceContext) {
 	i := len(args) - 1
 	switch args[i].Type() {
 	case socketContextType:
-		if c, ok := context.TransportContext.(*SocketContext); ok {
+		if c, ok := context.(*SocketContext); ok {
 			args[i] = reflect.ValueOf(c)
 		}
 	case netConnType:
-		if c, ok := context.TransportContext.(*SocketContext); ok {
+		if c, ok := context.(*SocketContext); ok {
 			args[i] = reflect.ValueOf(c.Conn)
 		}
 	default:
@@ -190,7 +189,7 @@ func (handler *connHandler) serve(service *SocketService) {
 func (handler *connHandler) handle(service *SocketService, data packet) {
 	context := service.acquireContext()
 	context.initSocketContext(service, handler.conn)
-	data.body = service.Handle(data.body, &context.ServiceContext)
+	data.body = service.Handle(data.body, context)
 	if data.fullDuplex {
 		handler.Lock()
 	}
@@ -199,7 +198,7 @@ func (handler *connHandler) handle(service *SocketService, data packet) {
 		handler.Unlock()
 	}
 	if err != nil {
-		fireErrorEvent(service.Event, err, &context.ServiceContext)
+		fireErrorEvent(service.Event, err, context)
 	}
 	service.releaseContext(context)
 }

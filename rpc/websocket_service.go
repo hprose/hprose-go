@@ -12,7 +12,7 @@
  *                                                        *
  * hprose websocket service for Go.                       *
  *                                                        *
- * LastModified: Oct 5, 2016                              *
+ * LastModified: Oct 6, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -43,23 +43,23 @@ type WebSocketService struct {
 	contextPool chan *WebSocketContext
 }
 
-func websocketFixArguments(args []reflect.Value, context *ServiceContext) {
+func websocketFixArguments(args []reflect.Value, context ServiceContext) {
 	i := len(args) - 1
 	switch args[i].Type() {
 	case websocketContextType:
-		if c, ok := context.TransportContext.(*WebSocketContext); ok {
+		if c, ok := context.(*WebSocketContext); ok {
 			args[i] = reflect.ValueOf(c)
 		}
 	case websocketConnType:
-		if c, ok := context.TransportContext.(*WebSocketContext); ok {
+		if c, ok := context.(*WebSocketContext); ok {
 			args[i] = reflect.ValueOf(c.WebSocket)
 		}
 	case httpContextType:
-		if c, ok := context.TransportContext.(*WebSocketContext); ok {
+		if c, ok := context.(*WebSocketContext); ok {
 			args[i] = reflect.ValueOf(&c.HTTPContext)
 		}
 	case httpRequestType:
-		if c, ok := context.TransportContext.(*WebSocketContext); ok {
+		if c, ok := context.(*WebSocketContext); ok {
 			args[i] = reflect.ValueOf(c.Request)
 		}
 	default:
@@ -124,7 +124,7 @@ func (service *WebSocketService) ServeHTTP(
 	if err != nil {
 		context := service.HTTPService.acquireContext()
 		context.initHTTPContext(service, response, request)
-		resp := service.endError(err, &context.ServiceContext)
+		resp := service.endError(err, context)
 		service.HTTPService.releaseContext(context)
 		response.Header().Set("Content-Length", util.Itoa(len(resp)))
 		response.Write(resp)
@@ -154,7 +154,7 @@ func (service *WebSocketService) handle(
 	context.initHTTPContext(service, response, request)
 	context.WebSocket = conn
 	id := data[0:4]
-	data = service.Handle(data[4:], &context.ServiceContext)
+	data = service.Handle(data[4:], context)
 	mutex.Lock()
 	writer, err := context.WebSocket.NextWriter(websocket.BinaryMessage)
 	if err == nil {
@@ -168,7 +168,7 @@ func (service *WebSocketService) handle(
 	}
 	mutex.Unlock()
 	if err != nil {
-		fireErrorEvent(service.Event, err, &context.ServiceContext)
+		fireErrorEvent(service.Event, err, context)
 	}
 	service.releaseContext(context)
 }

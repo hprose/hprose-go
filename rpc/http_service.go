@@ -12,7 +12,7 @@
  *                                                        *
  * hprose http service for Go.                            *
  *                                                        *
- * LastModified: Oct 5, 2016                              *
+ * LastModified: Oct 6, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -32,7 +32,7 @@ import (
 
 // HTTPContext is the hprose http context
 type HTTPContext struct {
-	ServiceContext
+	serviceContext
 	Response http.ResponseWriter
 	Request  *http.Request
 }
@@ -42,7 +42,6 @@ func (context *HTTPContext) initHTTPContext(
 	response http.ResponseWriter,
 	request *http.Request) {
 	context.initServiceContext(service)
-	context.TransportContext = context
 	context.Response = response
 	context.Request = request
 }
@@ -61,15 +60,15 @@ type sendHeaderEvent2 interface {
 	OnSendHeader(context *HTTPContext) error
 }
 
-func httpFixArguments(args []reflect.Value, context *ServiceContext) {
+func httpFixArguments(args []reflect.Value, context ServiceContext) {
 	i := len(args) - 1
 	switch args[i].Type() {
 	case httpContextType:
-		if c, ok := context.TransportContext.(*HTTPContext); ok {
+		if c, ok := context.(*HTTPContext); ok {
 			args[i] = reflect.ValueOf(c)
 		}
 	case httpRequestType:
-		if c, ok := context.TransportContext.(*HTTPContext); ok {
+		if c, ok := context.(*HTTPContext); ok {
 			args[i] = reflect.ValueOf(c.Request)
 		}
 	default:
@@ -217,19 +216,19 @@ func (service *HTTPService) ServeHTTP(
 		switch request.Method {
 		case "GET":
 			if service.GET {
-				resp = service.doFunctionList(&context.ServiceContext)
+				resp = service.doFunctionList(context)
 			} else {
 				response.WriteHeader(403)
 			}
 		case "POST":
 			var req []byte
 			if req, err = readAllFromHTTPRequest(request); err == nil {
-				resp = service.Handle(req, &context.ServiceContext)
+				resp = service.Handle(req, context)
 			}
 		}
 	}
 	if err != nil {
-		resp = service.endError(err, &context.ServiceContext)
+		resp = service.endError(err, context)
 	}
 	service.releaseContext(context)
 	response.Header().Set("Content-Length", util.Itoa(len(resp)))

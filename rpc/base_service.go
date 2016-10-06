@@ -12,7 +12,7 @@
  *                                                        *
  * hprose base service for Go.                            *
  *                                                        *
- * LastModified: Oct 2, 2016                              *
+ * LastModified: Oct 5, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -38,7 +38,7 @@ type BaseService struct {
 	handlerManager
 	filterManager
 	Clients
-	FixArguments func(args []reflect.Value, context *ServiceContext)
+	FixArguments func(args []reflect.Value, context ServiceContext)
 	Event        ServiceEvent
 	Debug        bool
 	Simple       bool
@@ -51,7 +51,7 @@ type BaseService struct {
 }
 
 // DefaultFixArguments is the default fix arguments function
-func DefaultFixArguments(args []reflect.Value, context *ServiceContext) {
+func DefaultFixArguments(args []reflect.Value, context ServiceContext) {
 	i := len(args) - 1
 	typ := args[i].Type()
 	if typ == interfaceType || typ == contextType || typ == serviceContextType {
@@ -80,15 +80,15 @@ func (service *BaseService) initBaseService() {
 	service.override.invokeHandler = func(
 		name string, args []reflect.Value,
 		context Context) (results []reflect.Value, err error) {
-		return invoke(name, args, context.(*ServiceContext))
+		return invoke(name, args, context.(ServiceContext))
 	}
 	service.override.beforeFilterHandler = func(
 		request []byte, context Context) (response []byte, err error) {
-		return service.beforeFilter(request, context.(*ServiceContext))
+		return service.beforeFilter(request, context.(ServiceContext))
 	}
 	service.override.afterFilterHandler = func(
 		request []byte, context Context) (response []byte, err error) {
-		return service.afterFilter(request, context.(*ServiceContext))
+		return service.afterFilter(request, context.(ServiceContext))
 	}
 }
 
@@ -207,10 +207,10 @@ func (service *BaseService) AddAfterFilterHandler(handler ...FilterHandler) Serv
 
 func callService(
 	name string, args []reflect.Value,
-	context *ServiceContext) (results []reflect.Value, err error) {
-	remoteMethod := context.Method
+	context ServiceContext) (results []reflect.Value, err error) {
+	remoteMethod := context.Method()
 	function := remoteMethod.Function
-	if context.IsMissingMethod {
+	if context.IsMissingMethod() {
 		missingMethod := function.Interface().(MissingMethod)
 		return missingMethod(name, args, context), nil
 	}
@@ -239,8 +239,8 @@ func callService(
 func doOutput(
 	args []reflect.Value,
 	results []reflect.Value,
-	context *ServiceContext) []byte {
-	method := context.Method
+	context ServiceContext) []byte {
+	method := context.Method()
 	writer := io.NewWriter(method.Simple)
 	switch method.Mode {
 	case RawWithEndTag:
@@ -261,7 +261,7 @@ func doOutput(
 				writer.WriteSlice(results)
 			}
 		}
-		if context.ByRef {
+		if context.ByRef() {
 			writer.WriteByte(io.TagArgument)
 			writer.Reset()
 			writer.WriteSlice(args)
@@ -300,7 +300,7 @@ func fireBeforeInvokeEvent(
 	event ServiceEvent,
 	name string,
 	args []reflect.Value,
-	context *ServiceContext) (err error) {
+	context ServiceContext) (err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			err = NewPanicError(e)
@@ -308,9 +308,9 @@ func fireBeforeInvokeEvent(
 	}()
 	switch event := event.(type) {
 	case beforeInvokeEvent:
-		event.OnBeforeInvoke(name, args, context.ByRef, context)
+		event.OnBeforeInvoke(name, args, context.ByRef(), context)
 	case beforeInvokeEvent2:
-		err = event.OnBeforeInvoke(name, args, context.ByRef, context)
+		err = event.OnBeforeInvoke(name, args, context.ByRef(), context)
 	}
 	return err
 }
@@ -320,7 +320,7 @@ func fireAfterInvokeEvent(
 	name string,
 	args []reflect.Value,
 	results []reflect.Value,
-	context *ServiceContext) (err error) {
+	context ServiceContext) (err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			err = NewPanicError(e)
@@ -328,9 +328,9 @@ func fireAfterInvokeEvent(
 	}()
 	switch event := event.(type) {
 	case afterInvokeEvent:
-		event.OnAfterInvoke(name, args, context.ByRef, results, context)
+		event.OnAfterInvoke(name, args, context.ByRef(), results, context)
 	case afterInvokeEvent2:
-		err = event.OnAfterInvoke(name, args, context.ByRef, results, context)
+		err = event.OnAfterInvoke(name, args, context.ByRef(), results, context)
 	}
 	return err
 }
@@ -351,8 +351,8 @@ func (service *BaseService) endError(err error, context Context) []byte {
 
 func invoke(
 	name string, args []reflect.Value,
-	context *ServiceContext) (results []reflect.Value, err error) {
-	if context.Oneway {
+	context ServiceContext) (results []reflect.Value, err error) {
+	if context.Method().Oneway {
 		go func() {
 			defer recover()
 			callService(name, args, context)
@@ -363,10 +363,10 @@ func invoke(
 }
 
 func readArguments(
-	fixArguments func(args []reflect.Value, context *ServiceContext),
+	fixArguments func(args []reflect.Value, context ServiceContext),
 	reader *io.Reader,
 	method *Method,
-	context *ServiceContext) (args []reflect.Value) {
+	context ServiceContext) (args []reflect.Value) {
 	if method == nil {
 		return reader.ReadSliceWithoutTag()
 	}
@@ -402,7 +402,7 @@ func readArguments(
 func (service *BaseService) beforeInvoke(
 	name string,
 	args []reflect.Value,
-	context *ServiceContext) (response []byte, err error) {
+	context ServiceContext) (response []byte, err error) {
 	err = fireBeforeInvokeEvent(service.Event, name, args, context)
 	if err != nil {
 		return nil, err
@@ -433,7 +433,7 @@ func mergeResult(results [][]byte) []byte {
 }
 
 func (service *BaseService) doSingleInvoke(
-	reader *io.Reader, context *ServiceContext) (result []byte, tag byte) {
+	reader *io.Reader, context ServiceContext) (result []byte, tag byte) {
 	name := reader.ReadString()
 	alias := strings.ToLower(name)
 	method := service.RemoteMethods[alias]
@@ -444,19 +444,19 @@ func (service *BaseService) doSingleInvoke(
 		args = readArguments(service.FixArguments, reader, method, context)
 		tag = reader.CheckTags([]byte{io.TagTrue, io.TagEnd, io.TagCall})
 		if tag == io.TagTrue {
-			context.ByRef = true
+			context.setByRef(true)
 			tag = reader.CheckTags([]byte{io.TagEnd, io.TagCall})
 		}
 	}
 	if method == nil {
 		method = service.RemoteMethods["*"]
-		context.IsMissingMethod = true
+		context.setIsMissingMethod(true)
 	}
 	if method == nil {
 		err := errors.New("Can't find this method " + name)
 		return service.sendError(err, context), tag
 	}
-	context.Method = method
+	context.setMethod(method)
 	result, err := service.beforeInvoke(name, args, context)
 	if err != nil {
 		return service.sendError(err, context), tag
@@ -466,7 +466,7 @@ func (service *BaseService) doSingleInvoke(
 
 func (service *BaseService) doInvoke(
 	reader *io.Reader,
-	context *ServiceContext) []byte {
+	context ServiceContext) []byte {
 	var results [][]byte
 	for {
 		result, tag := service.doSingleInvoke(reader, context)
@@ -479,7 +479,7 @@ func (service *BaseService) doInvoke(
 	return mergeResult(results)
 }
 
-func (service *BaseService) doFunctionList(context *ServiceContext) []byte {
+func (service *BaseService) doFunctionList(context ServiceContext) []byte {
 	writer := io.NewWriter(true)
 	writer.WriteByte(io.TagFunctions)
 	writer.WriteStringSlice(service.MethodNames)
@@ -489,7 +489,7 @@ func (service *BaseService) doFunctionList(context *ServiceContext) []byte {
 
 func (service *BaseService) afterFilter(
 	request []byte,
-	context *ServiceContext) (response []byte, err error) {
+	context ServiceContext) (response []byte, err error) {
 	reader := io.NewReader(request, false)
 	tag, err := reader.ReadByte()
 	if err != nil {
@@ -506,7 +506,7 @@ func (service *BaseService) afterFilter(
 }
 
 func (service *BaseService) delayError(
-	err error, context *ServiceContext) []byte {
+	err error, context ServiceContext) []byte {
 	response := service.endError(err, context)
 	if service.ErrorDelay > 0 {
 		time.Sleep(service.ErrorDelay)
@@ -515,7 +515,7 @@ func (service *BaseService) delayError(
 }
 
 func (service *BaseService) beforeFilter(
-	request []byte, context *ServiceContext) (response []byte, err error) {
+	request []byte, context ServiceContext) (response []byte, err error) {
 	request = service.inputFilter(request, context)
 	response, err = service.afterFilterHandler(request, context)
 	if err != nil {

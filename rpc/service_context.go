@@ -12,7 +12,7 @@
  *                                                        *
  * hprose service context for Go.                         *
  *                                                        *
- * LastModified: Oct 5, 2016                              *
+ * LastModified: Oct 6, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -20,26 +20,57 @@
 package rpc
 
 // ServiceContext is the hprose service context
-type ServiceContext struct {
+type ServiceContext interface {
+	Context
+	Service() Service
+	Method() *Method
+	IsMissingMethod() bool
+	ByRef() bool
+	setMethod(method *Method)
+	setIsMissingMethod(value bool)
+	setByRef(value bool)
+}
+
+type serviceContext struct {
 	BaseContext
-	*Method
-	Service
-	TransportContext Context
-	IsMissingMethod  bool
-	ByRef            bool
+	method          *Method
+	service         Service
+	isMissingMethod bool
+	byRef           bool
 }
 
-func (context *ServiceContext) initServiceContext(service Service) {
+func (context *serviceContext) initServiceContext(service Service) {
 	context.initBaseContext()
-	context.Method = nil
-	context.Service = service
-	context.IsMissingMethod = false
-	context.ByRef = false
+	context.service = service
+	context.method = nil
+	context.isMissingMethod = false
+	context.byRef = false
 }
 
-// NewServiceContext is the constructor of ServiceContext
-func NewServiceContext(service Service) (context *ServiceContext) {
-	context = new(ServiceContext)
-	context.initServiceContext(service)
-	return
+func (context *serviceContext) Method() *Method {
+	return context.method
+}
+
+func (context *serviceContext) Service() Service {
+	return context.service
+}
+
+func (context *serviceContext) IsMissingMethod() bool {
+	return context.isMissingMethod
+}
+
+func (context *serviceContext) ByRef() bool {
+	return context.byRef
+}
+
+func (context *serviceContext) setMethod(method *Method) {
+	context.method = method
+}
+
+func (context *serviceContext) setIsMissingMethod(value bool) {
+	context.isMissingMethod = value
+}
+
+func (context *serviceContext) setByRef(value bool) {
+	context.byRef = value
 }

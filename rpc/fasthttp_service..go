@@ -12,7 +12,7 @@
  *                                                        *
  * hprose fasthttp service for Go.                        *
  *                                                        *
- * LastModified: Oct 5, 2016                              *
+ * LastModified: Oct 6, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -30,14 +30,13 @@ import (
 
 // FastHTTPContext is the hprose fasthttp context
 type FastHTTPContext struct {
-	ServiceContext
+	serviceContext
 	RequestCtx *fasthttp.RequestCtx
 }
 
 func (context *FastHTTPContext) initFastHTTPContext(
 	service Service, ctx *fasthttp.RequestCtx) {
 	context.initServiceContext(service)
-	context.TransportContext = context
 	context.RequestCtx = ctx
 }
 
@@ -55,15 +54,15 @@ type fastSendHeaderEvent2 interface {
 	OnSendHeader(context *FastHTTPContext) error
 }
 
-func fasthttpFixArguments(args []reflect.Value, context *ServiceContext) {
+func fasthttpFixArguments(args []reflect.Value, context ServiceContext) {
 	i := len(args) - 1
 	switch args[i].Type() {
 	case fasthttpContextType:
-		if c, ok := context.TransportContext.(*FastHTTPContext); ok {
+		if c, ok := context.(*FastHTTPContext); ok {
 			args[i] = reflect.ValueOf(c)
 		}
 	case fasthttpRequestCtxType:
-		if c, ok := context.TransportContext.(*FastHTTPContext); ok {
+		if c, ok := context.(*FastHTTPContext); ok {
 			args[i] = reflect.ValueOf(c.RequestCtx)
 		}
 	default:
@@ -198,15 +197,15 @@ func (service *FastHTTPService) ServeFastHTTP(ctx *fasthttp.RequestCtx) {
 		switch util.ByteString(ctx.Method()) {
 		case "GET":
 			if service.GET {
-				resp = service.doFunctionList(&context.ServiceContext)
+				resp = service.doFunctionList(context)
 			} else {
 				ctx.SetStatusCode(403)
 			}
 		case "POST":
-			resp = service.Handle(ctx.PostBody(), &context.ServiceContext)
+			resp = service.Handle(ctx.PostBody(), context)
 		}
 	} else {
-		resp = service.endError(err, &context.ServiceContext)
+		resp = service.endError(err, context)
 	}
 	context.RequestCtx = nil
 	service.releaseContext(context)
