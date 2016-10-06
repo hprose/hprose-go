@@ -12,7 +12,7 @@
  *                                                        *
  * hprose writer for Go.                                  *
  *                                                        *
- * LastModified: Sep 16, 2016                             *
+ * LastModified: Oct 6, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -490,11 +490,7 @@ func writeMap(w *Writer, v reflect.Value) {
 	val := (*reflectValue)(unsafe.Pointer(&v))
 	mapEncoder := mapBodyEncoders[val.typ]
 	if mapEncoder != nil {
-		if v.CanAddr() {
-			mapEncoder(w, unsafe.Pointer(val.ptr))
-		} else {
-			mapEncoder(w, unsafe.Pointer(&val.ptr))
-		}
+		mapEncoder(w, v.Interface())
 	} else {
 		writeMapBody(w, v)
 	}
