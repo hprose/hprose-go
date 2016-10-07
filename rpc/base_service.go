@@ -12,7 +12,7 @@
  *                                                        *
  * hprose base service for Go.                            *
  *                                                        *
- * LastModified: Oct 5, 2016                              *
+ * LastModified: Oct 7, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -215,16 +215,14 @@ func callService(
 		return missingMethod(name, args, context), nil
 	}
 	ft := function.Type()
-	if ft.IsVariadic() {
-		results = function.CallSlice(args)
-	} else {
+	if !ft.IsVariadic() {
 		count := len(args)
 		n := ft.NumIn()
 		if n < count {
 			args = args[:n]
 		}
-		results = function.Call(args)
 	}
+	results = function.Call(args)
 	n := ft.NumOut()
 	if n == 0 {
 		return results, nil
@@ -384,7 +382,7 @@ func readArguments(
 	if n < count {
 		if ft.IsVariadic() {
 			for i := n; i < count; i++ {
-				args[i] = reflect.New(ft.In(n)).Elem()
+				args[i] = reflect.New(ft.In(n).Elem()).Elem()
 			}
 		} else {
 			for i := n; i < count; i++ {

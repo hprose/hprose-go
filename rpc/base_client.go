@@ -12,7 +12,7 @@
  *                                                        *
  * hprose rpc base client for Go.                         *
  *                                                        *
- * LastModified: Oct 5, 2016                              *
+ * LastModified: Oct 7, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -606,27 +606,20 @@ func getCallbackResultTypes(ft reflect.Type) ([]reflect.Type, bool) {
 	return results, hasError
 }
 
-func getIn(in []reflect.Value, isVariadic bool) []reflect.Value {
+func getIn(in []reflect.Value) []reflect.Value {
 	inlen := len(in)
 	varlen := 0
-	argc := inlen
-	if isVariadic {
-		argc--
-		varlen = in[argc].Len()
-		argc += varlen
-	}
+	argc := inlen - 1
+	varlen = in[argc].Len()
+	argc += varlen
 	args := make([]reflect.Value, argc)
 	if argc > 0 {
 		for i := 0; i < inlen-1; i++ {
 			args[i] = in[i]
 		}
-		if isVariadic {
-			v := in[inlen-1]
-			for i := 0; i < varlen; i++ {
-				args[inlen-1+i] = v.Index(i)
-			}
-		} else {
-			args[inlen-1] = in[inlen-1]
+		v := in[inlen-1]
+		for i := 0; i < varlen; i++ {
+			args[inlen-1+i] = v.Index(i)
 		}
 	}
 	return args
@@ -638,7 +631,9 @@ func getSyncRemoteMethod(
 	settings *InvokeSettings,
 	isVariadic, hasError bool) func(in []reflect.Value) (out []reflect.Value) {
 	return func(in []reflect.Value) (out []reflect.Value) {
-		in = getIn(in, isVariadic)
+		if isVariadic {
+			in = getIn(in)
+		}
 		var err error
 		out, err = client.Invoke(name, in, settings)
 		if hasError {
@@ -672,7 +667,9 @@ func getAsyncRemoteMethod(
 	isVariadic, hasError bool) func(in []reflect.Value) (out []reflect.Value) {
 	return func(in []reflect.Value) (out []reflect.Value) {
 		go func() {
-			in = getIn(in, isVariadic)
+			if isVariadic {
+				in = getIn(in)
+			}
 			callback := in[0]
 			in = in[1:]
 			out, err := client.Invoke(name, in, settings)
