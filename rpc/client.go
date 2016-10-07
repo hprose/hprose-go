@@ -27,15 +27,16 @@ import (
 
 // InvokeSettings is the invoke settings of hprose client
 type InvokeSettings struct {
-	ByRef       bool
-	Simple      bool
-	Mode        ResultMode
-	Idempotent  bool
-	Failswitch  bool
-	Oneway      bool
-	Retry       int
-	Timeout     time.Duration
-	ResultTypes []reflect.Type
+	ByRef          bool
+	Simple         bool
+	Idempotent     bool
+	Failswitch     bool
+	Oneway         bool
+	JSONCompatible bool
+	Retry          int
+	Mode           ResultMode
+	Timeout        time.Duration
+	ResultTypes    []reflect.Type
 }
 
 // Callback is the callback function type of Client.Go

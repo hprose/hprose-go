@@ -442,6 +442,7 @@ func (client *BaseClient) decode(
 		return
 	}
 	reader := hio.NewReader(data, false)
+	reader.JSONCompatible = context.JSONCompatible
 	tag, _ := reader.ReadByte()
 	if tag == hio.TagResult {
 		switch context.Mode {
@@ -698,15 +699,16 @@ func buildRemoteMethod(client *BaseClient, f reflect.Value, ft reflect.Type, sf 
 		}
 	}
 	settings := &InvokeSettings{
-		ByRef:       getBoolValue(sf.Tag, "byref"),
-		Simple:      getBoolValue(sf.Tag, "simple"),
-		Mode:        getResultMode(sf.Tag),
-		Idempotent:  getBoolValue(sf.Tag, "idempotent"),
-		Failswitch:  getBoolValue(sf.Tag, "failswitch"),
-		Oneway:      getBoolValue(sf.Tag, "oneway"),
-		Retry:       int(getInt64Value(sf.Tag, "retry")),
-		Timeout:     time.Duration(getInt64Value(sf.Tag, "timeout")),
-		ResultTypes: outTypes,
+		ByRef:          getBoolValue(sf.Tag, "byref"),
+		Simple:         getBoolValue(sf.Tag, "simple"),
+		Idempotent:     getBoolValue(sf.Tag, "idempotent"),
+		Failswitch:     getBoolValue(sf.Tag, "failswitch"),
+		Oneway:         getBoolValue(sf.Tag, "oneway"),
+		JSONCompatible: getBoolValue(sf.Tag, "jsoncompat"),
+		Retry:          int(getInt64Value(sf.Tag, "retry")),
+		Mode:           getResultMode(sf.Tag),
+		Timeout:        time.Duration(getInt64Value(sf.Tag, "timeout")),
+		ResultTypes:    outTypes,
 	}
 	var fn func(in []reflect.Value) (out []reflect.Value)
 	if async {
