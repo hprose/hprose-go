@@ -29,8 +29,9 @@ import (
 )
 
 type connEntry struct {
-	conn  net.Conn
-	timer *time.Timer
+	conn     net.Conn
+	timer    *time.Timer
+	reqCount int32
 }
 
 // SocketClient is base struct for TCPClient and UnixClient
@@ -96,7 +97,7 @@ func (client *SocketClient) SetMaxPoolSize(size int) {
 	client.connPool = pool
 }
 
-func (client *SocketClient) getConn() net.Conn {
+func (client *SocketClient) getConn() *connEntry {
 	for {
 		select {
 		case entry, closed := <-client.connPool:
@@ -106,7 +107,7 @@ func (client *SocketClient) getConn() net.Conn {
 			if entry.timer != nil {
 				entry.timer.Stop()
 				if entry.conn != nil {
-					return entry.conn
+					return entry
 				}
 			}
 			continue
@@ -116,17 +117,17 @@ func (client *SocketClient) getConn() net.Conn {
 	}
 }
 
-func (client *SocketClient) fetchConn() net.Conn {
+func (client *SocketClient) fetchConn() *connEntry {
 	client.cond.L.Lock()
 	for {
-		conn := client.getConn()
-		if conn != nil {
+		entry := client.getConn()
+		if entry != nil && entry.conn != nil {
 			client.cond.L.Unlock()
-			return conn
+			return entry
 		}
 		if int(atomic.AddInt32(&client.connCount, 1)) <= cap(client.connPool) {
 			client.cond.L.Unlock()
-			return client.createConn()
+			return &connEntry{conn: client.createConn()}
 		}
 		atomic.AddInt32(&client.connCount, -1)
 		client.cond.Wait()
@@ -144,24 +145,36 @@ func (client *SocketClient) Close() {
 	close(client.connPool)
 }
 
-func (client *SocketClient) fullDuplexSendAndReceive(
-	data []byte, context *ClientContext) ([]byte, error) {
-	id := atomic.AddUint32(&client.nextid, 1)
-	buf := make([]byte, len(data)+4)
-	fromUint32(buf, id)
-	copy(buf[4:], data)
-	//response := make(chan websocketResponse)
-	return nil, nil
-}
-
 func (client *SocketClient) close(conn net.Conn) {
 	conn.Close()
 	atomic.AddInt32(&client.connCount, -1)
 }
 
+func (client *SocketClient) fullDuplexSendAndReceive(
+	data []byte, context *ClientContext) (response []byte, err error) {
+	// conn := client.fetchConn()
+	// err = conn.SetDeadline(time.Now().Add(context.Timeout))
+	// if err == nil {
+	// 	id := atomic.AddUint32(&client.nextid, 1)
+	// 	dataPacket := packet{fullDuplex: true, body: data}
+	// 	fromUint32(dataPacket.id[:], id)
+	// 	err = sendData(conn, dataPacket)
+	// }
+	// entry := &connEntry{conn: conn}
+	// entry.timer = time.AfterFunc(client.IdleTimeout, func() {
+	// 	client.close(entry.conn)
+	// 	entry.conn = nil
+	// 	entry.timer = nil
+	// })
+	// client.connPool <- entry
+	// client.cond.Signal()
+	return nil, nil
+}
+
 func (client *SocketClient) halfDuplexSendAndReceive(
 	data []byte, context *ClientContext) (response []byte, err error) {
-	conn := client.fetchConn()
+	entry := client.fetchConn()
+	conn := entry.conn
 	err = conn.SetDeadline(time.Now().Add(context.Timeout))
 	dataPacket := packet{body: data}
 	if err == nil {
@@ -178,12 +191,15 @@ func (client *SocketClient) halfDuplexSendAndReceive(
 		client.cond.Signal()
 		return
 	}
-	entry := &connEntry{conn: conn}
-	entry.timer = time.AfterFunc(client.IdleTimeout, func() {
-		client.close(entry.conn)
-		entry.conn = nil
-		entry.timer = nil
-	})
+	if entry.timer == nil {
+		entry.timer = time.AfterFunc(client.IdleTimeout, func() {
+			client.close(conn)
+			entry.conn = nil
+			entry.timer = nil
+		})
+	} else {
+		entry.timer.Reset(client.IdleTimeout)
+	}
 	client.connPool <- entry
 	client.cond.Signal()
 	return dataPacket.body, nil
