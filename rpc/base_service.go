@@ -365,6 +365,7 @@ func readArguments(
 	reader *io.Reader,
 	method *Method,
 	context ServiceContext) (args []reflect.Value) {
+	reader.JSONCompatible = method.JSONCompatible
 	if method == nil {
 		return reader.ReadSliceWithoutTag()
 	}

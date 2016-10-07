@@ -12,7 +12,7 @@
  *                                                        *
  * hprose method manager for Go.                          *
  *                                                        *
- * LastModified: Oct 6, 2016                              *
+ * LastModified: Oct 7, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -27,10 +27,11 @@ import (
 
 // Options is the options of the published service method
 type Options struct {
-	Mode      ResultMode
-	Simple    bool
-	Oneway    bool
-	NameSpace string
+	Mode           ResultMode
+	Simple         bool
+	Oneway         bool
+	NameSpace      string
+	JSONCompatible bool
 }
 
 // Method is the published service method
