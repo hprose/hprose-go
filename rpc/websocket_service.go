@@ -12,7 +12,7 @@
  *                                                        *
  * hprose websocket service for Go.                       *
  *                                                        *
- * LastModified: Oct 6, 2016                              *
+ * LastModified: Oct 9, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -22,7 +22,6 @@ package rpc
 import (
 	"net/http"
 	"reflect"
-	"runtime"
 	"strings"
 	"sync"
 
@@ -40,7 +39,7 @@ type WebSocketContext struct {
 type WebSocketService struct {
 	HTTPService
 	websocket.Upgrader
-	contextPool chan *WebSocketContext
+	contextPool sync.Pool
 }
 
 func websocketFixArguments(args []reflect.Value, context ServiceContext) {
@@ -71,7 +70,9 @@ func websocketFixArguments(args []reflect.Value, context ServiceContext) {
 func NewWebSocketService() (service *WebSocketService) {
 	service = new(WebSocketService)
 	service.initBaseHTTPService()
-	service.contextPool = make(chan *WebSocketContext, runtime.NumCPU()*32)
+	service.contextPool = sync.Pool{
+		New: func() interface{} { return new(WebSocketContext) },
+	}
 	service.FixArguments = websocketFixArguments
 	service.CheckOrigin = func(request *http.Request) bool {
 		origin := request.Header.Get("origin")
@@ -87,30 +88,12 @@ func NewWebSocketService() (service *WebSocketService) {
 	return
 }
 
-// ContextPoolSize returns the context pool size
-func (service *WebSocketService) ContextPoolSize() int {
-	return cap(service.contextPool)
-}
-
-// SetContextPoolSize sets the context pool size
-func (service *WebSocketService) SetContextPoolSize(value int) {
-	service.contextPool = make(chan *WebSocketContext, value)
-}
-
 func (service *WebSocketService) acquireContext() (context *WebSocketContext) {
-	select {
-	case context = <-service.contextPool:
-		return
-	default:
-		return new(WebSocketContext)
-	}
+	return service.contextPool.Get().(*WebSocketContext)
 }
 
 func (service *WebSocketService) releaseContext(context *WebSocketContext) {
-	select {
-	case service.contextPool <- context:
-	default:
-	}
+	service.contextPool.Put(context)
 }
 
 // ServeHTTP is the hprose http handler method

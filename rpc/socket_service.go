@@ -12,7 +12,7 @@
  *                                                        *
  * hprose socket service for Go.                          *
  *                                                        *
- * LastModified: Oct 6, 2016                              *
+ * LastModified: Oct 9, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -24,7 +24,6 @@ import (
 	"crypto/tls"
 	"net"
 	"reflect"
-	"runtime"
 	"sync"
 )
 
@@ -61,40 +60,24 @@ func socketFixArguments(args []reflect.Value, context ServiceContext) {
 type SocketService struct {
 	BaseService
 	TLSConfig   *tls.Config
-	contextPool chan *SocketContext
+	contextPool sync.Pool
 }
 
 func (service *SocketService) initSocketService() {
 	service.initBaseService()
-	service.contextPool = make(chan *SocketContext, runtime.NumCPU()*8)
+	service.contextPool = sync.Pool{
+		New: func() interface{} { return new(SocketContext) },
+	}
 	service.FixArguments = socketFixArguments
 	service.TLSConfig = nil
 }
 
-// ContextPoolSize returns the context pool size
-func (service *SocketService) ContextPoolSize() int {
-	return cap(service.contextPool)
-}
-
-// SetContextPoolSize sets the context pool size
-func (service *SocketService) SetContextPoolSize(value int) {
-	service.contextPool = make(chan *SocketContext, value)
-}
-
 func (service *SocketService) acquireContext() (context *SocketContext) {
-	select {
-	case context = <-service.contextPool:
-		return
-	default:
-		return new(SocketContext)
-	}
+	return service.contextPool.Get().(*SocketContext)
 }
 
 func (service *SocketService) releaseContext(context *SocketContext) {
-	select {
-	case service.contextPool <- context:
-	default:
-	}
+	service.contextPool.Put(context)
 }
 
 func (service *SocketService) serveConn(conn net.Conn) {

@@ -12,7 +12,7 @@
  *                                                        *
  * hprose http service for Go.                            *
  *                                                        *
- * LastModified: Oct 6, 2016                              *
+ * LastModified: Oct 9, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -24,8 +24,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"reflect"
-	"runtime"
 	"strings"
+	"sync"
 
 	"github.com/hprose/hprose-golang/util"
 )
@@ -49,7 +49,7 @@ func (context *HTTPContext) initHTTPContext(
 // HTTPService is the hprose http service
 type HTTPService struct {
 	baseHTTPService
-	contextPool chan *HTTPContext
+	contextPool sync.Pool
 }
 
 type sendHeaderEvent interface {
@@ -80,35 +80,19 @@ func httpFixArguments(args []reflect.Value, context ServiceContext) {
 func NewHTTPService() (service *HTTPService) {
 	service = new(HTTPService)
 	service.initBaseHTTPService()
-	service.contextPool = make(chan *HTTPContext, runtime.NumCPU()*16)
+	service.contextPool = sync.Pool{
+		New: func() interface{} { return new(HTTPContext) },
+	}
 	service.FixArguments = httpFixArguments
 	return
 }
 
-// ContextPoolSize returns the context pool size
-func (service *HTTPService) ContextPoolSize() int {
-	return cap(service.contextPool)
-}
-
-// SetContextPoolSize sets the context pool size
-func (service *HTTPService) SetContextPoolSize(value int) {
-	service.contextPool = make(chan *HTTPContext, value)
-}
-
 func (service *HTTPService) acquireContext() (context *HTTPContext) {
-	select {
-	case context = <-service.contextPool:
-		return
-	default:
-		return new(HTTPContext)
-	}
+	return service.contextPool.Get().(*HTTPContext)
 }
 
 func (service *HTTPService) releaseContext(context *HTTPContext) {
-	select {
-	case service.contextPool <- context:
-	default:
-	}
+	service.contextPool.Put(context)
 }
 
 func (service *HTTPService) xmlFileHandler(

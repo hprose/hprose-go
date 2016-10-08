@@ -12,7 +12,7 @@
  *                                                        *
  * hprose fasthttp service for Go.                        *
  *                                                        *
- * LastModified: Oct 6, 2016                              *
+ * LastModified: Oct 9, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -21,8 +21,8 @@ package rpc
 
 import (
 	"reflect"
-	"runtime"
 	"strings"
+	"sync"
 
 	"github.com/hprose/hprose-golang/util"
 	"github.com/valyala/fasthttp"
@@ -43,7 +43,7 @@ func (context *FastHTTPContext) initFastHTTPContext(
 // FastHTTPService is the hprose fasthttp service
 type FastHTTPService struct {
 	baseHTTPService
-	contextPool chan *FastHTTPContext
+	contextPool sync.Pool
 }
 
 type fastSendHeaderEvent interface {
@@ -74,35 +74,19 @@ func fasthttpFixArguments(args []reflect.Value, context ServiceContext) {
 func NewFastHTTPService() (service *FastHTTPService) {
 	service = new(FastHTTPService)
 	service.initBaseHTTPService()
-	service.contextPool = make(chan *FastHTTPContext, runtime.NumCPU()*16)
+	service.contextPool = sync.Pool{
+		New: func() interface{} { return new(FastHTTPContext) },
+	}
 	service.FixArguments = fasthttpFixArguments
 	return
 }
 
-// ContextPoolSize returns the context pool size
-func (service *FastHTTPService) ContextPoolSize() int {
-	return cap(service.contextPool)
-}
-
-// SetContextPoolSize sets the context pool size
-func (service *FastHTTPService) SetContextPoolSize(value int) {
-	service.contextPool = make(chan *FastHTTPContext, value)
-}
-
 func (service *FastHTTPService) acquireContext() (context *FastHTTPContext) {
-	select {
-	case context = <-service.contextPool:
-		return
-	default:
-		return new(FastHTTPContext)
-	}
+	return service.contextPool.Get().(*FastHTTPContext)
 }
 
 func (service *FastHTTPService) releaseContext(context *FastHTTPContext) {
-	select {
-	case service.contextPool <- context:
-	default:
-	}
+	service.contextPool.Put(context)
 }
 
 func (service *FastHTTPService) xmlFileHandler(

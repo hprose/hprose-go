@@ -12,7 +12,7 @@
  *                                                        *
  * hprose rpc base client for Go.                         *
  *                                                        *
- * LastModified: Oct 7, 2016                              *
+ * LastModified: Oct 9, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -26,9 +26,9 @@ import (
 	"io"
 	"math/rand"
 	"reflect"
-	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -36,10 +36,37 @@ import (
 	"github.com/hprose/hprose-golang/util"
 )
 
+type clientTopic struct {
+	handler   func(interface{})
+	callbacks []func(interface{})
+}
+
+type topicManager struct {
+	allTopics map[string]map[string]*clientTopic
+	locker    sync.RWMutex
+}
+
+func (ct *topicManager) getTopic(
+	name string, id string, create bool) *clientTopic {
+	ct.locker.RLock()
+	topics := ct.allTopics[name]
+	if topics != nil {
+		topic := topics[id]
+		ct.locker.RUnlock()
+		return topic
+	}
+	if create {
+		ct.allTopics[name] = make(map[string]*clientTopic)
+	}
+	ct.locker.RUnlock()
+	return nil
+}
+
 // BaseClient is the hprose base client
 type BaseClient struct {
 	handlerManager
 	filterManager
+	topicManager
 	uri            string
 	uriList        []string
 	index          int32
@@ -47,15 +74,18 @@ type BaseClient struct {
 	retry          int
 	timeout        time.Duration
 	event          ClientEvent
-	contextPool    chan *ClientContext
+	contextPool    sync.Pool
 	SendAndReceive func([]byte, *ClientContext) ([]byte, error)
+	id             string
 }
 
 func (client *BaseClient) initBaseClient() {
 	client.initHandlerManager()
 	client.timeout = 30 * 1000 * 1000 * 1000
 	client.retry = 10
-	client.contextPool = make(chan *ClientContext, runtime.NumCPU())
+	client.contextPool = sync.Pool{
+		New: func() interface{} { return new(ClientContext) },
+	}
 	client.override.invokeHandler = func(
 		name string, args []reflect.Value,
 		context Context) (results []reflect.Value, err error) {
@@ -69,6 +99,7 @@ func (client *BaseClient) initBaseClient() {
 		request []byte, context Context) (response []byte, err error) {
 		return client.afterFilter(request, context.(*ClientContext))
 	}
+	client.allTopics = make(map[string]map[string]*clientTopic)
 }
 
 // URI returns the current hprose service address.
@@ -211,19 +242,11 @@ func (client *BaseClient) UseService(remoteService interface{}, namespace ...str
 }
 
 func (client *BaseClient) acquireContext() (context *ClientContext) {
-	select {
-	case context = <-client.contextPool:
-		return
-	default:
-		return new(ClientContext)
-	}
+	return client.contextPool.Get().(*ClientContext)
 }
 
 func (client *BaseClient) releaseContext(context *ClientContext) {
-	select {
-	case client.contextPool <- context:
-	default:
-	}
+	client.contextPool.Put(context)
 }
 
 func (client *BaseClient) initClientContext(
