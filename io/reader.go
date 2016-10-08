@@ -12,7 +12,7 @@
  *                                                        *
  * hprose reader for Go.                                  *
  *                                                        *
- * LastModified: Sep 14, 2016                             *
+ * LastModified: Oct 8, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -195,6 +195,19 @@ func (r *Reader) ReadBytesWithoutTag() (b []byte) {
 		setReaderRef(r, b)
 	}
 	return
+}
+
+// ReadTime from the reader
+func (r *Reader) ReadTime() (dt time.Time) {
+	tag := r.readByte()
+	switch tag {
+	case TagDate:
+		return r.ReadDateTimeWithoutTag()
+	case TagTime:
+		return r.ReadTimeWithoutTag()
+	}
+	castError(tag, "time.Time")
+	return time.Time{}
 }
 
 // ReadDateTimeWithoutTag from the reader
