@@ -12,7 +12,7 @@
  *                                                        *
  * hprose socket client for Go.                           *
  *                                                        *
- * LastModified: Oct 5, 2016                              *
+ * LastModified: Oct 8, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -28,10 +28,17 @@ import (
 	"time"
 )
 
+type socketResponse struct {
+	data []byte
+	err  error
+}
+
 type connEntry struct {
-	conn     net.Conn
-	timer    *time.Timer
-	reqCount int32
+	conn      net.Conn
+	timer     *time.Timer
+	reqCount  int32
+	cond      *sync.Cond
+	responses map[uint32]chan socketResponse
 }
 
 // SocketClient is base struct for TCPClient and UnixClient
@@ -106,9 +113,9 @@ func (client *SocketClient) getConn() *connEntry {
 			}
 			if entry.timer != nil {
 				entry.timer.Stop()
-				if entry.conn != nil {
-					return entry
-				}
+			}
+			if entry.conn != nil {
+				return entry
 			}
 			continue
 		default:
@@ -117,7 +124,41 @@ func (client *SocketClient) getConn() *connEntry {
 	}
 }
 
-func (client *SocketClient) fetchConn() *connEntry {
+func (client *SocketClient) fullDuplexReceive(entry *connEntry) {
+	conn := entry.conn
+	var dataPacket packet
+	for {
+		err := recvData(conn, &dataPacket)
+		if err != nil {
+			if entry.responses != nil {
+				entry.cond.L.Lock()
+				responses := entry.responses
+				entry.conn = nil
+				entry.reqCount = 0
+				entry.responses = nil
+				entry.cond.L.Unlock()
+				entry.cond.Broadcast()
+				client.close(conn)
+				for _, response := range responses {
+					response <- socketResponse{nil, err}
+				}
+			}
+			break
+		}
+		id := toUint32(dataPacket.id[:])
+		entry.cond.L.Lock()
+		response := entry.responses[id]
+		delete(entry.responses, id)
+		entry.reqCount--
+		entry.cond.L.Unlock()
+		entry.cond.Signal()
+		if response != nil {
+			response <- socketResponse{dataPacket.body, nil}
+		}
+	}
+}
+
+func (client *SocketClient) fetchConn(fullDuplex bool) *connEntry {
 	client.cond.L.Lock()
 	for {
 		entry := client.getConn()
@@ -127,7 +168,13 @@ func (client *SocketClient) fetchConn() *connEntry {
 		}
 		if int(atomic.AddInt32(&client.connCount, 1)) <= cap(client.connPool) {
 			client.cond.L.Unlock()
-			return &connEntry{conn: client.createConn()}
+			entry := &connEntry{conn: client.createConn()}
+			if fullDuplex {
+				entry.cond = sync.NewCond(&sync.Mutex{})
+				entry.responses = make(map[uint32]chan socketResponse, 10)
+				go client.fullDuplexReceive(entry)
+			}
+			return entry
 		}
 		atomic.AddInt32(&client.connCount, -1)
 		client.cond.Wait()
@@ -151,31 +198,63 @@ func (client *SocketClient) close(conn net.Conn) {
 }
 
 func (client *SocketClient) fullDuplexSendAndReceive(
-	data []byte, context *ClientContext) (response []byte, err error) {
-	// conn := client.fetchConn()
-	// err = conn.SetDeadline(time.Now().Add(context.Timeout))
-	// if err == nil {
-	// 	id := atomic.AddUint32(&client.nextid, 1)
-	// 	dataPacket := packet{fullDuplex: true, body: data}
-	// 	fromUint32(dataPacket.id[:], id)
-	// 	err = sendData(conn, dataPacket)
-	// }
-	// entry := &connEntry{conn: conn}
-	// entry.timer = time.AfterFunc(client.IdleTimeout, func() {
-	// 	client.close(entry.conn)
-	// 	entry.conn = nil
-	// 	entry.timer = nil
-	// })
-	// client.connPool <- entry
-	// client.cond.Signal()
-	return nil, nil
+	data []byte, context *ClientContext) (resp []byte, err error) {
+	var entry *connEntry
+	for {
+		entry = client.fetchConn(true)
+		entry.cond.L.Lock()
+		for entry.reqCount > 10 {
+			entry.cond.Wait()
+		}
+		entry.cond.L.Unlock()
+		if entry.conn != nil {
+			break
+		}
+		entry.reqCount = 0
+		entry.cond.Signal()
+	}
+	conn := entry.conn
+	id := atomic.AddUint32(&client.nextid, 1)
+	deadline := time.Now().Add(context.Timeout)
+	err = conn.SetDeadline(deadline)
+	response := make(chan socketResponse)
+	if err == nil {
+		entry.cond.L.Lock()
+		entry.responses[id] = response
+		entry.reqCount++
+		entry.cond.L.Unlock()
+		dataPacket := packet{fullDuplex: true, body: data}
+		fromUint32(dataPacket.id[:], id)
+		err = sendData(conn, dataPacket)
+	}
+	if err == nil {
+		err = conn.SetDeadline(time.Time{})
+	}
+	if err != nil {
+		client.close(conn)
+		client.cond.Signal()
+		return
+	}
+	client.connPool <- entry
+	client.cond.Signal()
+	select {
+	case resp := <-response:
+		return resp.data, resp.err
+	case <-time.After(deadline.Sub(time.Now())):
+		entry.cond.L.Lock()
+		delete(entry.responses, id)
+		entry.reqCount--
+		entry.cond.L.Unlock()
+		entry.cond.Signal()
+		return nil, ErrTimeout
+	}
 }
 
 func (client *SocketClient) halfDuplexSendAndReceive(
-	data []byte, context *ClientContext) (response []byte, err error) {
-	entry := client.fetchConn()
+	data []byte, context *ClientContext) ([]byte, error) {
+	entry := client.fetchConn(false)
 	conn := entry.conn
-	err = conn.SetDeadline(time.Now().Add(context.Timeout))
+	err := conn.SetDeadline(time.Now().Add(context.Timeout))
 	dataPacket := packet{body: data}
 	if err == nil {
 		err = sendData(conn, dataPacket)
@@ -189,7 +268,7 @@ func (client *SocketClient) halfDuplexSendAndReceive(
 	if err != nil {
 		client.close(conn)
 		client.cond.Signal()
-		return
+		return nil, err
 	}
 	if entry.timer == nil {
 		entry.timer = time.AfterFunc(client.IdleTimeout, func() {
