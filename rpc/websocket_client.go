@@ -12,7 +12,7 @@
  *                                                        *
  * hprose websocket client for Go.                        *
  *                                                        *
- * LastModified: Oct 2, 2016                              *
+ * LastModified: Oct 8, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -29,14 +29,9 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-type websocketReqeust struct {
+type reqeust struct {
 	id   uint32
 	data []byte
-}
-
-type websocketResponse struct {
-	data []byte
-	err  error
 }
 
 // WebSocketClient is hprose websocket client
@@ -47,8 +42,8 @@ type WebSocketClient struct {
 	dialer    websocket.Dialer
 	conn      *websocket.Conn
 	nextid    uint32
-	requests  chan websocketReqeust
-	responses map[uint32]chan websocketResponse
+	requests  chan reqeust
+	responses map[uint32]chan socketResponse
 	closed    bool
 }
 
@@ -90,7 +85,7 @@ func (client *WebSocketClient) close(err error) {
 	client.cond.L.Lock()
 	if err != nil && client.responses != nil {
 		for _, response := range client.responses {
-			response <- websocketResponse{nil, err}
+			response <- socketResponse{nil, err}
 		}
 	}
 	client.responses = nil
@@ -143,7 +138,7 @@ func (client *WebSocketClient) recvLoop() {
 			client.cond.L.Lock()
 			response := client.responses[id]
 			if response != nil {
-				response <- websocketResponse{data[4:], nil}
+				response <- socketResponse{data[4:], nil}
 				delete(client.responses, id)
 			}
 			client.unlimit()
@@ -160,8 +155,8 @@ func (client *WebSocketClient) getConn(uri string) (err error) {
 			return err
 		}
 		count := client.MaxConcurrentRequests
-		client.requests = make(chan websocketReqeust, count)
-		client.responses = make(map[uint32]chan websocketResponse, count)
+		client.requests = make(chan reqeust, count)
+		client.responses = make(map[uint32]chan socketResponse, count)
 		go client.sendLoop()
 		go client.recvLoop()
 	}
@@ -174,7 +169,7 @@ func (client *WebSocketClient) sendAndReceive(
 	buf := make([]byte, len(data)+4)
 	fromUint32(buf, id)
 	copy(buf[4:], data)
-	response := make(chan websocketResponse)
+	response := make(chan socketResponse)
 	client.cond.L.Lock()
 	client.limit()
 	if client.closed {
@@ -187,7 +182,7 @@ func (client *WebSocketClient) sendAndReceive(
 	}
 	client.responses[id] = response
 	client.cond.L.Unlock()
-	client.requests <- websocketReqeust{id, buf}
+	client.requests <- reqeust{id, buf}
 	select {
 	case resp := <-response:
 		return resp.data, resp.err

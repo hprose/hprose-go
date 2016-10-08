@@ -28,11 +28,6 @@ import (
 	"time"
 )
 
-type socketResponse struct {
-	data []byte
-	err  error
-}
-
 type connEntry struct {
 	conn      net.Conn
 	timer     *time.Timer
@@ -126,9 +121,9 @@ func (client *SocketClient) getConn() *connEntry {
 
 func (client *SocketClient) fullDuplexReceive(entry *connEntry) {
 	conn := entry.conn
-	var dataPacket packet
+	var data packet
 	for {
-		err := recvData(conn, &dataPacket)
+		err := recvData(conn, &data)
 		if err != nil {
 			if entry.responses != nil {
 				entry.cond.L.Lock()
@@ -145,7 +140,7 @@ func (client *SocketClient) fullDuplexReceive(entry *connEntry) {
 			}
 			break
 		}
-		id := toUint32(dataPacket.id[:])
+		id := toUint32(data.id[:])
 		entry.cond.L.Lock()
 		response := entry.responses[id]
 		delete(entry.responses, id)
@@ -153,7 +148,7 @@ func (client *SocketClient) fullDuplexReceive(entry *connEntry) {
 		entry.cond.L.Unlock()
 		entry.cond.Signal()
 		if response != nil {
-			response <- socketResponse{dataPacket.body, nil}
+			response <- socketResponse{data.body, nil}
 		}
 	}
 }

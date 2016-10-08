@@ -32,6 +32,11 @@ type packet struct {
 	body       []byte
 }
 
+type socketResponse struct {
+	data []byte
+	err  error
+}
+
 func toUint32(b []byte) uint32 {
 	return uint32(b[0])<<24 | uint32(b[1])<<16 | uint32(b[2])<<8 | uint32(b[3])
 }
