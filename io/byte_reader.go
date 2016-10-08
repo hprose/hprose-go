@@ -12,7 +12,7 @@
  *                                                        *
  * byte reader for Go.                                    *
  *                                                        *
- * LastModified: Sep 27, 2016                             *
+ * LastModified: Oct 8, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -42,6 +42,12 @@ func NewByteReader(buf []byte) (reader *ByteReader) {
 	reader = new(ByteReader)
 	reader.buf = buf
 	return
+}
+
+// Init ByteReader
+func (r *ByteReader) Init(buf []byte) {
+	r.buf = buf
+	r.off = 0
 }
 
 // ReadByte reads and returns a single byte. If no byte is available,
