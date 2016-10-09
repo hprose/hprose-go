@@ -10,13 +10,16 @@
  *                                                        *
  * util/util.go                                           *
  *                                                        *
- * some util for Go.                                      *
+ * some utility functions for Go.                         *
  *                                                        *
  * LastModified: Sep 15, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 
+/*
+Package util defines some utility functions for Golang.
+*/
 package util
 
 import (
