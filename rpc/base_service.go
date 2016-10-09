@@ -46,6 +46,7 @@ type BaseService struct {
 	Heartbeat    time.Duration
 	ErrorDelay   time.Duration
 	UserData     map[string]interface{}
+	readerPool   sync.Pool
 	topics       map[string]*topic
 	sync.RWMutex
 }
@@ -76,6 +77,9 @@ func (service *BaseService) initBaseService() {
 	service.Heartbeat = 3 * 1000 * 1000 * 1000
 	service.ErrorDelay = 10 * 1000 * 1000 * 1000
 	service.topics = make(map[string]*topic)
+	service.readerPool = sync.Pool{
+		New: func() interface{} { return new(io.Reader) },
+	}
 	service.AddFunction("#", GetNextID, Options{Simple: true})
 	service.override.invokeHandler = func(
 		name string, args []reflect.Value,
@@ -491,7 +495,10 @@ func (service *BaseService) doFunctionList(context ServiceContext) []byte {
 func (service *BaseService) afterFilter(
 	request []byte,
 	context ServiceContext) (response []byte, err error) {
-	reader := io.NewReader(request, false)
+	reader := service.readerPool.Get().(*io.Reader)
+	defer service.readerPool.Put(reader)
+	reader.Init(request)
+	reader.Reset()
 	tag, err := reader.ReadByte()
 	if err != nil {
 		return nil, err

@@ -75,6 +75,7 @@ type BaseClient struct {
 	timeout        time.Duration
 	event          ClientEvent
 	contextPool    sync.Pool
+	readerPool     sync.Pool
 	SendAndReceive func([]byte, *ClientContext) ([]byte, error)
 	id             string
 }
@@ -85,6 +86,9 @@ func (client *BaseClient) initBaseClient() {
 	client.retry = 10
 	client.contextPool = sync.Pool{
 		New: func() interface{} { return new(ClientContext) },
+	}
+	client.readerPool = sync.Pool{
+		New: func() interface{} { return new(hio.Reader) },
 	}
 	client.override.invokeHandler = func(
 		name string, args []reflect.Value,
@@ -464,7 +468,10 @@ func (client *BaseClient) decode(
 		results[0] = reflect.ValueOf(data[:n-1])
 		return
 	}
-	reader := hio.NewReader(data, false)
+	reader := client.readerPool.Get().(*hio.Reader)
+	defer client.readerPool.Put(reader)
+	reader.Init(data)
+	reader.Reset()
 	reader.JSONCompatible = context.JSONCompatible
 	tag, _ := reader.ReadByte()
 	if tag == hio.TagResult {
