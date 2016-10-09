@@ -12,7 +12,7 @@
  *                                                        *
  * hprose base service for Go.                            *
  *                                                        *
- * LastModified: Oct 7, 2016                              *
+ * LastModified: Oct 9, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -365,8 +365,10 @@ func readArguments(
 	reader *io.Reader,
 	method *Method,
 	context ServiceContext) (args []reflect.Value) {
-	reader.JSONCompatible = method.JSONCompatible
-	if method == nil {
+	if method != nil {
+		reader.JSONCompatible = method.JSONCompatible
+	}
+	if method == nil && context.IsMissingMethod() {
 		return reader.ReadSliceWithoutTag()
 	}
 	count := reader.ReadCount()
@@ -436,6 +438,10 @@ func (service *BaseService) doSingleInvoke(
 	name := reader.ReadString()
 	alias := strings.ToLower(name)
 	method := service.RemoteMethods[alias]
+	if method == nil {
+		method = service.RemoteMethods["*"]
+		context.setIsMissingMethod(true)
+	}
 	tag = reader.CheckTags([]byte{io.TagList, io.TagEnd, io.TagCall})
 	var args []reflect.Value
 	if tag == io.TagList {
@@ -446,10 +452,6 @@ func (service *BaseService) doSingleInvoke(
 			context.setByRef(true)
 			tag = reader.CheckTags([]byte{io.TagEnd, io.TagCall})
 		}
-	}
-	if method == nil {
-		method = service.RemoteMethods["*"]
-		context.setIsMissingMethod(true)
 	}
 	if method == nil {
 		err := errors.New("Can't find this method " + name)
