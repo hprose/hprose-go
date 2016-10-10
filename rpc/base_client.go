@@ -803,21 +803,7 @@ func (client *BaseClient) ID() (string, error) {
 
 func (client *BaseClient) subscribe(
 	name string, id string, settings *InvokeSettings) {
-	var (
-		resultTypes []reflect.Type
-		results     []reflect.Value
-		err         error
-	)
-	if settings == nil {
-		settings = new(InvokeSettings)
-	} else {
-		resultTypes = settings.ResultTypes
-	}
-	settings.ByRef = false
-	settings.Idempotent = true
-	settings.Mode = Normal
-	settings.Oneway = false
-	settings.Simple = true
+	resultTypes := settings.ResultTypes
 	settings.ResultTypes = []reflect.Type{interfaceType}
 	args := []reflect.Value{reflect.ValueOf(id)}
 	for {
@@ -825,14 +811,17 @@ func (client *BaseClient) subscribe(
 		if topic == nil {
 			return
 		}
-		results, err = client.Invoke(name, args, settings)
+		results, err := client.Invoke(name, args, settings)
 		if !results[0].IsNil() {
 			func() {
 				defer client.fireErrorEvent(name, nil)
 				if resultTypes != nil && len(resultTypes) > 0 {
-					buf := hio.NewWriter(false).Serialize(results[0]).Bytes()
-					reader := client.acquireReader(buf)
+					writer := hio.NewWriter(false)
+					writer.WriteValue(results[0])
+					reader := client.acquireReader(writer.Bytes())
 					if len(resultTypes) == 1 {
+						results = make([]reflect.Value, 1)
+						results[0] = reflect.New(resultTypes[0]).Elem()
 						reader.ReadValue(results[0])
 					} else {
 						results = readMultiResults(reader, resultTypes)
@@ -853,23 +842,43 @@ func (client *BaseClient) subscribe(
 // Subscribe a push topic
 func (client *BaseClient) Subscribe(
 	name string, id string,
-	callback Callback, settings *InvokeSettings) (err error) {
+	settings *InvokeSettings, callback interface{}) (err error) {
 	if id == "" {
 		id, err = client.ID()
 		if err != nil {
 			return err
 		}
 	}
+	f := reflect.ValueOf(callback)
+	if f.Kind() != reflect.Func {
+		return errors.New("Subscribe: callback must be a function")
+	}
+	resultTypes, hasError := getCallbackResultTypes(f.Type())
+	cb := func(results []reflect.Value, err error) {
+		if hasError {
+			results = append(results, reflect.ValueOf(&err).Elem())
+		}
+		f.Call(results)
+	}
+	if settings == nil {
+		settings = new(InvokeSettings)
+	}
+	settings.ByRef = false
+	settings.Idempotent = true
+	settings.Mode = Normal
+	settings.Oneway = false
+	settings.Simple = true
+	settings.ResultTypes = resultTypes
 	topic := client.getTopic(name, id, true)
 	if topic == nil {
 		topic = new(clientTopic)
-		topic.addCallback(callback)
+		topic.addCallback(cb)
 		client.topicManager.locker.Lock()
 		client.allTopics[name][id] = topic
 		client.topicManager.locker.Unlock()
 		go client.subscribe(name, id, settings)
 	} else {
-		topic.addCallback(callback)
+		topic.addCallback(cb)
 	}
 	return nil
 }

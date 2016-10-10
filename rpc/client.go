@@ -70,7 +70,7 @@ type Client interface {
 	Go(string, []reflect.Value, Callback, *InvokeSettings)
 	Close()
 	ID() (string, error)
-	Subscribe(name string, id string, callback Callback, settings *InvokeSettings) (err error)
+	Subscribe(name string, id string, settings *InvokeSettings, callback interface{}) (err error)
 	Unsubscribe(name string, id ...string)
 }
 

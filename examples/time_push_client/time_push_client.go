@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"reflect"
 
 	"github.com/hprose/hprose-golang/rpc"
 )
@@ -12,13 +11,13 @@ func main() {
 	count := 0
 	id, _ := client.ID()
 	done := make(chan bool)
-	client.Subscribe("time", id, func(result []reflect.Value, err error) {
+	client.Subscribe("time", id, nil, func(data string) {
 		count++
 		if count > 10 {
 			client.Unsubscribe("time")
 			done <- true
 		}
-		fmt.Println(result[0].Interface())
-	}, nil)
+		fmt.Println(data)
+	})
 	<-done
 }
