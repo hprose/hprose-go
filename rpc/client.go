@@ -69,6 +69,9 @@ type Client interface {
 	Invoke(string, []reflect.Value, *InvokeSettings) ([]reflect.Value, error)
 	Go(string, []reflect.Value, Callback, *InvokeSettings)
 	Close()
+	ID() (string, error)
+	Subscribe(name string, id string, callback Callback, settings *InvokeSettings) (err error)
+	Unsubscribe(name string, id ...string)
 }
 
 // ClientContext is the hprose client context

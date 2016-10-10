@@ -28,6 +28,7 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
+var stringType = reflect.TypeOf("")
 var errorType = reflect.TypeOf((*error)(nil)).Elem()
 var interfaceType = reflect.TypeOf((*interface{})(nil)).Elem()
 var contextType = reflect.TypeOf((*Context)(nil)).Elem()

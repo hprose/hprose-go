@@ -12,7 +12,7 @@
  *                                                        *
  * hprose rpc base client for Go.                         *
  *                                                        *
- * LastModified: Oct 9, 2016                              *
+ * LastModified: Oct 10, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -37,8 +37,14 @@ import (
 )
 
 type clientTopic struct {
-	handler   func(interface{})
-	callbacks []func(interface{})
+	callbacks []Callback
+	locker    sync.RWMutex
+}
+
+func (ct *clientTopic) addCallback(callback Callback) {
+	ct.locker.Lock()
+	ct.callbacks = append(ct.callbacks, callback)
+	ct.locker.Unlock()
 }
 
 type topicManager struct {
@@ -46,19 +52,21 @@ type topicManager struct {
 	locker    sync.RWMutex
 }
 
-func (ct *topicManager) getTopic(
+func (tm *topicManager) getTopic(
 	name string, id string, create bool) *clientTopic {
-	ct.locker.RLock()
-	topics := ct.allTopics[name]
+	tm.locker.RLock()
+	topics := tm.allTopics[name]
 	if topics != nil {
 		topic := topics[id]
-		ct.locker.RUnlock()
+		tm.locker.RUnlock()
 		return topic
 	}
+	tm.locker.RUnlock()
 	if create {
-		ct.allTopics[name] = make(map[string]*clientTopic)
+		tm.locker.Lock()
+		tm.allTopics[name] = make(map[string]*clientTopic)
+		tm.locker.Unlock()
 	}
-	ct.locker.RUnlock()
 	return nil
 }
 
@@ -293,20 +301,24 @@ func (client *BaseClient) Invoke(name string, args []reflect.Value, settings *In
 // Go invoke the remote method asynchronous
 func (client *BaseClient) Go(name string, args []reflect.Value, callback Callback, settings *InvokeSettings) {
 	go func() {
-		defer func() {
-			if e := recover(); e != nil {
-				err := NewPanicError(e)
-				if event, ok := client.event.(onErrorEvent); ok {
-					event.OnError(name, err)
-				}
-			}
-		}()
+		defer client.fireErrorEvent(name, nil)
 		callback(client.Invoke(name, args, settings))
 	}()
 }
 
 // Close the client
 func (client *BaseClient) Close() {}
+
+func (client *BaseClient) fireErrorEvent(name string, err error) {
+	if e := recover(); e != nil {
+		err = NewPanicError(e)
+	}
+	if err != nil {
+		if event, ok := client.event.(onErrorEvent); ok {
+			event.OnError(name, err)
+		}
+	}
+}
 
 func (client *BaseClient) beforeFilter(
 	request []byte,
@@ -395,6 +407,24 @@ func (client *BaseClient) encode(
 	return writer.Bytes()
 }
 
+func readMultiResults(
+	reader *hio.Reader, resultTypes []reflect.Type) (results []reflect.Value) {
+	length := len(resultTypes)
+	reader.CheckTag(hio.TagList)
+	count := reader.ReadCount()
+	results = make([]reflect.Value, util.Max(length, count))
+	for i := 0; i < length; i++ {
+		results[i] = reflect.New(resultTypes[i]).Elem()
+	}
+	if length < count {
+		for i := length; i < count; i++ {
+			results[i] = reflect.New(interfaceType).Elem()
+		}
+	}
+	reader.ReadSlice(results[:count])
+	return
+}
+
 func (client *BaseClient) readResults(
 	reader *hio.Reader,
 	context *ClientContext) (results []reflect.Value) {
@@ -408,18 +438,7 @@ func (client *BaseClient) readResults(
 		results[0] = reflect.New(context.ResultTypes[0]).Elem()
 		reader.ReadValue(results[0])
 	default:
-		reader.CheckTag(hio.TagList)
-		count := reader.ReadCount()
-		results = make([]reflect.Value, util.Max(length, count))
-		for i := 0; i < length; i++ {
-			results[i] = reflect.New(context.ResultTypes[i]).Elem()
-		}
-		if length < count {
-			for i := length; i < count; i++ {
-				results[i] = reflect.New(interfaceType).Elem()
-			}
-		}
-		reader.ReadSlice(results[:count])
+		results = readMultiResults(reader, context.ResultTypes)
 	}
 	return
 }
@@ -442,6 +461,18 @@ func (client *BaseClient) readArguments(
 	}
 	reader.ReadSlice(a[:count])
 	return
+}
+
+func (client *BaseClient) acquireReader(buf []byte) (reader *hio.Reader) {
+	reader = client.readerPool.Get().(*hio.Reader)
+	reader.Init(buf)
+	return
+}
+
+func (client *BaseClient) releaseReader(reader *hio.Reader) {
+	reader.Init(nil)
+	reader.Reset()
+	client.readerPool.Put(reader)
 }
 
 func (client *BaseClient) decode(
@@ -468,10 +499,8 @@ func (client *BaseClient) decode(
 		results[0] = reflect.ValueOf(data[:n-1])
 		return
 	}
-	reader := client.readerPool.Get().(*hio.Reader)
-	defer client.readerPool.Put(reader)
-	reader.Init(data)
-	reader.Reset()
+	reader := client.acquireReader(data)
+	defer client.releaseReader(reader)
 	reader.JSONCompatible = context.JSONCompatible
 	tag, _ := reader.ReadByte()
 	if tag == hio.TagResult {
@@ -680,17 +709,6 @@ func getSyncRemoteMethod(
 	}
 }
 
-func fireClientErrorEvent(client *BaseClient, name string, err error) {
-	if e := recover(); e != nil {
-		err = NewPanicError(e)
-	}
-	if err != nil {
-		if event, ok := client.event.(onErrorEvent); ok {
-			event.OnError(name, err)
-		}
-	}
-}
-
 func getAsyncRemoteMethod(
 	client *BaseClient,
 	name string,
@@ -707,7 +725,7 @@ func getAsyncRemoteMethod(
 			if hasError {
 				out = append(out, reflect.ValueOf(&err).Elem())
 			}
-			defer fireClientErrorEvent(client, name, err)
+			defer client.fireErrorEvent(name, err)
 			callback.Call(out)
 		}()
 		return nil
@@ -753,4 +771,124 @@ func buildRemoteMethod(client *BaseClient, f reflect.Value, ft reflect.Type, sf 
 	} else {
 		f.Set(reflect.MakeFunc(ft, fn))
 	}
+}
+
+var autoIDSettings = InvokeSettings{
+	Simple:      true,
+	Idempotent:  true,
+	Failswitch:  true,
+	ResultTypes: []reflect.Type{stringType},
+}
+
+// ID returns the auto id of this hprose client
+func (client *BaseClient) ID() (string, error) {
+	client.topicManager.locker.RLock()
+	if client.id != "" {
+		client.topicManager.locker.RUnlock()
+		return client.id, nil
+	}
+	client.topicManager.locker.RUnlock()
+	client.topicManager.locker.Lock()
+	defer client.topicManager.locker.Unlock()
+	if client.id != "" {
+		return client.id, nil
+	}
+	results, err := client.Invoke("#", nil, &autoIDSettings)
+	if err != nil {
+		return "", err
+	}
+	client.id = results[0].String()
+	return client.id, nil
+}
+
+func (client *BaseClient) subscribe(
+	name string, id string, settings *InvokeSettings) {
+	var (
+		resultTypes []reflect.Type
+		results     []reflect.Value
+		err         error
+	)
+	if settings == nil {
+		settings = new(InvokeSettings)
+	} else {
+		resultTypes = settings.ResultTypes
+	}
+	settings.ByRef = false
+	settings.Idempotent = true
+	settings.Mode = Normal
+	settings.Oneway = false
+	settings.Simple = true
+	settings.ResultTypes = []reflect.Type{interfaceType}
+	args := []reflect.Value{reflect.ValueOf(id)}
+	for {
+		topic := client.getTopic(name, id, false)
+		if topic == nil {
+			return
+		}
+		results, err = client.Invoke(name, args, settings)
+		if !results[0].IsNil() {
+			func() {
+				defer client.fireErrorEvent(name, nil)
+				if resultTypes != nil && len(resultTypes) > 0 {
+					buf := hio.NewWriter(false).Serialize(results[0]).Bytes()
+					reader := client.acquireReader(buf)
+					if len(resultTypes) == 1 {
+						reader.ReadValue(results[0])
+					} else {
+						results = readMultiResults(reader, resultTypes)
+					}
+					client.releaseReader(reader)
+				}
+				topic.locker.RLock()
+				callbacks := topic.callbacks
+				topic.locker.RUnlock()
+				for _, callback := range callbacks {
+					callback(results, err)
+				}
+			}()
+		}
+	}
+}
+
+// Subscribe a push topic
+func (client *BaseClient) Subscribe(
+	name string, id string,
+	callback Callback, settings *InvokeSettings) (err error) {
+	if id == "" {
+		id, err = client.ID()
+		if err != nil {
+			return err
+		}
+	}
+	topic := client.getTopic(name, id, true)
+	if topic == nil {
+		topic = new(clientTopic)
+		topic.addCallback(callback)
+		client.topicManager.locker.Lock()
+		client.allTopics[name][id] = topic
+		client.topicManager.locker.Unlock()
+		go client.subscribe(name, id, settings)
+	} else {
+		topic.addCallback(callback)
+	}
+	return nil
+}
+
+// Unsubscribe a push topic
+func (client *BaseClient) Unsubscribe(name string, id ...string) {
+	client.topicManager.locker.Lock()
+	if client.allTopics[name] != nil {
+		if len(id) == 0 {
+			if client.id == "" {
+				delete(client.allTopics, name)
+			} else {
+				delete(client.allTopics[name], client.id)
+			}
+		} else {
+			for i := range id {
+				delete(client.allTopics[name], id[i])
+			}
+		}
+	}
+	client.topicManager.locker.Unlock()
 }
