@@ -7,18 +7,28 @@ import (
 	"github.com/valyala/fasthttp"
 )
 
-// Hello ...
-type Hello struct{}
+// Service ...
+type Service struct{}
 
 // Hello ...
-func (*Hello) Hello(name string) string {
+func (Service) Hello(name string) string {
 	return "Hello " + name + "!"
+}
+
+// Sum ...
+func (Service) Sum(a ...int) int {
+	sum := 0
+	for _, i := range a {
+		sum += i
+	}
+	return sum
 }
 
 func main() {
 	runtime.GOMAXPROCS(runtime.NumCPU())
 	service := rpc.NewFastHTTPService()
-	service.AddInstanceMethods(&Hello{}, rpc.Options{})
+	service.Debug = true
+	service.AddInstanceMethods(Service{}, rpc.Options{})
 	//	service.AddFunction("hello", hello, rpc.Options{})
 	fasthttp.ListenAndServe(":8080", service.ServeFastHTTP)
 }

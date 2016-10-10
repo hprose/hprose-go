@@ -12,6 +12,7 @@ import (
 type Stub struct {
 	Hello      func(string) (string, error)
 	AsyncHello func(func(string, error), string) `name:"hello"`
+	Sum        func(...int) int
 }
 
 func main() {
@@ -23,6 +24,10 @@ func main() {
 		fmt.Println(result, err)
 	}, "async world")
 	fmt.Println(stub.Hello("world"))
+	fmt.Println(stub.Sum())
+	fmt.Println(stub.Sum(1))
+	fmt.Println(stub.Sum(1, 2))
+	fmt.Println(stub.Sum(1, 2, 3, 4, 5, 6, 7))
 	start := time.Now()
 	var n int32 = 500000
 	done := make(chan bool)
