@@ -86,6 +86,17 @@ type ClientContext struct {
 	Client  Client
 }
 
+// NewClient is the constructor of Client
+func NewClient(uri ...string) Client {
+	return clientFactories[checkAddresses(uri, allSchemes)](uri...)
+}
+
+// UseFastHTTPClient as the default http client
+func UseFastHTTPClient() {
+	registerClientFactory("http", newFastHTTPClient)
+	registerClientFactory("https", newFastHTTPClient)
+}
+
 var httpSchemes = []string{"http", "https"}
 var tcpSchemes = []string{"tcp", "tcp4", "tcp6"}
 var unixSchemes = []string{"unix"}
@@ -119,39 +130,18 @@ func checkAddresses(uriList []string, schemes []string) (scheme string) {
 
 var clientFactories = make(map[string]func(...string) Client)
 
-// NewClient is the constructor of Client
-func NewClient(uri ...string) Client {
-	return clientFactories[checkAddresses(uri, allSchemes)](uri...)
-}
-
-// public functions
-
-// RegisterClientFactory register client factory
-func RegisterClientFactory(scheme string, newClient func(...string) Client) {
+func registerClientFactory(scheme string, newClient func(...string) Client) {
 	clientFactories[strings.ToLower(scheme)] = newClient
 }
 
-// TryRegisterClientFactory register client factory if scheme is not register
-func TryRegisterClientFactory(scheme string, newClient func(...string) Client) {
-	scheme = strings.ToLower(scheme)
-	if clientFactories[scheme] == nil {
-		clientFactories[scheme] = newClient
-	}
-}
-
-// UseFastHTTPClient as the default http client
-func UseFastHTTPClient() {
-	RegisterClientFactory("http", newFastHTTPClient)
-	RegisterClientFactory("https", newFastHTTPClient)
-}
-
 func init() {
-	RegisterClientFactory("http", newHTTPClient)
-	RegisterClientFactory("https", newHTTPClient)
-	RegisterClientFactory("tcp", newTCPClient)
-	RegisterClientFactory("tcp4", newTCPClient)
-	RegisterClientFactory("tcp6", newTCPClient)
-	RegisterClientFactory("unix", newUnixClient)
-	RegisterClientFactory("ws", newWebSocketClient)
-	RegisterClientFactory("wss", newWebSocketClient)
+	registerClientFactory("http", newHTTPClient)
+	registerClientFactory("https", newHTTPClient)
+	registerClientFactory("tcp", newTCPClient)
+	registerClientFactory("tcp4", newTCPClient)
+	registerClientFactory("tcp6", newTCPClient)
+	registerClientFactory("unix", newUnixClient)
+	registerClientFactory("ws", newWebSocketClient)
+	registerClientFactory("wss", newWebSocketClient)
 }
+
