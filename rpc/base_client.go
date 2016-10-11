@@ -12,7 +12,7 @@
  *                                                        *
  * hprose rpc base client for Go.                         *
  *                                                        *
- * LastModified: Oct 10, 2016                             *
+ * LastModified: Oct 11, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -446,8 +446,9 @@ func (client *BaseClient) readResults(
 func (client *BaseClient) readArguments(
 	reader *hio.Reader,
 	args []reflect.Value,
-	context *ClientContext) {
+	context *ClientContext) byte {
 	length := len(args)
+	reader.Reset()
 	reader.CheckTag(hio.TagList)
 	count := reader.ReadCount()
 	a := make([]reflect.Value, util.Max(length, count))
@@ -460,7 +461,8 @@ func (client *BaseClient) readArguments(
 		}
 	}
 	reader.ReadSlice(a[:count])
-	return
+	tag, _ := reader.ReadByte()
+	return tag
 }
 
 func (client *BaseClient) acquireReader(buf []byte) (reader *hio.Reader) {
@@ -513,9 +515,7 @@ func (client *BaseClient) decode(
 		}
 		tag, _ = reader.ReadByte()
 		if tag == hio.TagArgument {
-			reader.Reset()
-			client.readArguments(reader, args, context)
-			tag, _ = reader.ReadByte()
+			tag = client.readArguments(reader, args, context)
 		}
 	} else if tag == hio.TagError {
 		return nil, errors.New(reader.ReadString())
@@ -801,6 +801,31 @@ func (client *BaseClient) ID() (string, error) {
 	return client.id, nil
 }
 
+func (client *BaseClient) processCallback(
+	name string,
+	callbacks []Callback,
+	resultTypes []reflect.Type,
+	results []reflect.Value,
+	err error) {
+	defer client.fireErrorEvent(name, nil)
+	if resultTypes != nil && len(resultTypes) > 0 {
+		writer := hio.NewWriter(false)
+		writer.WriteValue(results[0])
+		reader := client.acquireReader(writer.Bytes())
+		if len(resultTypes) == 1 {
+			results = make([]reflect.Value, 1)
+			results[0] = reflect.New(resultTypes[0]).Elem()
+			reader.ReadValue(results[0])
+		} else {
+			results = readMultiResults(reader, resultTypes)
+		}
+		client.releaseReader(reader)
+	}
+	for _, callback := range callbacks {
+		callback(results, err)
+	}
+}
+
 func (client *BaseClient) subscribe(
 	name string, id string, settings *InvokeSettings) {
 	resultTypes := settings.ResultTypes
@@ -811,30 +836,12 @@ func (client *BaseClient) subscribe(
 		if topic == nil {
 			return
 		}
+		topic.locker.RLock()
+		callbacks := topic.callbacks
+		topic.locker.RUnlock()
 		results, err := client.Invoke(name, args, settings)
 		if !results[0].IsNil() {
-			func() {
-				defer client.fireErrorEvent(name, nil)
-				if resultTypes != nil && len(resultTypes) > 0 {
-					writer := hio.NewWriter(false)
-					writer.WriteValue(results[0])
-					reader := client.acquireReader(writer.Bytes())
-					if len(resultTypes) == 1 {
-						results = make([]reflect.Value, 1)
-						results[0] = reflect.New(resultTypes[0]).Elem()
-						reader.ReadValue(results[0])
-					} else {
-						results = readMultiResults(reader, resultTypes)
-					}
-					client.releaseReader(reader)
-				}
-				topic.locker.RLock()
-				callbacks := topic.callbacks
-				topic.locker.RUnlock()
-				for _, callback := range callbacks {
-					callback(results, err)
-				}
-			}()
+			client.processCallback(name, callbacks, resultTypes, results, err)
 		}
 	}
 }
