@@ -12,7 +12,7 @@
  *                                                        *
  * hprose websocket client for Go.                        *
  *                                                        *
- * LastModified: Oct 8, 2016                              *
+ * LastModified: Oct 11, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -22,7 +22,6 @@ package rpc
 import (
 	"crypto/tls"
 	"net/http"
-	"net/url"
 	"sync/atomic"
 	"time"
 
@@ -62,22 +61,11 @@ func newWebSocketClient(uri ...string) Client {
 	return NewWebSocketClient(uri...)
 }
 
-func checkWebSocketAddresses(client *WebSocketClient, uriList []string) {
-	for _, uri := range uriList {
-		if u, err := url.Parse(uri); err == nil {
-			if u.Scheme != "ws" && u.Scheme != "wss" {
-				panic("This client desn't support " + u.Scheme + " scheme.")
-			}
-			if u.Scheme == "wss" {
-				client.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
-			}
-		}
-	}
-}
-
 // SetURIList set a list of server addresses
 func (client *WebSocketClient) SetURIList(uriList []string) {
-	checkWebSocketAddresses(client, uriList)
+	if checkAddresses(uriList, websocketSchemes) == "wss" {
+		client.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
+	}
 	client.BaseClient.SetURIList(uriList)
 }
 

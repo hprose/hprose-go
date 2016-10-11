@@ -12,7 +12,7 @@
  *                                                        *
  * hprose http client for Go.                             *
  *                                                        *
- * LastModified: Oct 2, 2016                              *
+ * LastModified: Oct 11, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -25,7 +25,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
-	"net/url"
 	"time"
 
 	hio "github.com/hprose/hprose-golang/io"
@@ -67,22 +66,11 @@ func newHTTPClient(uri ...string) Client {
 	return NewHTTPClient(uri...)
 }
 
-func checkHTTPAddresses(client Client, uriList []string) {
-	for _, uri := range uriList {
-		if u, err := url.Parse(uri); err == nil {
-			if u.Scheme != "http" && u.Scheme != "https" {
-				panic("This client desn't support " + u.Scheme + " scheme.")
-			}
-			if u.Scheme == "https" {
-				client.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
-			}
-		}
-	}
-}
-
 // SetURIList set a list of server addresses
 func (client *HTTPClient) SetURIList(uriList []string) {
-	checkHTTPAddresses(client, uriList)
+	if checkAddresses(uriList, httpSchemes) == "https" {
+		client.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
+	}
 	client.BaseClient.SetURIList(uriList)
 }
 

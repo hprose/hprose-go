@@ -12,7 +12,7 @@
  *                                                        *
  * hprose tcp client for Go.                              *
  *                                                        *
- * LastModified: Oct 5, 2016                              *
+ * LastModified: Oct 11, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -47,19 +47,13 @@ func NewTCPClient(uri ...string) (client *TCPClient) {
 	return
 }
 
-func checkTCPAddresses(client Client, uriList []string) {
-	for _, uri := range uriList {
-		if u, err := url.Parse(uri); err == nil {
-			if u.Scheme != "tcp" && u.Scheme != "tcp4" && u.Scheme != "tcp6" {
-				panic("This client desn't support " + u.Scheme + " scheme.")
-			}
-		}
-	}
+func newTCPClient(uri ...string) Client {
+	return NewTCPClient(uri...)
 }
 
 // SetURIList set a list of server addresses
 func (client *TCPClient) SetURIList(uriList []string) {
-	checkTCPAddresses(client, uriList)
+	checkAddresses(uriList, tcpSchemes)
 	client.BaseClient.SetURIList(uriList)
 }
 

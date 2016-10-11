@@ -12,7 +12,7 @@
  *                                                        *
  * rpc error for Go.                                      *
  *                                                        *
- * LastModified: Oct 2, 2016                              *
+ * LastModified: Oct 11, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -30,6 +30,8 @@ var ErrTimeout = errors.New("timeout")
 var errServerIsAlreadyStarted = errors.New("The server is already started")
 var errServerIsNotStarted = errors.New("The server is not started")
 var errClientIsAlreadyClosed = errors.New("The Client is already closed")
+var errURIListEmpty = errors.New("uriList must contain at least one uri")
+var errNotSupportMultpleProtocol = errors.New("Not support multiple protocol.")
 
 // PanicError represents a panic error
 type PanicError struct {

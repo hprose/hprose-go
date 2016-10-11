@@ -12,7 +12,7 @@
  *                                                        *
  * hprose http client for Go.                             *
  *                                                        *
- * LastModified: Oct 2, 2016                              *
+ * LastModified: Oct 11, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -53,7 +53,9 @@ func newFastHTTPClient(uri ...string) Client {
 
 // SetURIList set a list of server addresses
 func (client *FastHTTPClient) SetURIList(uriList []string) {
-	checkHTTPAddresses(client, uriList)
+	if checkAddresses(uriList, httpSchemes) == "https" {
+		client.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
+	}
 	client.BaseClient.SetURIList(uriList)
 }
 
