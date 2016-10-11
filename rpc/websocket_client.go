@@ -35,7 +35,7 @@ type reqeust struct {
 
 // WebSocketClient is hprose websocket client
 type WebSocketClient struct {
-	BaseClient
+	baseClient
 	limiter
 	http.Header
 	dialer    websocket.Dialer
@@ -66,7 +66,7 @@ func (client *WebSocketClient) SetURIList(uriList []string) {
 	if checkAddresses(uriList, websocketSchemes) == "wss" {
 		client.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
 	}
-	client.BaseClient.SetURIList(uriList)
+	client.baseClient.SetURIList(uriList)
 }
 
 func (client *WebSocketClient) close(err error) {

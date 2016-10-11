@@ -46,7 +46,7 @@ func newUnixClient(uri ...string) Client {
 // SetURIList set a list of server addresses
 func (client *UnixClient) SetURIList(uriList []string) {
 	checkAddresses(uriList, unixSchemes)
-	client.BaseClient.SetURIList(uriList)
+	client.baseClient.SetURIList(uriList)
 }
 
 func (client *UnixClient) createUnixConn() net.Conn {

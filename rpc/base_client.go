@@ -70,8 +70,7 @@ func (tm *topicManager) getTopic(
 	return nil
 }
 
-// BaseClient is the hprose base client
-type BaseClient struct {
+type baseClient struct {
 	handlerManager
 	filterManager
 	topicManager
@@ -88,7 +87,7 @@ type BaseClient struct {
 	id             string
 }
 
-func (client *BaseClient) initBaseClient() {
+func (client *baseClient) initBaseClient() {
 	client.initHandlerManager()
 	client.timeout = 30 * 1000 * 1000 * 1000
 	client.retry = 10
@@ -115,7 +114,7 @@ func (client *BaseClient) initBaseClient() {
 }
 
 // URI returns the current hprose service address.
-func (client *BaseClient) URI() string {
+func (client *baseClient) URI() string {
 	return client.uri
 }
 
@@ -123,12 +122,12 @@ func (client *BaseClient) URI() string {
 //
 // If you want to set more than one service address, please don't use this
 // method, use SetURIList instead.
-func (client *BaseClient) SetURI(uri string) {
+func (client *baseClient) SetURI(uri string) {
 	client.SetURIList([]string{uri})
 }
 
 // URIList returns all of the hprose service addresses
-func (client *BaseClient) URIList() []string {
+func (client *baseClient) URIList() []string {
 	return client.uriList
 }
 
@@ -143,7 +142,7 @@ func shuffleStringSlice(src []string) []string {
 }
 
 // SetURIList set a list of server addresses
-func (client *BaseClient) SetURIList(uriList []string) {
+func (client *baseClient) SetURIList(uriList []string) {
 	client.uriList = shuffleStringSlice(uriList)
 	client.index = 0
 	client.failround = 0
@@ -151,97 +150,97 @@ func (client *BaseClient) SetURIList(uriList []string) {
 }
 
 // TLSClientConfig returns the tls config of hprose client
-func (client *BaseClient) TLSClientConfig() *tls.Config {
+func (client *baseClient) TLSClientConfig() *tls.Config {
 	return nil
 }
 
 // SetTLSClientConfig set the tls config of hprose client
-func (client *BaseClient) SetTLSClientConfig(config *tls.Config) {}
+func (client *baseClient) SetTLSClientConfig(config *tls.Config) {}
 
 // Retry returns the max retry count
-func (client *BaseClient) Retry() int {
+func (client *baseClient) Retry() int {
 	return client.retry
 }
 
 // SetRetry set the max retry count
-func (client *BaseClient) SetRetry(value int) {
+func (client *baseClient) SetRetry(value int) {
 	client.retry = value
 }
 
 // Timeout returns the client timeout setting
-func (client *BaseClient) Timeout() time.Duration {
+func (client *baseClient) Timeout() time.Duration {
 	return client.timeout
 }
 
 // SetTimeout set the client timeout setting
-func (client *BaseClient) SetTimeout(value time.Duration) {
+func (client *baseClient) SetTimeout(value time.Duration) {
 	client.timeout = value
 }
 
 // Failround return the fail round
-func (client *BaseClient) Failround() int {
+func (client *baseClient) Failround() int {
 	return client.failround
 }
 
 // SetEvent set the client event
-func (client *BaseClient) SetEvent(event ClientEvent) {
+func (client *baseClient) SetEvent(event ClientEvent) {
 	client.event = event
 }
 
 // Filter return the first filter
-func (client *BaseClient) Filter() Filter {
+func (client *baseClient) Filter() Filter {
 	return client.filterManager.Filter()
 }
 
 // FilterByIndex return the filter by index
-func (client *BaseClient) FilterByIndex(index int) Filter {
+func (client *baseClient) FilterByIndex(index int) Filter {
 	return client.filterManager.FilterByIndex(index)
 }
 
 // SetFilter will replace the current filter settings
-func (client *BaseClient) SetFilter(filter ...Filter) Client {
+func (client *baseClient) SetFilter(filter ...Filter) Client {
 	client.filterManager.SetFilter(filter...)
 	return client
 }
 
 // AddFilter add the filter to this Service
-func (client *BaseClient) AddFilter(filter ...Filter) Client {
+func (client *baseClient) AddFilter(filter ...Filter) Client {
 	client.filterManager.AddFilter(filter...)
 	return client
 }
 
 // RemoveFilterByIndex remove the filter by the index
-func (client *BaseClient) RemoveFilterByIndex(index int) Client {
+func (client *baseClient) RemoveFilterByIndex(index int) Client {
 	client.filterManager.RemoveFilterByIndex(index)
 	return client
 }
 
 // RemoveFilter remove the filter from this Service
-func (client *BaseClient) RemoveFilter(filter ...Filter) Client {
+func (client *baseClient) RemoveFilter(filter ...Filter) Client {
 	client.filterManager.RemoveFilter(filter...)
 	return client
 }
 
 // AddInvokeHandler add the invoke handler to this Service
-func (client *BaseClient) AddInvokeHandler(handler ...InvokeHandler) Client {
+func (client *baseClient) AddInvokeHandler(handler ...InvokeHandler) Client {
 	client.handlerManager.AddInvokeHandler(handler...)
 	return client
 }
 
 // AddBeforeFilterHandler add the filter handler before filters
-func (client *BaseClient) AddBeforeFilterHandler(handler ...FilterHandler) Client {
+func (client *baseClient) AddBeforeFilterHandler(handler ...FilterHandler) Client {
 	client.handlerManager.AddBeforeFilterHandler(handler...)
 	return client
 }
 
 // AddAfterFilterHandler add the filter handler after filters
-func (client *BaseClient) AddAfterFilterHandler(handler ...FilterHandler) Client {
+func (client *baseClient) AddAfterFilterHandler(handler ...FilterHandler) Client {
 	client.handlerManager.AddAfterFilterHandler(handler...)
 	return client
 }
 
 // UseService build a remote service proxy object with namespace
-func (client *BaseClient) UseService(remoteService interface{}, namespace ...string) {
+func (client *baseClient) UseService(remoteService interface{}, namespace ...string) {
 	ns := ""
 	if len(namespace) == 1 {
 		ns = namespace[0]
@@ -253,15 +252,15 @@ func (client *BaseClient) UseService(remoteService interface{}, namespace ...str
 	buildRemoteService(client, v, ns)
 }
 
-func (client *BaseClient) acquireContext() (context *ClientContext) {
+func (client *baseClient) acquireContext() (context *ClientContext) {
 	return client.contextPool.Get().(*ClientContext)
 }
 
-func (client *BaseClient) releaseContext(context *ClientContext) {
+func (client *baseClient) releaseContext(context *ClientContext) {
 	client.contextPool.Put(context)
 }
 
-func (client *BaseClient) initClientContext(
+func (client *baseClient) initClientContext(
 	context *ClientContext, settings *InvokeSettings) {
 	context.initBaseContext()
 	context.Client = client
@@ -283,7 +282,7 @@ func (client *BaseClient) initClientContext(
 }
 
 // Invoke the remote method synchronous
-func (client *BaseClient) Invoke(name string, args []reflect.Value, settings *InvokeSettings) (results []reflect.Value, err error) {
+func (client *baseClient) Invoke(name string, args []reflect.Value, settings *InvokeSettings) (results []reflect.Value, err error) {
 	context := client.acquireContext()
 	client.initClientContext(context, settings)
 	results, err = client.handlerManager.invokeHandler(name, args, context)
@@ -299,7 +298,7 @@ func (client *BaseClient) Invoke(name string, args []reflect.Value, settings *In
 }
 
 // Go invoke the remote method asynchronous
-func (client *BaseClient) Go(name string, args []reflect.Value, callback Callback, settings *InvokeSettings) {
+func (client *baseClient) Go(name string, args []reflect.Value, callback Callback, settings *InvokeSettings) {
 	go func() {
 		defer client.fireErrorEvent(name, nil)
 		callback(client.Invoke(name, args, settings))
@@ -307,9 +306,9 @@ func (client *BaseClient) Go(name string, args []reflect.Value, callback Callbac
 }
 
 // Close the client
-func (client *BaseClient) Close() {}
+func (client *baseClient) Close() {}
 
-func (client *BaseClient) fireErrorEvent(name string, err error) {
+func (client *baseClient) fireErrorEvent(name string, err error) {
 	if e := recover(); e != nil {
 		err = NewPanicError(e)
 	}
@@ -320,7 +319,7 @@ func (client *BaseClient) fireErrorEvent(name string, err error) {
 	}
 }
 
-func (client *BaseClient) beforeFilter(
+func (client *baseClient) beforeFilter(
 	request []byte,
 	context *ClientContext) (response []byte, err error) {
 	request = client.outputFilter(request, context)
@@ -333,12 +332,12 @@ func (client *BaseClient) beforeFilter(
 	return
 }
 
-func (client *BaseClient) afterFilter(
+func (client *baseClient) afterFilter(
 	request []byte, context Context) (response []byte, err error) {
 	return client.SendAndReceive(request, context.(*ClientContext))
 }
 
-func (client *BaseClient) sendRequest(
+func (client *baseClient) sendRequest(
 	request []byte,
 	context *ClientContext) (response []byte, err error) {
 	response, err = client.handlerManager.beforeFilterHandler(request, context)
@@ -348,7 +347,7 @@ func (client *BaseClient) sendRequest(
 	return
 }
 
-func (client *BaseClient) retrySendReqeust(
+func (client *baseClient) retrySendReqeust(
 	request []byte,
 	err error,
 	context *ClientContext) ([]byte, error) {
@@ -372,7 +371,7 @@ func (client *BaseClient) retrySendReqeust(
 	return nil, err
 }
 
-func (client *BaseClient) failswitch() {
+func (client *baseClient) failswitch() {
 	n := int32(len(client.uriList))
 	if n > 1 {
 		if atomic.CompareAndSwapInt32(&client.index, n-1, 0) {
@@ -389,7 +388,7 @@ func (client *BaseClient) failswitch() {
 	}
 }
 
-func (client *BaseClient) encode(
+func (client *baseClient) encode(
 	name string,
 	args []reflect.Value,
 	context *ClientContext) []byte {
@@ -425,7 +424,7 @@ func readMultiResults(
 	return
 }
 
-func (client *BaseClient) readResults(
+func (client *baseClient) readResults(
 	reader *hio.Reader,
 	context *ClientContext) (results []reflect.Value) {
 	length := len(context.ResultTypes)
@@ -443,7 +442,7 @@ func (client *BaseClient) readResults(
 	return
 }
 
-func (client *BaseClient) readArguments(
+func (client *baseClient) readArguments(
 	reader *hio.Reader,
 	args []reflect.Value,
 	context *ClientContext) byte {
@@ -465,19 +464,19 @@ func (client *BaseClient) readArguments(
 	return tag
 }
 
-func (client *BaseClient) acquireReader(buf []byte) (reader *hio.Reader) {
+func (client *baseClient) acquireReader(buf []byte) (reader *hio.Reader) {
 	reader = client.readerPool.Get().(*hio.Reader)
 	reader.Init(buf)
 	return
 }
 
-func (client *BaseClient) releaseReader(reader *hio.Reader) {
+func (client *baseClient) releaseReader(reader *hio.Reader) {
 	reader.Init(nil)
 	reader.Reset()
 	client.readerPool.Put(reader)
 }
 
-func (client *BaseClient) decode(
+func (client *baseClient) decode(
 	data []byte,
 	args []reflect.Value,
 	context *ClientContext) (results []reflect.Value, err error) {
@@ -526,7 +525,7 @@ func (client *BaseClient) decode(
 	return
 }
 
-func (client *BaseClient) invoke(
+func (client *baseClient) invoke(
 	name string,
 	args []reflect.Value,
 	context *ClientContext) (results []reflect.Value, err error) {
@@ -538,7 +537,7 @@ func (client *BaseClient) invoke(
 	return client.decode(response, args, context)
 }
 
-func buildRemoteService(client *BaseClient, v reflect.Value, ns string) {
+func buildRemoteService(client *baseClient, v reflect.Value, ns string) {
 	v = v.Elem()
 	t := v.Type()
 	et := t
@@ -571,7 +570,7 @@ func buildRemoteService(client *BaseClient, v reflect.Value, ns string) {
 	}
 }
 
-func buildRemoteSubService(client *BaseClient, f reflect.Value, ft reflect.Type,
+func buildRemoteSubService(client *baseClient, f reflect.Value, ft reflect.Type,
 	sf reflect.StructField, ns string) {
 	namespace := ns
 	if !sf.Anonymous {
@@ -686,7 +685,7 @@ func getIn(in []reflect.Value) []reflect.Value {
 }
 
 func getSyncRemoteMethod(
-	client *BaseClient,
+	client *baseClient,
 	name string,
 	settings *InvokeSettings,
 	isVariadic, hasError bool) func(in []reflect.Value) (out []reflect.Value) {
@@ -710,7 +709,7 @@ func getSyncRemoteMethod(
 }
 
 func getAsyncRemoteMethod(
-	client *BaseClient,
+	client *baseClient,
 	name string,
 	settings *InvokeSettings,
 	isVariadic, hasError bool) func(in []reflect.Value) (out []reflect.Value) {
@@ -732,7 +731,7 @@ func getAsyncRemoteMethod(
 	}
 }
 
-func buildRemoteMethod(client *BaseClient, f reflect.Value, ft reflect.Type, sf reflect.StructField, ns string) {
+func buildRemoteMethod(client *baseClient, f reflect.Value, ft reflect.Type, sf reflect.StructField, ns string) {
 	name := getRemoteMethodName(sf, ns)
 	outTypes, hasError := getResultTypes(ft)
 	async := false
@@ -781,7 +780,7 @@ var autoIDSettings = InvokeSettings{
 }
 
 // ID returns the auto id of this hprose client
-func (client *BaseClient) ID() (string, error) {
+func (client *baseClient) ID() (string, error) {
 	client.topicManager.locker.RLock()
 	if client.id != "" {
 		client.topicManager.locker.RUnlock()
@@ -801,7 +800,7 @@ func (client *BaseClient) ID() (string, error) {
 	return client.id, nil
 }
 
-func (client *BaseClient) processCallback(
+func (client *baseClient) processCallback(
 	name string,
 	callbacks []Callback,
 	resultTypes []reflect.Type,
@@ -826,7 +825,7 @@ func (client *BaseClient) processCallback(
 	}
 }
 
-func (client *BaseClient) subscribe(
+func (client *baseClient) subscribe(
 	name string, id string, settings *InvokeSettings) {
 	resultTypes := settings.ResultTypes
 	settings.ResultTypes = []reflect.Type{interfaceType}
@@ -847,7 +846,7 @@ func (client *BaseClient) subscribe(
 }
 
 // Subscribe a push topic
-func (client *BaseClient) Subscribe(
+func (client *baseClient) Subscribe(
 	name string, id string,
 	settings *InvokeSettings, callback interface{}) (err error) {
 	if id == "" {
@@ -891,7 +890,7 @@ func (client *BaseClient) Subscribe(
 }
 
 // Unsubscribe a push topic
-func (client *BaseClient) Unsubscribe(name string, id ...string) {
+func (client *baseClient) Unsubscribe(name string, id ...string) {
 	client.topicManager.locker.Lock()
 	if client.allTopics[name] != nil {
 		if len(id) == 0 {

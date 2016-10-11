@@ -80,7 +80,7 @@ type Client interface {
 
 // ClientContext is the hprose client context
 type ClientContext struct {
-	BaseContext
+	baseContext
 	InvokeSettings
 	Retried int
 	Client  Client

@@ -66,7 +66,7 @@ func (entry *connEntry) clearResponse() map[uint32]chan socketResponse {
 
 // SocketClient is base struct for TCPClient and UnixClient
 type SocketClient struct {
-	BaseClient
+	baseClient
 	ReadBuffer  int
 	WriteBuffer int
 	IdleTimeout time.Duration

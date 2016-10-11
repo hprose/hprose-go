@@ -27,7 +27,7 @@ import (
 )
 
 type baseHTTPService struct {
-	BaseService
+	baseService
 	P3P                          bool
 	GET                          bool
 	CrossDomain                  bool

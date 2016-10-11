@@ -54,7 +54,7 @@ func newTCPClient(uri ...string) Client {
 // SetURIList set a list of server addresses
 func (client *TCPClient) SetURIList(uriList []string) {
 	checkAddresses(uriList, tcpSchemes)
-	client.BaseClient.SetURIList(uriList)
+	client.baseClient.SetURIList(uriList)
 }
 
 func (client *TCPClient) createTCPConn() net.Conn {

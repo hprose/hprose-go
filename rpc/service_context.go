@@ -32,7 +32,7 @@ type ServiceContext interface {
 }
 
 type serviceContext struct {
-	BaseContext
+	baseContext
 	method          *Method
 	service         Service
 	isMissingMethod bool

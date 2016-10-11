@@ -37,7 +37,7 @@ var DisableGlobalCookie = false
 
 // HTTPClient is hprose http client
 type HTTPClient struct {
-	BaseClient
+	baseClient
 	limiter
 	http.Client
 	http.Transport
@@ -71,7 +71,7 @@ func (client *HTTPClient) SetURIList(uriList []string) {
 	if checkAddresses(uriList, httpSchemes) == "https" {
 		client.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
 	}
-	client.BaseClient.SetURIList(uriList)
+	client.baseClient.SetURIList(uriList)
 }
 
 // TLSClientConfig return the tls.Config in hprose client
@@ -86,7 +86,7 @@ func (client *HTTPClient) SetTLSClientConfig(config *tls.Config) {
 
 // Timeout returns the client timeout setting
 func (client *HTTPClient) Timeout() time.Duration {
-	return client.BaseClient.timeout
+	return client.baseClient.timeout
 }
 
 // KeepAlive return the keepalive status of hprose client

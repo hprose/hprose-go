@@ -58,7 +58,7 @@ func socketFixArguments(args []reflect.Value, context ServiceContext) {
 
 // SocketService is the hprose socket service
 type SocketService struct {
-	BaseService
+	baseService
 	TLSConfig   *tls.Config
 	contextPool sync.Pool
 }

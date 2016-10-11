@@ -27,7 +27,7 @@ import (
 
 // FastHTTPClient is hprose fasthttp client
 type FastHTTPClient struct {
-	BaseClient
+	baseClient
 	limiter
 	fasthttp.Client
 	Header      fasthttp.RequestHeader
@@ -56,7 +56,7 @@ func (client *FastHTTPClient) SetURIList(uriList []string) {
 	if checkAddresses(uriList, httpSchemes) == "https" {
 		client.SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true})
 	}
-	client.BaseClient.SetURIList(uriList)
+	client.baseClient.SetURIList(uriList)
 }
 
 // TLSClientConfig return the tls.Config in hprose client
