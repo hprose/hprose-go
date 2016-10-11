@@ -12,7 +12,7 @@
  *                                                        *
  * hprose base service for Go.                            *
  *                                                        *
- * LastModified: Oct 10, 2016                             *
+ * LastModified: Oct 11, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -20,7 +20,6 @@
 package rpc
 
 import (
-	"crypto/rand"
 	"errors"
 	"fmt"
 	"reflect"
@@ -60,16 +59,6 @@ func DefaultFixArguments(args []reflect.Value, context ServiceContext) {
 	}
 }
 
-// GetNextID is the default method for client uid
-func GetNextID() (uid string) {
-	u := make([]byte, 16)
-	rand.Read(u)
-	u[6] = (u[6] & 0x0f) | 0x40
-	u[8] = (u[8] & 0x3f) | 0x80
-	uid = fmt.Sprintf("%x-%x-%x-%x-%x", u[0:4], u[4:6], u[6:8], u[8:10], u[10:])
-	return
-}
-
 func (service *BaseService) initBaseService() {
 	service.initMethodManager()
 	service.initHandlerManager()
@@ -80,7 +69,7 @@ func (service *BaseService) initBaseService() {
 	service.readerPool = sync.Pool{
 		New: func() interface{} { return new(io.Reader) },
 	}
-	service.AddFunction("#", GetNextID, Options{Simple: true})
+	service.AddFunction("#", util.UUIDv4, Options{Simple: true})
 	service.override.invokeHandler = func(
 		name string, args []reflect.Value,
 		context Context) (results []reflect.Value, err error) {

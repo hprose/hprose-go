@@ -12,7 +12,7 @@
  *                                                        *
  * some utility functions for Go.                         *
  *                                                        *
- * LastModified: Sep 15, 2016                             *
+ * LastModified: Oct 11, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -23,6 +23,8 @@ Package util defines some utility functions for Golang.
 package util
 
 import (
+	"crypto/rand"
+	"fmt"
 	"math"
 	"unsafe"
 )
@@ -288,4 +290,14 @@ func Max(a, b int) int {
 		return a
 	}
 	return b
+}
+
+// UUIDv4 returns a version 4 UUID string
+func UUIDv4() (uid string) {
+	u := make([]byte, 16)
+	rand.Read(u)
+	u[6] = (u[6] & 0x0f) | 0x40
+	u[8] = (u[8] & 0x3f) | 0x80
+	uid = fmt.Sprintf("%x-%x-%x-%x-%x", u[0:4], u[4:6], u[6:8], u[8:10], u[10:])
+	return
 }
