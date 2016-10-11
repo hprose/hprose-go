@@ -50,8 +50,7 @@ type BaseService struct {
 	sync.RWMutex
 }
 
-// DefaultFixArguments is the default fix arguments function
-func DefaultFixArguments(args []reflect.Value, context ServiceContext) {
+func defaultFixArguments(args []reflect.Value, context ServiceContext) {
 	i := len(args) - 1
 	typ := args[i].Type()
 	if typ == interfaceType || typ == contextType || typ == serviceContextType {

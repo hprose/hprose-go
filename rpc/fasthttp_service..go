@@ -66,7 +66,7 @@ func fasthttpFixArguments(args []reflect.Value, context ServiceContext) {
 			args[i] = reflect.ValueOf(c.RequestCtx)
 		}
 	default:
-		DefaultFixArguments(args, context)
+		defaultFixArguments(args, context)
 	}
 }
 

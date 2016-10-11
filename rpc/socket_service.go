@@ -52,7 +52,7 @@ func socketFixArguments(args []reflect.Value, context ServiceContext) {
 			args[i] = reflect.ValueOf(c.Conn)
 		}
 	default:
-		DefaultFixArguments(args, context)
+		defaultFixArguments(args, context)
 	}
 }
 

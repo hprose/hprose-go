@@ -62,7 +62,7 @@ func websocketFixArguments(args []reflect.Value, context ServiceContext) {
 			args[i] = reflect.ValueOf(c.Request)
 		}
 	default:
-		DefaultFixArguments(args, context)
+		defaultFixArguments(args, context)
 	}
 }
 
