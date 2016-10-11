@@ -36,6 +36,34 @@ type connEntry struct {
 	responses map[uint32]chan socketResponse
 }
 
+func (entry *connEntry) addResponse(id uint32, response chan socketResponse) {
+	entry.cond.L.Lock()
+	entry.responses[id] = response
+	entry.reqCount++
+	entry.cond.L.Unlock()
+}
+
+func (entry *connEntry) removeResponse(id uint32) chan socketResponse {
+	entry.cond.L.Lock()
+	response := entry.responses[id]
+	delete(entry.responses, id)
+	entry.reqCount--
+	entry.cond.L.Unlock()
+	entry.cond.Signal()
+	return response
+}
+
+func (entry *connEntry) clearResponse() map[uint32]chan socketResponse {
+	entry.cond.L.Lock()
+	responses := entry.responses
+	entry.conn = nil
+	entry.reqCount = 0
+	entry.responses = nil
+	entry.cond.L.Unlock()
+	entry.cond.Broadcast()
+	return responses
+}
+
 // SocketClient is base struct for TCPClient and UnixClient
 type SocketClient struct {
 	BaseClient
@@ -126,14 +154,7 @@ func (client *SocketClient) fullDuplexReceive(entry *connEntry) {
 		err := recvData(conn, &data)
 		if err != nil {
 			if entry.responses != nil {
-				entry.cond.L.Lock()
-				responses := entry.responses
-				entry.conn = nil
-				entry.reqCount = 0
-				entry.responses = nil
-				entry.cond.L.Unlock()
-				entry.cond.Broadcast()
-				client.close(conn)
+				responses := entry.clearResponse()
 				for _, response := range responses {
 					response <- socketResponse{nil, err}
 				}
@@ -141,12 +162,7 @@ func (client *SocketClient) fullDuplexReceive(entry *connEntry) {
 			break
 		}
 		id := toUint32(data.id[:])
-		entry.cond.L.Lock()
-		response := entry.responses[id]
-		delete(entry.responses, id)
-		entry.reqCount--
-		entry.cond.L.Unlock()
-		entry.cond.Signal()
+		response := entry.removeResponse(id)
 		if response != nil {
 			response <- socketResponse{data.body, nil}
 		}
@@ -214,10 +230,7 @@ func (client *SocketClient) fullDuplexSendAndReceive(
 	err = conn.SetDeadline(deadline)
 	response := make(chan socketResponse)
 	if err == nil {
-		entry.cond.L.Lock()
-		entry.responses[id] = response
-		entry.reqCount++
-		entry.cond.L.Unlock()
+		entry.addResponse(id, response)
 		dataPacket := packet{fullDuplex: true, body: data}
 		fromUint32(dataPacket.id[:], id)
 		err = sendData(conn, dataPacket)
@@ -236,11 +249,7 @@ func (client *SocketClient) fullDuplexSendAndReceive(
 	case resp := <-response:
 		return resp.data, resp.err
 	case <-time.After(deadline.Sub(time.Now())):
-		entry.cond.L.Lock()
-		delete(entry.responses, id)
-		entry.reqCount--
-		entry.cond.L.Unlock()
-		entry.cond.Signal()
+		entry.removeResponse(id)
 		return nil, ErrTimeout
 	}
 }
