@@ -12,7 +12,7 @@
  *                                                        *
  * hprose writer for Go.                                  *
  *                                                        *
- * LastModified: Oct 6, 2016                              *
+ * LastModified: Oct 12, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -421,12 +421,15 @@ func writeArray(w *Writer, v reflect.Value) {
 	writeListHeader(w, count)
 	encoder := sliceBodyEncoders[sliceType]
 	if encoder != nil {
-		sliceHeader := reflect.SliceHeader{
+		var slice interface{}
+		sliceStruct := (*emptyInterface)(unsafe.Pointer(&slice))
+		sliceStruct.typ = sliceType
+		sliceStruct.ptr = uintptr(unsafe.Pointer(&reflect.SliceHeader{
 			Data: (*emptyInterface)(unsafe.Pointer(&v)).ptr,
 			Len:  count,
 			Cap:  count,
-		}
-		encoder(w, unsafe.Pointer(&sliceHeader))
+		}))
+		encoder(w, slice)
 	} else {
 		writeListBody(w, v, count)
 	}
@@ -447,7 +450,7 @@ func writeSlice(w *Writer, v reflect.Value) {
 	writeListHeader(w, count)
 	encoder := sliceBodyEncoders[val.typ]
 	if encoder != nil {
-		encoder(w, val.ptr)
+		encoder(w, *(*interface{})(unsafe.Pointer(&v)))
 	} else {
 		writeListBody(w, v, count)
 	}

@@ -12,16 +12,14 @@
  *                                                        *
  * hprose slice encoder for Go.                           *
  *                                                        *
- * LastModified: Sep 1, 2016                              *
+ * LastModified: Oct 12, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
 
 package io
 
-import "unsafe"
-
-var sliceBodyEncoders = map[uintptr]func(*Writer, unsafe.Pointer){
+var sliceBodyEncoders = map[uintptr]func(*Writer, interface{}){
 	getType(([]bool)(nil)):        boolSliceEncoder,
 	getType(([]int)(nil)):         intSliceEncoder,
 	getType(([]int8)(nil)):        int8SliceEncoder,
@@ -46,138 +44,138 @@ var sliceBodyEncoders = map[uintptr]func(*Writer, unsafe.Pointer){
 // RegisterSliceEncoder for fast serialize custom slice type.
 // This function is usually used for code generators.
 // This function should be called in package init function.
-func RegisterSliceEncoder(m interface{}, encoder func(*Writer, unsafe.Pointer)) {
+func RegisterSliceEncoder(m interface{}, encoder func(*Writer, interface{})) {
 	sliceBodyEncoders[getType(m)] = encoder
 }
 
-func boolSliceEncoder(w *Writer, ptr unsafe.Pointer) {
-	slice := *(*[]bool)(ptr)
+func boolSliceEncoder(w *Writer, v interface{}) {
+	slice := v.([]bool)
 	for _, e := range slice {
 		w.WriteBool(e)
 	}
 }
 
-func intSliceEncoder(w *Writer, ptr unsafe.Pointer) {
-	slice := *(*[]int)(ptr)
+func intSliceEncoder(w *Writer, v interface{}) {
+	slice := v.([]int)
 	for _, e := range slice {
 		w.WriteInt(int64(e))
 	}
 }
 
-func int8SliceEncoder(w *Writer, ptr unsafe.Pointer) {
-	slice := *(*[]int8)(ptr)
+func int8SliceEncoder(w *Writer, v interface{}) {
+	slice := v.([]int8)
 	for _, e := range slice {
 		w.WriteInt(int64(e))
 	}
 }
 
-func int16SliceEncoder(w *Writer, ptr unsafe.Pointer) {
-	slice := *(*[]int16)(ptr)
+func int16SliceEncoder(w *Writer, v interface{}) {
+	slice := v.([]int16)
 	for _, e := range slice {
 		w.WriteInt(int64(e))
 	}
 }
 
-func int32SliceEncoder(w *Writer, ptr unsafe.Pointer) {
-	slice := *(*[]int32)(ptr)
+func int32SliceEncoder(w *Writer, v interface{}) {
+	slice := v.([]int32)
 	for _, e := range slice {
 		w.WriteInt(int64(e))
 	}
 }
 
-func int64SliceEncoder(w *Writer, ptr unsafe.Pointer) {
-	slice := *(*[]int64)(ptr)
+func int64SliceEncoder(w *Writer, v interface{}) {
+	slice := v.([]int64)
 	for _, e := range slice {
 		w.WriteInt(e)
 	}
 }
 
-func uintSliceEncoder(w *Writer, ptr unsafe.Pointer) {
-	slice := *(*[]uint)(ptr)
+func uintSliceEncoder(w *Writer, v interface{}) {
+	slice := v.([]uint)
 	for _, e := range slice {
 		w.WriteUint(uint64(e))
 	}
 }
 
-func uint8SliceEncoder(w *Writer, ptr unsafe.Pointer) {
-	slice := *(*[]uint8)(ptr)
+func uint8SliceEncoder(w *Writer, v interface{}) {
+	slice := v.([]uint8)
 	for _, e := range slice {
 		w.WriteUint(uint64(e))
 	}
 }
 
-func uint16SliceEncoder(w *Writer, ptr unsafe.Pointer) {
-	slice := *(*[]uint16)(ptr)
+func uint16SliceEncoder(w *Writer, v interface{}) {
+	slice := v.([]uint16)
 	for _, e := range slice {
 		w.WriteUint(uint64(e))
 	}
 }
 
-func uint32SliceEncoder(w *Writer, ptr unsafe.Pointer) {
-	slice := *(*[]uint32)(ptr)
+func uint32SliceEncoder(w *Writer, v interface{}) {
+	slice := v.([]uint32)
 	for _, e := range slice {
 		w.WriteUint(uint64(e))
 	}
 }
 
-func uint64SliceEncoder(w *Writer, ptr unsafe.Pointer) {
-	slice := *(*[]uint64)(ptr)
+func uint64SliceEncoder(w *Writer, v interface{}) {
+	slice := v.([]uint64)
 	for _, e := range slice {
 		w.WriteUint(e)
 	}
 }
 
-func uintptrSliceEncoder(w *Writer, ptr unsafe.Pointer) {
-	slice := *(*[]uintptr)(ptr)
+func uintptrSliceEncoder(w *Writer, v interface{}) {
+	slice := v.([]uintptr)
 	for _, e := range slice {
 		w.WriteUint(uint64(e))
 	}
 }
 
-func float32SliceEncoder(w *Writer, ptr unsafe.Pointer) {
-	slice := *(*[]float32)(ptr)
+func float32SliceEncoder(w *Writer, v interface{}) {
+	slice := v.([]float32)
 	for _, e := range slice {
 		w.WriteFloat(float64(e), 32)
 	}
 }
 
-func float64SliceEncoder(w *Writer, ptr unsafe.Pointer) {
-	slice := *(*[]float64)(ptr)
+func float64SliceEncoder(w *Writer, v interface{}) {
+	slice := v.([]float64)
 	for _, e := range slice {
 		w.WriteFloat(e, 64)
 	}
 }
 
-func complex64SliceEncoder(w *Writer, ptr unsafe.Pointer) {
-	slice := *(*[]complex64)(ptr)
+func complex64SliceEncoder(w *Writer, v interface{}) {
+	slice := v.([]complex64)
 	for _, e := range slice {
 		w.WriteComplex64(e)
 	}
 }
 
-func complex128SliceEncoder(w *Writer, ptr unsafe.Pointer) {
-	slice := *(*[]complex128)(ptr)
+func complex128SliceEncoder(w *Writer, v interface{}) {
+	slice := v.([]complex128)
 	for _, e := range slice {
 		w.WriteComplex128(e)
 	}
 }
 
-func stringSliceEncoder(w *Writer, ptr unsafe.Pointer) {
-	slice := *(*[]string)(ptr)
+func stringSliceEncoder(w *Writer, v interface{}) {
+	slice := v.([]string)
 	for _, e := range slice {
 		w.WriteString(e)
 	}
 }
 
-func bytesSliceEncoder(w *Writer, ptr unsafe.Pointer) {
-	slice := *(*[][]byte)(ptr)
+func bytesSliceEncoder(w *Writer, v interface{}) {
+	slice := v.([][]byte)
 	for _, e := range slice {
 		w.WriteBytes(e)
 	}
 }
 
-func interfaceSliceEncoder(w *Writer, ptr unsafe.Pointer) {
-	slice := *(*[]interface{})(ptr)
+func interfaceSliceEncoder(w *Writer, v interface{}) {
+	slice := v.([]interface{})
 	for _, e := range slice {
 		w.Serialize(e)
 	}
