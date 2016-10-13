@@ -12,7 +12,7 @@
  *                                                        *
  * hprose struct decoder for Go.                          *
  *                                                        *
- * LastModified: Sep 14, 2016                             *
+ * LastModified: Oct 13, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -219,10 +219,10 @@ func readStructMeta(r *Reader, v reflect.Value, tag byte) {
 	structType := v.Type()
 	if structType.Kind() != reflect.Struct {
 		structType = GetStructType(structName)
-	}
-	if structType == nil {
-		panic(errors.New("cannot convert " + structName +
-			" to type " + v.Type().String()))
+		if structType == nil {
+			panic(errors.New("cannot convert " + structName +
+				" to type " + v.Type().String()))
+		}
 	}
 	structCache := getStructCache(structType)
 	fieldMap := structCache.FieldMap
@@ -231,6 +231,7 @@ func readStructMeta(r *Reader, v reflect.Value, tag byte) {
 	for i := 0; i < count; i++ {
 		fields[i] = fieldMap[r.ReadString()]
 	}
+	r.structTypeRef = append(r.structTypeRef, structType)
 	r.fieldsRef = append(r.fieldsRef, fields)
 	r.readByte()
 	r.ReadValue(v)
@@ -238,6 +239,16 @@ func readStructMeta(r *Reader, v reflect.Value, tag byte) {
 
 func readStructData(r *Reader, v reflect.Value, tag byte) {
 	index := r.ReadCount()
+	if v.Kind() == reflect.Interface {
+		typ := r.structTypeRef[index]
+		if !reflect.PtrTo(typ).Implements(v.Type()) {
+			panic(errors.New("*" + typ.String() + " does not implements " + v.Type().String() + " interface"))
+		} else {
+			ptr := reflect.New(typ)
+			v.Set(ptr)
+			v = ptr.Elem()
+		}
+	}
 	fields := r.fieldsRef[index]
 	count := len(fields)
 	if !r.Simple {

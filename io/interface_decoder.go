@@ -12,7 +12,7 @@
  *                                                        *
  * hprose interface decoder for Go.                       *
  *                                                        *
- * LastModified: Sep 10, 2016                             *
+ * LastModified: Oct 13, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -155,8 +155,8 @@ var interfaceDecoders = [256]func(r *Reader, v reflect.Value, tag byte){
 	TagTime:     readTimeAsInterface,
 	TagList:     readListAsInterface,
 	TagMap:      readMapAsInterface,
-	TagClass:    func(r *Reader, v reflect.Value, tag byte) { panic("TODO") },
-	TagObject:   func(r *Reader, v reflect.Value, tag byte) { panic("TODO") },
+	TagClass:    readStructMeta,
+	TagObject:   readStructData,
 	TagRef:      readRefAsInterface,
 }
 

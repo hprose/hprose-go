@@ -12,7 +12,7 @@
  *                                                        *
  * hprose Reader Test for Go.                             *
  *                                                        *
- * LastModified: Sep 10, 2016                             *
+ * LastModified: Oct 13, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -1649,6 +1649,23 @@ func TestUnserializeStruct(t *testing.T) {
 	reader.Unserialize(&p)
 	if !reflect.DeepEqual(p, test) {
 		t.Error(p, test)
+	}
+}
+
+func TestUnserializeStructAsInterface(t *testing.T) {
+	type Test struct {
+		Name string
+		Age  int
+		Male bool
+	}
+	test := Test{"Tom", 36, true}
+	w := NewWriter(true)
+	w.Serialize(test)
+	reader := NewReader(w.Bytes(), false)
+	var p interface{}
+	reader.Unserialize(&p)
+	if !reflect.DeepEqual(p, &test) {
+		t.Error(p, &test)
 	}
 }
 

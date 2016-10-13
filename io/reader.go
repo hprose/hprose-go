@@ -34,6 +34,7 @@ import (
 type Reader struct {
 	RawReader
 	Simple         bool
+	structTypeRef  []reflect.Type
 	fieldsRef      [][]*fieldCache
 	ref            []interface{}
 	JSONCompatible bool
@@ -303,6 +304,9 @@ func (r *Reader) ReadCount() int {
 
 // Reset the reference counter
 func (r *Reader) Reset() {
+	if r.structTypeRef != nil {
+		r.structTypeRef = r.structTypeRef[:0]
+	}
 	if r.fieldsRef != nil {
 		r.fieldsRef = r.fieldsRef[:0]
 	}
