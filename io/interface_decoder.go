@@ -12,7 +12,7 @@
  *                                                        *
  * hprose interface decoder for Go.                       *
  *                                                        *
- * LastModified: Oct 13, 2016                             *
+ * LastModified: Oct 15, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -57,7 +57,7 @@ func readInfAsInterface(r *Reader, v reflect.Value, tag byte) {
 }
 
 func readIntAsInterface(r *Reader, v reflect.Value, tag byte) {
-	v.Set(reflect.ValueOf(readInt(&r.ByteReader)))
+	v.Set(reflect.ValueOf(r.readInt()))
 }
 
 func readLongAsInterface(r *Reader, v reflect.Value, tag byte) {

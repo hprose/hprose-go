@@ -95,7 +95,7 @@ func (r *Reader) ReadBool() bool {
 
 // ReadIntWithoutTag from the reader
 func (r *Reader) ReadIntWithoutTag() int {
-	return readInt(&r.ByteReader)
+	return r.readInt()
 }
 
 // ReadInt from the reader
@@ -324,7 +324,7 @@ func (r *Reader) readRef() interface{} {
 	if r.Simple {
 		panic(errors.New("reference unserialization can't support in simple mode"))
 	}
-	return readRef(r, readInt(&r.ByteReader))
+	return readRef(r, r.readInt())
 }
 
 func setReaderRef(r *Reader, o interface{}) {

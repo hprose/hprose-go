@@ -189,7 +189,7 @@ func (r *ByteReader) readLongAsFloat64() (f float64) {
 	return
 }
 
-func readInt(r *ByteReader) int {
+func (r *ByteReader) readInt() int {
 	return int(r.readInt64(TagSemicolon))
 }
 
