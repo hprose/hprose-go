@@ -127,7 +127,7 @@ func (r *RawReader) readStringRaw(w *ByteWriter) {
 		tag = r.readByte()
 		w.writeByte(tag)
 		if tag == TagQuote {
-			w.write(r.readUTF8Slice(count+1))
+			w.write(r.readUTF8Slice(count + 1))
 			return
 		}
 	}
