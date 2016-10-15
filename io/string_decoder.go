@@ -26,7 +26,7 @@ import (
 )
 
 func readNumberAsString(r *Reader) string {
-	return string(readUntil(&r.ByteReader, TagSemicolon))
+	return string(r.readUntil(TagSemicolon))
 }
 
 func readInfAsString(r *Reader) string {

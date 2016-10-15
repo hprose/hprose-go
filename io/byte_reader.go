@@ -197,7 +197,7 @@ func (r *ByteReader) readLength() int {
 	return int(r.readInt64(TagQuote))
 }
 
-func readUntil(r *ByteReader, tag byte) (result []byte) {
+func (r *ByteReader) readUntil(tag byte) (result []byte) {
 	result = r.buf[r.off:]
 	i := bytes.IndexByte(result, tag)
 	if i < 0 {
@@ -209,7 +209,7 @@ func readUntil(r *ByteReader, tag byte) (result []byte) {
 }
 
 func readFloat32(r *ByteReader) float32 {
-	s := util.ByteString(readUntil(r, TagSemicolon))
+	s := util.ByteString(r.readUntil(TagSemicolon))
 	f, e := strconv.ParseFloat(s, 32)
 	if e != nil {
 		panic(e)
@@ -218,7 +218,7 @@ func readFloat32(r *ByteReader) float32 {
 }
 
 func readFloat64(r *ByteReader) float64 {
-	s := util.ByteString(readUntil(r, TagSemicolon))
+	s := util.ByteString(r.readUntil(TagSemicolon))
 	f, e := strconv.ParseFloat(s, 64)
 	if e != nil {
 		panic(e)
@@ -270,12 +270,12 @@ func readUTF8Char(r *ByteReader) (result string) {
 
 func readBigInt(r *ByteReader) (result *big.Int) {
 	result = new(big.Int)
-	result.SetString(util.ByteString(readUntil(r, TagSemicolon)), 10)
+	result.SetString(util.ByteString(r.readUntil(TagSemicolon)), 10)
 	return
 }
 
 func readBigFloat(r *ByteReader) (result *big.Float) {
-	result, _, _ = new(big.Float).Parse(util.ByteString(readUntil(r, TagSemicolon)), 10)
+	result, _, _ = new(big.Float).Parse(util.ByteString(r.readUntil(TagSemicolon)), 10)
 	return
 }
 

@@ -65,7 +65,7 @@ func readIntAsStruct(r *Reader, v reflect.Value, tag byte) {
 }
 
 func readLongAsStruct(r *Reader, v reflect.Value, tag byte) {
-	i := util.ByteString(readUntil(&r.ByteReader, TagSemicolon))
+	i := util.ByteString(r.readUntil(TagSemicolon))
 	typ := (*reflectValue)(unsafe.Pointer(&v)).typ
 	switch typ {
 	case bigIntType:
@@ -94,7 +94,7 @@ func readLongAsStruct(r *Reader, v reflect.Value, tag byte) {
 }
 
 func readDoubleAsStruct(r *Reader, v reflect.Value, tag byte) {
-	f := util.ByteString(readUntil(&r.ByteReader, TagSemicolon))
+	f := util.ByteString(r.readUntil(TagSemicolon))
 	typ := (*reflectValue)(unsafe.Pointer(&v)).typ
 	switch typ {
 	case bigFloatType:

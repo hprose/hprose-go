@@ -12,7 +12,7 @@
  *                                                        *
  * hprose bool decoder for Go.                            *
  *                                                        *
- * LastModified: Sep 14, 2016                             *
+ * LastModified: Oct 15, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -36,7 +36,7 @@ func readBoolTrue(r *Reader) bool {
 }
 
 func readNumberAsBool(r *Reader) bool {
-	bytes := readUntil(&r.ByteReader, TagSemicolon)
+	bytes := r.readUntil(TagSemicolon)
 	if len(bytes) == 0 {
 		return true
 	}

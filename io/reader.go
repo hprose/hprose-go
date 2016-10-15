@@ -265,7 +265,7 @@ func (r *Reader) ReadTimeWithoutTag() (t time.Time) {
 
 // ReadBigIntWithoutTag from the reader
 func (r *Reader) ReadBigIntWithoutTag() *big.Int {
-	b := readUntil(&r.ByteReader, TagSemicolon)
+	b := r.readUntil(TagSemicolon)
 	i, _ := new(big.Int).SetString(util.ByteString(b), 10)
 	return i
 }
