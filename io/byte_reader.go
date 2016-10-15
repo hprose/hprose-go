@@ -269,14 +269,7 @@ func (r *ByteReader) readInf() float64 {
 	return math.Inf(int(TagPos - r.readByte()))
 }
 
-func readBytes(r *ByteReader) (result []byte) {
-	result = make([]byte, r.readLength())
-	r.Read(result)
-	r.readByte()
-	return
-}
-
-func readNsec(r *ByteReader) (nsec int, tag byte) {
+func (r *ByteReader) readNsec() (nsec int, tag byte) {
 	nsec = int(r.readByte() - '0')
 	nsec = nsec*10 + int(r.readByte()-'0')
 	nsec = nsec*10 + int(r.readByte()-'0')
