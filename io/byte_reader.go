@@ -253,12 +253,8 @@ func (r *ByteReader) readUTF8Slice(length int) []byte {
 	return r.buf[p:r.off]
 }
 
-func readUTF8String(r *ByteReader, length int) string {
-	return string(r.readUTF8Slice(length))
-}
-
 func (r *ByteReader) readString() (result string) {
-	result = readUTF8String(r, r.readLength())
+	result = string(r.readUTF8Slice(r.readLength()))
 	r.readByte()
 	return
 }
