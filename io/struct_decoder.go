@@ -215,7 +215,7 @@ func readMapAsStruct(r *Reader, v reflect.Value, tag byte) {
 }
 
 func readStructMeta(r *Reader, v reflect.Value, tag byte) {
-	structName := readString(&r.ByteReader)
+	structName := r.readString()
 	structType := v.Type()
 	if structType.Kind() != reflect.Struct {
 		structType = GetStructType(structName)

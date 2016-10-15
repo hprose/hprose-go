@@ -166,7 +166,7 @@ func (r *Reader) ReadComplex128() complex128 {
 
 // ReadStringWithoutTag from the reader
 func (r *Reader) ReadStringWithoutTag() (str string) {
-	str = readString(&r.ByteReader)
+	str = r.readString()
 	if !r.Simple {
 		setReaderRef(r, str)
 	}
