@@ -12,7 +12,7 @@
  *                                                        *
  * hprose slice encoder for Go.                           *
  *                                                        *
- * LastModified: Oct 12, 2016                             *
+ * LastModified: Oct 15, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -44,8 +44,8 @@ var sliceBodyEncoders = map[uintptr]func(*Writer, interface{}){
 // RegisterSliceEncoder for fast serialize custom slice type.
 // This function is usually used for code generators.
 // This function should be called in package init function.
-func RegisterSliceEncoder(m interface{}, encoder func(*Writer, interface{})) {
-	sliceBodyEncoders[getType(m)] = encoder
+func RegisterSliceEncoder(s interface{}, encoder func(*Writer, interface{})) {
+	sliceBodyEncoders[getType(s)] = encoder
 }
 
 func boolSliceEncoder(w *Writer, v interface{}) {
