@@ -24,7 +24,6 @@ import (
 	"errors"
 	"io"
 	"math"
-	"math/big"
 	"strconv"
 
 	"github.com/hprose/hprose-golang/util"
@@ -264,22 +263,7 @@ func (r *ByteReader) readString() (result string) {
 	return
 }
 
-func readUTF8Char(r *ByteReader) (result string) {
-	return readUTF8String(r, 1)
-}
-
-func readBigInt(r *ByteReader) (result *big.Int) {
-	result = new(big.Int)
-	result.SetString(util.ByteString(r.readUntil(TagSemicolon)), 10)
-	return
-}
-
-func readBigFloat(r *ByteReader) (result *big.Float) {
-	result, _, _ = new(big.Float).Parse(util.ByteString(r.readUntil(TagSemicolon)), 10)
-	return
-}
-
-func readInf(r *ByteReader) float64 {
+func (r *ByteReader) readInf() float64 {
 	// '+' - '+' == 0 >= 0, return positive infinity
 	// '+' - '-' == -2 < 0, return negative infinity
 	return math.Inf(int(TagPos - r.readByte()))

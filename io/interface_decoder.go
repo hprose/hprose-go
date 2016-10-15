@@ -53,7 +53,7 @@ func readNaNAsInterface(r *Reader, v reflect.Value, tag byte) {
 }
 
 func readInfAsInterface(r *Reader, v reflect.Value, tag byte) {
-	v.Set(reflect.ValueOf(readInf(&r.ByteReader)))
+	v.Set(reflect.ValueOf(r.readInf()))
 }
 
 func readIntAsInterface(r *Reader, v reflect.Value, tag byte) {

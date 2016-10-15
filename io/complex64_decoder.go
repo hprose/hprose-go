@@ -41,7 +41,7 @@ func stringToComplex64(s string) complex64 {
 }
 
 func readInfinityAsComplex64(r *Reader) complex64 {
-	return complex(float32(readInf(&r.ByteReader)), 0)
+	return complex(float32(r.readInf()), 0)
 }
 
 func readUTF8CharAsComplex64(r *Reader) complex64 {

@@ -47,7 +47,7 @@ func readNumberAsBool(r *Reader) bool {
 }
 
 func readInfinityAsBool(r *Reader) bool {
-	readInf(&r.ByteReader)
+	r.readInf()
 	return true
 }
 
