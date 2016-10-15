@@ -193,7 +193,7 @@ func (r *ByteReader) readInt() int {
 	return int(r.readInt64(TagSemicolon))
 }
 
-func readLength(r *ByteReader) int {
+func (r *ByteReader) readLength() int {
 	return int(r.readInt64(TagQuote))
 }
 
@@ -259,7 +259,7 @@ func readUTF8String(r *ByteReader, length int) string {
 }
 
 func readString(r *ByteReader) (result string) {
-	result = readUTF8String(r, readLength(r))
+	result = readUTF8String(r, r.readLength())
 	r.readByte()
 	return
 }
@@ -286,7 +286,7 @@ func readInf(r *ByteReader) float64 {
 }
 
 func readBytes(r *ByteReader) (result []byte) {
-	result = make([]byte, readLength(r))
+	result = make([]byte, r.readLength())
 	r.Read(result)
 	r.readByte()
 	return

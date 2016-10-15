@@ -12,7 +12,7 @@
  *                                                        *
  * hprose array decoder for Go.                           *
  *                                                        *
- * LastModified: Sep 14, 2016                             *
+ * LastModified: Oct 15, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -41,7 +41,7 @@ func readBytesAsArray(r *Reader, v reflect.Value, tag byte) {
 		Cap:  n,
 	}
 	b := *(*[]byte)(unsafe.Pointer(&sliceHeader))
-	l := readLength(&r.ByteReader)
+	l := r.readLength()
 	min := util.Min(n, l)
 	if _, err := r.Read(b[:min]); err != nil {
 		panic(err)

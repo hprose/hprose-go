@@ -12,7 +12,7 @@
  *                                                        *
  * hprose string decoder for Go.                          *
  *                                                        *
- * LastModified: Sep 10, 2016                             *
+ * LastModified: Oct 15, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -41,7 +41,7 @@ func readUTF8CharAsString(r *Reader) string {
 }
 
 func readBytesAsString(r *Reader) (str string) {
-	l := readLength(&r.ByteReader)
+	l := r.readLength()
 	str = string(r.Next(l))
 	r.readByte()
 	if !r.Simple {

@@ -12,7 +12,7 @@
  *                                                        *
  * hprose slice decoder for Go.                           *
  *                                                        *
- * LastModified: Sep 12, 2016                             *
+ * LastModified: Oct 15, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -30,7 +30,7 @@ func readBytesAsSlice(r *Reader, v reflect.Value, tag byte) {
 	}
 	b := v.Bytes()
 	n := cap(b)
-	l := readLength(&r.ByteReader)
+	l := r.readLength()
 	if n >= l {
 		b = b[:l]
 		v.SetLen(l)

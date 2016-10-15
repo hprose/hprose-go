@@ -186,7 +186,7 @@ func (r *Reader) ReadString() (str string) {
 
 // ReadBytesWithoutTag from the reader
 func (r *Reader) ReadBytesWithoutTag() (b []byte) {
-	l := readLength(&r.ByteReader)
+	l := r.readLength()
 	b = make([]byte, l)
 	if _, err := r.Read(b); err != nil {
 		panic(err)
