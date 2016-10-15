@@ -52,7 +52,7 @@ func readInfinityAsBool(r *Reader) bool {
 }
 
 func readUTF8CharAsBool(r *Reader) bool {
-	b, err := strconv.ParseBool(util.ByteString(readUTF8Slice(&r.ByteReader, 1)))
+	b, err := strconv.ParseBool(util.ByteString(r.readUTF8Slice(1)))
 	if err != nil {
 		panic(err)
 	}

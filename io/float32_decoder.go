@@ -46,7 +46,7 @@ func readInfinityAsFloat32(r *Reader) float32 {
 }
 
 func readUTF8CharAsFloat32(r *Reader) float32 {
-	return stringToFloat32(util.ByteString(readUTF8Slice(&r.ByteReader, 1)))
+	return stringToFloat32(util.ByteString(r.readUTF8Slice(1)))
 }
 
 func readStringAsFloat32(r *Reader) float32 {

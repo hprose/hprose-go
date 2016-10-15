@@ -45,7 +45,7 @@ func stringToUint(s string) uint64 {
 }
 
 func readUTF8CharAsUint(r *Reader) uint64 {
-	return stringToUint(util.ByteString(readUTF8Slice(&r.ByteReader, 1)))
+	return stringToUint(util.ByteString(r.readUTF8Slice(1)))
 }
 
 func readStringAsUint(r *Reader) uint64 {

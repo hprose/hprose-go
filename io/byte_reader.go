@@ -226,7 +226,7 @@ func (r *ByteReader) readFloat64() float64 {
 	return f
 }
 
-func readUTF8Slice(r *ByteReader, length int) []byte {
+func (r *ByteReader) readUTF8Slice(length int) []byte {
 	var empty = []byte{}
 	if length == 0 {
 		return empty
@@ -255,7 +255,7 @@ func readUTF8Slice(r *ByteReader, length int) []byte {
 }
 
 func readUTF8String(r *ByteReader, length int) string {
-	return string(readUTF8Slice(r, length))
+	return string(r.readUTF8Slice(length))
 }
 
 func readString(r *ByteReader) (result string) {

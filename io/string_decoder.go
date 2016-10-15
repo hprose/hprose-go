@@ -37,7 +37,7 @@ func readInfAsString(r *Reader) string {
 }
 
 func readUTF8CharAsString(r *Reader) string {
-	return string(readUTF8Slice(&r.ByteReader, 1))
+	return string(r.readUTF8Slice(1))
 }
 
 func readBytesAsString(r *Reader) (str string) {

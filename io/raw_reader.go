@@ -12,7 +12,7 @@
  *                                                        *
  * hprose raw reader for Go.                              *
  *                                                        *
- * LastModified: Sep 6, 2016                              *
+ * LastModified: Oct 15, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -99,7 +99,7 @@ func (r *RawReader) readDateTimeRaw(w *ByteWriter) {
 }
 
 func (r *RawReader) readUTF8CharRaw(w *ByteWriter) {
-	w.write(readUTF8Slice(&r.ByteReader, 1))
+	w.write(r.readUTF8Slice(1))
 }
 
 func (r *RawReader) readBytesRaw(w *ByteWriter) {
@@ -127,7 +127,7 @@ func (r *RawReader) readStringRaw(w *ByteWriter) {
 		tag = r.readByte()
 		w.writeByte(tag)
 		if tag == TagQuote {
-			w.write(readUTF8Slice(&r.ByteReader, count+1))
+			w.write(r.readUTF8Slice(count+1))
 			return
 		}
 	}
