@@ -12,7 +12,7 @@
  *                                                        *
  * hprose float64 decoder for Go.                         *
  *                                                        *
- * LastModified: Sep 14, 2016                             *
+ * LastModified: Oct 15, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -30,7 +30,7 @@ import (
 )
 
 func readLongAsFloat64(r *Reader) float64 {
-	return ReadLongAsFloat64(&r.ByteReader)
+	return r.readLongAsFloat64()
 }
 
 func stringToFloat64(s string) float64 {

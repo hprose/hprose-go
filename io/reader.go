@@ -12,7 +12,7 @@
  *                                                        *
  * hprose reader for Go.                                  *
  *                                                        *
- * LastModified: Oct 8, 2016                              *
+ * LastModified: Oct 15, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -299,7 +299,7 @@ func (r *Reader) ReadSlice(v []reflect.Value) {
 
 // ReadCount of array, slice, map or struct field
 func (r *Reader) ReadCount() int {
-	return int(ReadInt64(&r.ByteReader, TagOpenbrace))
+	return int(r.readInt64(TagOpenbrace))
 }
 
 // Reset the reference counter

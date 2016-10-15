@@ -12,7 +12,7 @@
  *                                                        *
  * hprose int decoder for Go.                             *
  *                                                        *
- * LastModified: Sep 14, 2016                             *
+ * LastModified: Oct 15, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -29,7 +29,7 @@ import (
 )
 
 func readInt64(r *Reader) int64 {
-	return ReadInt64(&r.ByteReader, TagSemicolon)
+	return r.readInt64(TagSemicolon)
 }
 
 func readFloat64AsInt(r *Reader) int64 {

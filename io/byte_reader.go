@@ -12,7 +12,7 @@
  *                                                        *
  * byte reader for Go.                                    *
  *                                                        *
- * LastModified: Oct 8, 2016                              *
+ * LastModified: Oct 15, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -129,8 +129,7 @@ func (r *ByteReader) read4Digit() int {
 	return n*10 + int(r.readByte()-'0')
 }
 
-// ReadInt64 from ByteReader
-func ReadInt64(r *ByteReader, tag byte) (i int64) {
+func (r *ByteReader) readInt64(tag byte) (i int64) {
 	i = 0
 	b := r.readByte()
 	if b == tag {
@@ -158,13 +157,11 @@ func ReadInt64(r *ByteReader, tag byte) (i int64) {
 	return
 }
 
-// ReadUint64 from ByteReader
-func ReadUint64(r *ByteReader, tag byte) (i uint64) {
-	return uint64(ReadInt64(r, tag))
+func (r *ByteReader) readUint64(tag byte) (i uint64) {
+	return uint64(r.readInt64(tag))
 }
 
-// ReadLongAsFloat64 from ByteReader
-func ReadLongAsFloat64(r *ByteReader) (f float64) {
+func (r *ByteReader) readLongAsFloat64() (f float64) {
 	f = 0
 	b := r.readByte()
 	if b == TagSemicolon {
@@ -193,11 +190,11 @@ func ReadLongAsFloat64(r *ByteReader) (f float64) {
 }
 
 func readInt(r *ByteReader) int {
-	return int(ReadInt64(r, TagSemicolon))
+	return int(r.readInt64(TagSemicolon))
 }
 
 func readLength(r *ByteReader) int {
-	return int(ReadInt64(r, TagQuote))
+	return int(r.readInt64(TagQuote))
 }
 
 func readUntil(r *ByteReader, tag byte) (result []byte) {

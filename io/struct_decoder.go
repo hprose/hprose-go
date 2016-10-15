@@ -12,7 +12,7 @@
  *                                                        *
  * hprose struct decoder for Go.                          *
  *                                                        *
- * LastModified: Oct 13, 2016                             *
+ * LastModified: Oct 15, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -48,7 +48,7 @@ func readDigitAsStruct(r *Reader, v reflect.Value, tag byte) {
 }
 
 func readIntAsStruct(r *Reader, v reflect.Value, tag byte) {
-	i := ReadInt64(&r.ByteReader, TagSemicolon)
+	i := r.readInt64(TagSemicolon)
 	typ := (*reflectValue)(unsafe.Pointer(&v)).typ
 	switch typ {
 	case bigIntType:

@@ -12,7 +12,7 @@
  *                                                        *
  * hprose complex64 decoder for Go.                       *
  *                                                        *
- * LastModified: Sep 14, 2016                             *
+ * LastModified: Oct 15, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -29,7 +29,7 @@ import (
 )
 
 func readLongAsComplex64(r *Reader) complex64 {
-	return complex(float32(ReadLongAsFloat64(&r.ByteReader)), 0)
+	return complex(float32(r.readLongAsFloat64()), 0)
 }
 
 func stringToComplex64(s string) complex64 {

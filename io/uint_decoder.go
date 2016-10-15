@@ -29,7 +29,7 @@ import (
 )
 
 func readUint64(r *Reader) uint64 {
-	return ReadUint64(&r.ByteReader, TagSemicolon)
+	return r.readUint64(TagSemicolon)
 }
 
 func readFloat64AsUint(r *Reader) uint64 {
