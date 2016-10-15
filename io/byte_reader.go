@@ -208,7 +208,7 @@ func (r *ByteReader) readUntil(tag byte) (result []byte) {
 	return result[:i]
 }
 
-func readFloat32(r *ByteReader) float32 {
+func (r *ByteReader) readFloat32() float32 {
 	s := util.ByteString(r.readUntil(TagSemicolon))
 	f, e := strconv.ParseFloat(s, 32)
 	if e != nil {
@@ -217,7 +217,7 @@ func readFloat32(r *ByteReader) float32 {
 	return float32(f)
 }
 
-func readFloat64(r *ByteReader) float64 {
+func (r *ByteReader) readFloat64() float64 {
 	s := util.ByteString(r.readUntil(TagSemicolon))
 	f, e := strconv.ParseFloat(s, 64)
 	if e != nil {

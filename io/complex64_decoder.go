@@ -92,7 +92,7 @@ var complex64Decoders = [256]func(r *Reader) complex64{
 	TagInfinity: readInfinityAsComplex64,
 	TagInteger:  readLongAsComplex64,
 	TagLong:     readLongAsComplex64,
-	TagDouble:   func(r *Reader) complex64 { return complex(readFloat32(&r.ByteReader), 0) },
+	TagDouble:   func(r *Reader) complex64 { return complex(r.readFloat32(), 0) },
 	TagUTF8Char: readUTF8CharAsComplex64,
 	TagString:   readStringAsComplex64,
 	TagList:     readListAsComplex64,

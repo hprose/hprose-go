@@ -65,7 +65,7 @@ func readLongAsInterface(r *Reader, v reflect.Value, tag byte) {
 }
 
 func readFloatAsInterface(r *Reader, v reflect.Value, tag byte) {
-	v.Set(reflect.ValueOf(readFloat64(&r.ByteReader)))
+	v.Set(reflect.ValueOf(r.readFloat64()))
 }
 
 func readUTF8CharAsInterface(r *Reader, v reflect.Value, tag byte) {

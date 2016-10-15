@@ -33,7 +33,7 @@ func readInt64(r *Reader) int64 {
 }
 
 func readFloat64AsInt(r *Reader) int64 {
-	return int64(readFloat64(&r.ByteReader))
+	return int64(r.readFloat64())
 }
 
 func stringToInt(s string) int64 {

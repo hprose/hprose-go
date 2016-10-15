@@ -97,7 +97,7 @@ var float64Decoders = [256]func(r *Reader) float64{
 	TagInfinity: readInfinityAsFloat64,
 	TagInteger:  readLongAsFloat64,
 	TagLong:     readLongAsFloat64,
-	TagDouble:   func(r *Reader) float64 { return readFloat64(&r.ByteReader) },
+	TagDouble:   func(r *Reader) float64 { return r.readFloat64() },
 	TagUTF8Char: readUTF8CharAsFloat64,
 	TagString:   readStringAsFloat64,
 	TagDate:     readDateTimeAsFloat64,
