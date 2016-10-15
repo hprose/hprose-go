@@ -174,7 +174,7 @@ func (r *Reader) ReadStringWithoutTag() (str string) {
 }
 
 // ReadString from the reader
-func (r *Reader) ReadString() (str string) {
+func (r *Reader) ReadString() string {
 	tag := r.readByte()
 	decoder := stringDecoders[tag]
 	if decoder != nil {
@@ -199,7 +199,7 @@ func (r *Reader) ReadBytesWithoutTag() (b []byte) {
 }
 
 // ReadTime from the reader
-func (r *Reader) ReadTime() (dt time.Time) {
+func (r *Reader) ReadTime() time.Time {
 	tag := r.readByte()
 	switch tag {
 	case TagDate:

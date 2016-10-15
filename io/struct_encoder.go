@@ -12,7 +12,7 @@
  *                                                        *
  * hprose struct encoder for Go.                          *
  *                                                        *
- * LastModified: Sep 16, 2015                             *
+ * LastModified: Oct 15, 2015                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -67,7 +67,7 @@ func getFieldAlias(f *reflect.StructField, tag string) (alias string) {
 	return alias
 }
 
-func getSubFields(t reflect.Type, tag string, offset uintptr, index []int) []*fieldCache {
+func getSubFields(t reflect.Type, tag string, index []int) []*fieldCache {
 	subFields := getFields(t, tag)
 	for _, subField := range subFields {
 		subField.Index = append(index, subField.Index...)
@@ -89,7 +89,7 @@ func getFields(t reflect.Type, tag string) []*fieldCache {
 		}
 		if f.Anonymous {
 			if fkind == reflect.Struct {
-				subFields := getSubFields(ft, tag, f.Offset, f.Index)
+				subFields := getSubFields(ft, tag, f.Index)
 				fields = append(fields, subFields...)
 				continue
 			}
