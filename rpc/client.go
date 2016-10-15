@@ -12,7 +12,7 @@
  *                                                        *
  * hprose rpc client for Go.                              *
  *                                                        *
- * LastModified: Oct 11, 2016                             *
+ * LastModified: Oct 15, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -76,6 +76,8 @@ type Client interface {
 	ID() (string, error)
 	Subscribe(name string, id string, settings *InvokeSettings, callback interface{}) (err error)
 	Unsubscribe(name string, id ...string)
+	IsSubscribed(name string) bool
+	SubscribedList() []string
 }
 
 // ClientContext is the hprose client context
@@ -144,4 +146,3 @@ func init() {
 	registerClientFactory("ws", newWebSocketClient)
 	registerClientFactory("wss", newWebSocketClient)
 }
-

@@ -12,7 +12,7 @@
  *                                                        *
  * hprose rpc base client for Go.                         *
  *                                                        *
- * LastModified: Oct 11, 2016                             *
+ * LastModified: Oct 15, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -52,22 +52,41 @@ type topicManager struct {
 	locker    sync.RWMutex
 }
 
-func (tm *topicManager) getTopic(
-	name string, id string, create bool) *clientTopic {
+func (tm *topicManager) getTopic(topic string, id string) *clientTopic {
 	tm.locker.RLock()
-	topics := tm.allTopics[name]
+	topics := tm.allTopics[topic]
 	if topics != nil {
 		topic := topics[id]
 		tm.locker.RUnlock()
 		return topic
 	}
 	tm.locker.RUnlock()
-	if create {
-		tm.locker.Lock()
-		tm.allTopics[name] = make(map[string]*clientTopic)
-		tm.locker.Unlock()
-	}
 	return nil
+}
+func (tm *topicManager) createTopic(topic string) {
+	tm.locker.Lock()
+	if tm.allTopics[topic] == nil {
+		tm.allTopics[topic] = make(map[string]*clientTopic)
+	}
+	tm.locker.Lock()
+}
+
+// IsSubscribed the topic
+func (tm *topicManager) IsSubscribed(topic string) bool {
+	tm.locker.RLock()
+	defer tm.locker.RUnlock()
+	return tm.allTopics[topic] != nil
+}
+
+// SubscribedList returns the subscribed topic list
+func (tm *topicManager) SubscribedList() []string {
+	tm.locker.RLock()
+	list := make([]string, 0, len(tm.allTopics))
+	for name := range tm.allTopics {
+		list = append(list, name)
+	}
+	tm.locker.RUnlock()
+	return list
 }
 
 type baseClient struct {
@@ -831,7 +850,7 @@ func (client *baseClient) subscribe(
 	settings.ResultTypes = []reflect.Type{interfaceType}
 	args := []reflect.Value{reflect.ValueOf(id)}
 	for {
-		topic := client.getTopic(name, id, false)
+		topic := client.getTopic(name, id)
 		if topic == nil {
 			return
 		}
@@ -875,7 +894,8 @@ func (client *baseClient) Subscribe(
 	settings.Oneway = false
 	settings.Simple = true
 	settings.ResultTypes = resultTypes
-	topic := client.getTopic(name, id, true)
+	client.createTopic(name)
+	topic := client.getTopic(name, id)
 	if topic == nil {
 		topic = new(clientTopic)
 		topic.addCallback(cb)
@@ -903,6 +923,9 @@ func (client *baseClient) Unsubscribe(name string, id ...string) {
 			for i := range id {
 				delete(client.allTopics[name], id[i])
 			}
+		}
+		if len(client.allTopics[name]) == 0 {
+			delete(client.allTopics, name)
 		}
 	}
 	client.topicManager.locker.Unlock()
