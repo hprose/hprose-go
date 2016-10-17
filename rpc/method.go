@@ -12,7 +12,7 @@
  *                                                        *
  * hprose method manager for Go.                          *
  *                                                        *
- * LastModified: Oct 7, 2016                              *
+ * LastModified: Oct 17, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -280,21 +280,22 @@ func (mm *methodManager) AddMissingMethod(
 //			// Synchronous call
 //			Multiply func(args *Args) int
 //			// Asynchronous call
-//			Divide func(args *Args) (<-chan *Quotient, <-chan error)
+//			Divide func(func(*Quotient, error), *Args)
 //		}
 //
 // Then it can make a remote call:
 //
-//		client := rpc.NewClient("http://127.0.0.0:8080")
+//		client := rpc.NewClient("http://127.0.0.1:8080")
 //		var stub *Stub
 //		client.UseService(&stub)
 //		fmt.Println(stub.Multiply(&Args{8, 7}))
-//		quo, e := stub.Device(&Args{8, 7})
-//		if err := <-e; err != nil {
-//			log.Fatal("arith error:", err)
-//		}
-//		result := <-quo
-//		fmt.Println(result.Quo, result.Rem)
+//		stub.Divide(func(result *Quotient, err error) {
+//			if err != nil {
+//				log.Fatal("arith error:", err)
+//			} else {
+//				fmt.Println(result.Quo, result.Rem)
+//			}
+//		}, &Args{8, 7})
 //
 // You can also call it in other languages.
 //
