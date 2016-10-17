@@ -341,7 +341,7 @@ func (mm *methodManager) addNetRPCMethod(
 		panic("the second argument of method " + name + " must be a pointer")
 	}
 	if ft.NumOut() != 1 || ft.Out(0) != errorType {
-		panic("the method " + name + " must return type error.")
+		panic("the result type of method " + name + " must be error")
 	}
 	argsType := ft.In(0)
 	resultType := ft.In(1)
