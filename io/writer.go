@@ -12,7 +12,7 @@
  *                                                        *
  * hprose writer for Go.                                  *
  *                                                        *
- * LastModified: Oct 12, 2016                             *
+ * LastModified: Oct 17, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -302,7 +302,7 @@ func (w *Writer) WriteStringSlice(slice []string) {
 		return
 	}
 	writeListHeader(w, count)
-	stringSliceEncoder(w, unsafe.Pointer(&slice))
+	stringSliceEncoder(w, slice)
 	writeListFooter(w)
 }
 
