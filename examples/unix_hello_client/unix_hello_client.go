@@ -15,7 +15,7 @@ type Stub struct {
 }
 
 func main() {
-	client := rpc.NewClient("tcp://127.0.0.1:4321/")
+	client := rpc.NewClient("unix:/tmp/my.sock")
 	var stub *Stub
 	client.UseService(&stub)
 	stub.AsyncHello(func(result string, err error) {
