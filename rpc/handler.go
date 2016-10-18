@@ -12,7 +12,7 @@
  *                                                        *
  * hprose handler manager for Go.                         *
  *                                                        *
- * LastModified: Oct 2, 2016                              *
+ * LastModified: Oct 18, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -45,8 +45,14 @@ type FilterHandler func(
 	context Context,
 	next NextFilterHandler) (response []byte, err error)
 
+type addFilterHandler struct {
+	Use func(handler ...FilterHandler)
+}
+
 // handlerManager is the hprose handler manager
 type handlerManager struct {
+	BeforeFilter               addFilterHandler
+	AfterFilter                addFilterHandler
 	invokeHandlers             []InvokeHandler
 	beforeFilterHandlers       []FilterHandler
 	afterFilterHandlers        []FilterHandler
@@ -64,6 +70,8 @@ type handlerManager struct {
 }
 
 func (hm *handlerManager) initHandlerManager() {
+	hm.BeforeFilter.Use = hm.AddBeforeFilterHandler
+	hm.AfterFilter.Use = hm.AddAfterFilterHandler
 	hm.defaultInvokeHandler = func(
 		name string,
 		args []reflect.Value,
@@ -164,4 +172,9 @@ func (hm *handlerManager) AddAfterFilterHandler(handler ...FilterHandler) {
 		next = getNextFilterHandler(next, hm.afterFilterHandlers[i])
 	}
 	hm.afterFilterHandler = next
+}
+
+// Use is a method alias of AddInvokeHandler
+func (hm *handlerManager) Use(handler ...InvokeHandler) {
+	hm.AddInvokeHandler(handler...)
 }
