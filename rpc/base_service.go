@@ -39,7 +39,6 @@ type baseService struct {
 	FixArguments func(args []reflect.Value, context ServiceContext)
 	Event        ServiceEvent
 	Debug        bool
-	Simple       bool
 	Timeout      time.Duration
 	Heartbeat    time.Duration
 	ErrorDelay   time.Duration
