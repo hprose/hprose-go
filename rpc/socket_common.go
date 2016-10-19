@@ -12,7 +12,7 @@
  *                                                        *
  * hprose socket common for Go.                           *
  *                                                        *
- * LastModified: Oct 5, 2016                              *
+ * LastModified: Oct 20, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -48,30 +48,6 @@ func fromUint32(b []byte, i uint32) {
 	b[3] = byte(i)
 }
 
-func recvData(reader io.Reader, data *packet) (err error) {
-	header := data.id[:]
-	if _, err = reader.Read(header); err != nil {
-		return
-	}
-	size := toUint32(header)
-	data.fullDuplex = (size&0x80000000 != 0)
-	if data.fullDuplex {
-		size &= 0x7FFFFFFF
-		data.fullDuplex = true
-		data.body = nil
-		if _, err = reader.Read(data.id[:]); err != nil {
-			return
-		}
-	}
-	if cap(data.body) >= int(size) {
-		data.body = data.body[:size]
-	} else {
-		data.body = make([]byte, size)
-	}
-	_, err = reader.Read(data.body)
-	return
-}
-
 var bufferPool = make(chan []byte, runtime.NumCPU()*2)
 
 func acquireBuffer() (buf []byte) {
@@ -90,7 +66,7 @@ func releaseBuffer(buf []byte) {
 	}
 }
 
-func sendData(writer io.Writer, data packet) (err error) {
+func serverSendData(writer io.Writer, data packet) (err error) {
 	n := len(data.body)
 	i := 4
 	buf := acquireBuffer()
@@ -119,6 +95,67 @@ func sendData(writer io.Writer, data packet) (err error) {
 		_, err = writer.Write(data.body[p:])
 	}
 	return err
+}
+
+func serverRecvData(reader io.Reader, data *packet) (err error) {
+	header := data.id[:]
+	if _, err = reader.Read(header); err != nil {
+		return
+	}
+	size := toUint32(header)
+	data.fullDuplex = (size&0x80000000 != 0)
+	if data.fullDuplex {
+		size &= 0x7FFFFFFF
+		data.fullDuplex = true
+		data.body = nil
+		if _, err = reader.Read(data.id[:]); err != nil {
+			return
+		}
+	}
+	if cap(data.body) >= int(size) {
+		data.body = data.body[:size]
+	} else {
+		data.body = make([]byte, size)
+	}
+	_, err = reader.Read(data.body)
+	return
+}
+
+func clientSendData(writer io.Writer, data []byte) (err error) {
+	n := len(data)
+	const i = 4
+	buf := acquireBuffer()
+	fromUint32(buf, uint32(n))
+	p := 2048 - i
+	if n <= p {
+		copy(buf[i:], data)
+		_, err = writer.Write(buf[:n+i])
+		releaseBuffer(buf)
+	} else {
+		copy(buf[i:], data[:p])
+		_, err = writer.Write(buf)
+		releaseBuffer(buf)
+		if err != nil {
+			return err
+		}
+		_, err = writer.Write(data[p:])
+	}
+	return err
+}
+
+func clientRecvData(reader io.Reader, buf []byte) (data []byte, err error) {
+	var header [4]byte
+	if _, err = reader.Read(header[:]); err != nil {
+		return
+	}
+	size := toUint32(header[:])
+	if cap(buf) >= int(size) {
+		data = buf[:size]
+	} else {
+		data = make([]byte, size)
+	}
+	_, err = reader.Read(data)
+	return
 }
 
 func nextTempDelay(

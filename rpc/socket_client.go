@@ -12,7 +12,7 @@
  *                                                        *
  * hprose socket client for Go.                           *
  *                                                        *
- * LastModified: Oct 19, 2016                             *
+ * LastModified: Oct 20, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -146,12 +146,11 @@ func (client *SocketClient) sendAndReceive(
 	entry := client.fetchConn(false)
 	conn := entry.conn
 	err := conn.SetDeadline(time.Now().Add(context.Timeout))
-	dataPacket := packet{body: data}
 	if err == nil {
-		err = sendData(conn, dataPacket)
+		err = clientSendData(conn, data)
 	}
 	if err == nil {
-		err = recvData(conn, &dataPacket)
+		data, err = clientRecvData(conn, data)
 	}
 	if err == nil {
 		err = conn.SetDeadline(time.Time{})
@@ -172,5 +171,5 @@ func (client *SocketClient) sendAndReceive(
 	}
 	client.connPool <- entry
 	client.cond.Signal()
-	return dataPacket.body, nil
+	return data, nil
 }
