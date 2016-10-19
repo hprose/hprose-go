@@ -12,7 +12,7 @@
  *                                                        *
  * hprose socket client for Go.                           *
  *                                                        *
- * LastModified: Oct 8, 2016                              *
+ * LastModified: Oct 19, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -31,7 +31,7 @@ import (
 type connEntry struct {
 	conn      net.Conn
 	timer     *time.Timer
-	reqCount  int32
+	reqCount  int
 	cond      *sync.Cond
 	responses map[uint32]chan socketResponse
 }
@@ -67,15 +67,16 @@ func (entry *connEntry) clearResponse() map[uint32]chan socketResponse {
 // SocketClient is base struct for TCPClient and UnixClient
 type SocketClient struct {
 	baseClient
-	ReadBuffer  int
-	WriteBuffer int
-	IdleTimeout time.Duration
-	TLSConfig   *tls.Config
-	connPool    chan *connEntry
-	connCount   int32
-	nextid      uint32
-	createConn  func() net.Conn
-	cond        sync.Cond
+	ReadBuffer         int
+	WriteBuffer        int
+	IdleTimeout        time.Duration
+	MaxRequestsPerConn int
+	TLSConfig          *tls.Config
+	connPool           chan *connEntry
+	connCount          int32
+	nextid             uint32
+	createConn         func() net.Conn
+	cond               sync.Cond
 }
 
 func (client *SocketClient) initSocketClient() {
@@ -83,8 +84,9 @@ func (client *SocketClient) initSocketClient() {
 	client.ReadBuffer = 0
 	client.WriteBuffer = 0
 	client.IdleTimeout = 30 * time.Second
+	client.MaxRequestsPerConn = 10
 	client.TLSConfig = nil
-	client.connPool = make(chan *connEntry, runtime.NumCPU()*2)
+	client.connPool = make(chan *connEntry, runtime.NumCPU())
 	client.connCount = 0
 	client.nextid = 0
 	client.cond.L = &sync.Mutex{}
@@ -182,7 +184,7 @@ func (client *SocketClient) fetchConn(fullDuplex bool) *connEntry {
 			entry := &connEntry{conn: client.createConn()}
 			if fullDuplex {
 				entry.cond = sync.NewCond(&sync.Mutex{})
-				entry.responses = make(map[uint32]chan socketResponse, 10)
+				entry.responses = make(map[uint32]chan socketResponse, client.MaxRequestsPerConn)
 				go client.fullDuplexReceive(entry)
 			}
 			return entry
@@ -214,7 +216,7 @@ func (client *SocketClient) fullDuplexSendAndReceive(
 	for {
 		entry = client.fetchConn(true)
 		entry.cond.L.Lock()
-		for entry.reqCount > 10 {
+		for entry.reqCount > client.MaxRequestsPerConn {
 			entry.cond.Wait()
 		}
 		entry.cond.L.Unlock()
