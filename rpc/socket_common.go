@@ -12,7 +12,7 @@
  *                                                        *
  * hprose socket common for Go.                           *
  *                                                        *
- * LastModified: Oct 20, 2016                             *
+ * LastModified: Oct 5, 2016                              *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -22,7 +22,7 @@ package rpc
 import (
 	"io"
 	"net"
-	"sync"
+	"runtime"
 	"time"
 )
 
@@ -72,16 +72,22 @@ func recvData(reader io.Reader, data *packet) (err error) {
 	return
 }
 
-var bufferPool = sync.Pool{
-	New: func() interface{} { return make([]byte, 2048) },
-}
+var bufferPool = make(chan []byte, runtime.NumCPU()*2)
 
-func acquireBuffer() []byte {
-	return bufferPool.Get().([]byte)
+func acquireBuffer() (buf []byte) {
+	select {
+	case buf = <-bufferPool:
+		return
+	default:
+		return make([]byte, 2048)
+	}
 }
 
 func releaseBuffer(buf []byte) {
-	bufferPool.Put(buf)
+	select {
+	case bufferPool <- buf:
+	default:
+	}
 }
 
 func sendData(writer io.Writer, data packet) (err error) {
