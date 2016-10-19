@@ -29,54 +29,22 @@ import (
 )
 
 type connEntry struct {
-	conn      net.Conn
-	timer     *time.Timer
-	reqCount  int
-	cond      *sync.Cond
-	responses map[uint32]chan socketResponse
-}
-
-func (entry *connEntry) addResponse(id uint32, response chan socketResponse) {
-	entry.cond.L.Lock()
-	entry.responses[id] = response
-	entry.reqCount++
-	entry.cond.L.Unlock()
-}
-
-func (entry *connEntry) removeResponse(id uint32) chan socketResponse {
-	entry.cond.L.Lock()
-	response := entry.responses[id]
-	delete(entry.responses, id)
-	entry.reqCount--
-	entry.cond.L.Unlock()
-	entry.cond.Signal()
-	return response
-}
-
-func (entry *connEntry) clearResponse() map[uint32]chan socketResponse {
-	entry.cond.L.Lock()
-	responses := entry.responses
-	entry.conn = nil
-	entry.reqCount = 0
-	entry.responses = nil
-	entry.cond.L.Unlock()
-	entry.cond.Broadcast()
-	return responses
+	conn  net.Conn
+	timer *time.Timer
 }
 
 // SocketClient is base struct for TCPClient and UnixClient
 type SocketClient struct {
 	baseClient
-	ReadBuffer         int
-	WriteBuffer        int
-	IdleTimeout        time.Duration
-	MaxRequestsPerConn int
-	TLSConfig          *tls.Config
-	connPool           chan *connEntry
-	connCount          int32
-	nextid             uint32
-	createConn         func() net.Conn
-	cond               sync.Cond
+	ReadBuffer  int
+	WriteBuffer int
+	IdleTimeout time.Duration
+	TLSConfig   *tls.Config
+	connPool    chan *connEntry
+	connCount   int32
+	nextid      uint32
+	createConn  func() net.Conn
+	cond        sync.Cond
 }
 
 func (client *SocketClient) initSocketClient() {
@@ -84,13 +52,12 @@ func (client *SocketClient) initSocketClient() {
 	client.ReadBuffer = 0
 	client.WriteBuffer = 0
 	client.IdleTimeout = 30 * time.Second
-	client.MaxRequestsPerConn = 10
 	client.TLSConfig = nil
 	client.connPool = make(chan *connEntry, runtime.NumCPU())
 	client.connCount = 0
 	client.nextid = 0
 	client.cond.L = &sync.Mutex{}
-	client.SetFullDuplex(false)
+	client.SendAndReceive = client.sendAndReceive
 }
 
 // TLSClientConfig returns the tls.Config in hprose client
@@ -101,15 +68,6 @@ func (client *SocketClient) TLSClientConfig() *tls.Config {
 // SetTLSClientConfig sets the tls.Config
 func (client *SocketClient) SetTLSClientConfig(config *tls.Config) {
 	client.TLSConfig = config
-}
-
-// SetFullDuplex sets full duplex or half duplex mode of hprose socket client
-func (client *SocketClient) SetFullDuplex(fullDuplex bool) {
-	if fullDuplex {
-		client.SendAndReceive = client.fullDuplexSendAndReceive
-	} else {
-		client.SendAndReceive = client.halfDuplexSendAndReceive
-	}
 }
 
 // MaxPoolSize returns the max conn pool size of hprose socket client
@@ -149,28 +107,6 @@ func (client *SocketClient) getConn() *connEntry {
 	}
 }
 
-func (client *SocketClient) fullDuplexReceive(entry *connEntry) {
-	conn := entry.conn
-	var data packet
-	for {
-		err := recvData(conn, &data)
-		if err != nil {
-			if entry.responses != nil {
-				responses := entry.clearResponse()
-				for _, response := range responses {
-					response <- socketResponse{nil, err}
-				}
-			}
-			break
-		}
-		id := toUint32(data.id[:])
-		response := entry.removeResponse(id)
-		if response != nil {
-			response <- socketResponse{data.body, nil}
-		}
-	}
-}
-
 func (client *SocketClient) fetchConn(fullDuplex bool) *connEntry {
 	client.cond.L.Lock()
 	for {
@@ -182,11 +118,6 @@ func (client *SocketClient) fetchConn(fullDuplex bool) *connEntry {
 		if int(atomic.AddInt32(&client.connCount, 1)) <= cap(client.connPool) {
 			client.cond.L.Unlock()
 			entry := &connEntry{conn: client.createConn()}
-			if fullDuplex {
-				entry.cond = sync.NewCond(&sync.Mutex{})
-				entry.responses = make(map[uint32]chan socketResponse, client.MaxRequestsPerConn)
-				go client.fullDuplexReceive(entry)
-			}
 			return entry
 		}
 		atomic.AddInt32(&client.connCount, -1)
@@ -210,53 +141,7 @@ func (client *SocketClient) close(conn net.Conn) {
 	atomic.AddInt32(&client.connCount, -1)
 }
 
-func (client *SocketClient) fullDuplexSendAndReceive(
-	data []byte, context *ClientContext) (resp []byte, err error) {
-	var entry *connEntry
-	for {
-		entry = client.fetchConn(true)
-		entry.cond.L.Lock()
-		for entry.reqCount > client.MaxRequestsPerConn {
-			entry.cond.Wait()
-		}
-		entry.cond.L.Unlock()
-		if entry.conn != nil {
-			break
-		}
-		entry.reqCount = 0
-		entry.cond.Signal()
-	}
-	conn := entry.conn
-	id := atomic.AddUint32(&client.nextid, 1)
-	deadline := time.Now().Add(context.Timeout)
-	err = conn.SetDeadline(deadline)
-	response := make(chan socketResponse)
-	if err == nil {
-		entry.addResponse(id, response)
-		dataPacket := packet{fullDuplex: true, body: data}
-		fromUint32(dataPacket.id[:], id)
-		err = sendData(conn, dataPacket)
-	}
-	if err == nil {
-		err = conn.SetDeadline(time.Time{})
-	}
-	if err != nil {
-		client.close(conn)
-		client.cond.Signal()
-		return
-	}
-	client.connPool <- entry
-	client.cond.Signal()
-	select {
-	case resp := <-response:
-		return resp.data, resp.err
-	case <-time.After(deadline.Sub(time.Now())):
-		entry.removeResponse(id)
-		return nil, ErrTimeout
-	}
-}
-
-func (client *SocketClient) halfDuplexSendAndReceive(
+func (client *SocketClient) sendAndReceive(
 	data []byte, context *ClientContext) ([]byte, error) {
 	entry := client.fetchConn(false)
 	conn := entry.conn
