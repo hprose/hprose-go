@@ -344,16 +344,16 @@ func (mm *methodManager) addNetRPCMethod(
 		panic("the result type of method " + name + " must be error")
 	}
 	argsType := ft.In(0)
-	resultType := ft.In(1)
+	resultType := ft.In(1).Elem()
 	in := []reflect.Type{argsType}
 	out := []reflect.Type{resultType, errorType}
 	newft := reflect.FuncOf(in, out, false)
 	newMethod := reflect.MakeFunc(newft, func(
 		args []reflect.Value) (results []reflect.Value) {
-		result := reflect.New(resultType.Elem())
+		result := reflect.New(resultType)
 		in := []reflect.Value{args[0], result}
 		err := method.Call(in)[0]
-		results = []reflect.Value{result, err}
+		results = []reflect.Value{result.Elem(), err}
 		return
 	})
 	mm.AddFunction(name, newMethod, options)
