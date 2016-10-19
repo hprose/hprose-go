@@ -45,7 +45,7 @@ type baseService struct {
 	UserData     map[string]interface{}
 	readerPool   sync.Pool
 	topics       map[string]*topic
-	sync.RWMutex
+	topicLock    sync.RWMutex
 }
 
 func defaultFixArguments(args []reflect.Value, context ServiceContext) {
@@ -582,9 +582,9 @@ func (service *baseService) Publish(
 		heartbeat = service.Heartbeat
 	}
 	t := newTopic(heartbeat)
-	service.Lock()
+	service.topicLock.Lock()
 	service.topics[topic] = t
-	service.Unlock()
+	service.topicLock.Unlock()
 	return service.AddFunction(topic, func(id string) interface{} {
 		message := t.get(id)
 		if message == nil {
@@ -603,9 +603,9 @@ func (service *baseService) Publish(
 }
 
 func (service *baseService) getTopic(topic string) (t *topic) {
-	service.RLock()
+	service.topicLock.RLock()
 	t = service.topics[topic]
-	service.RUnlock()
+	service.topicLock.RUnlock()
 	if t == nil {
 		panic("topic \"" + topic + "\" is not published.")
 	}

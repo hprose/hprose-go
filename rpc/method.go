@@ -12,7 +12,7 @@
  *                                                        *
  * hprose method manager for Go.                          *
  *                                                        *
- * LastModified: Oct 17, 2016                             *
+ * LastModified: Oct 19, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -44,7 +44,7 @@ type Method struct {
 type methodManager struct {
 	MethodNames   []string
 	RemoteMethods map[string]*Method
-	sync.RWMutex
+	mmLocker      sync.Mutex
 }
 
 func (mm *methodManager) initMethodManager() {
@@ -74,10 +74,10 @@ func (mm *methodManager) AddFunction(
 	if options.NameSpace != "" && name != "*" {
 		name = options.NameSpace + "_" + name
 	}
-	mm.Lock()
+	mm.mmLocker.Lock()
 	mm.MethodNames = append(mm.MethodNames, name)
 	mm.RemoteMethods[strings.ToLower(name)] = &Method{f, options}
-	mm.Unlock()
+	mm.mmLocker.Unlock()
 }
 
 // AddFunctions is used for batch publishing service method
@@ -362,7 +362,7 @@ func (mm *methodManager) addNetRPCMethod(
 // Remove the published func or method by name
 func (mm *methodManager) Remove(name string) {
 	name = strings.ToLower(name)
-	mm.Lock()
+	mm.mmLocker.Lock()
 	n := len(mm.MethodNames)
 	for i := 0; i < n; i++ {
 		if strings.ToLower(mm.MethodNames[i]) == name {
@@ -371,5 +371,5 @@ func (mm *methodManager) Remove(name string) {
 		}
 	}
 	delete(mm.RemoteMethods, name)
-	mm.Unlock()
+	mm.mmLocker.Unlock()
 }
