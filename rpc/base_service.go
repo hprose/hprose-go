@@ -12,7 +12,7 @@
  *                                                        *
  * hprose base service for Go.                            *
  *                                                        *
- * LastModified: Oct 11, 2016                             *
+ * LastModified: Oct 19, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -59,9 +59,9 @@ func defaultFixArguments(args []reflect.Value, context ServiceContext) {
 func (service *baseService) initBaseService() {
 	service.initMethodManager()
 	service.initHandlerManager()
-	service.Timeout = 120 * 1000 * 1000 * 1000
-	service.Heartbeat = 3 * 1000 * 1000 * 1000
-	service.ErrorDelay = 10 * 1000 * 1000 * 1000
+	service.Timeout = 120 * time.Second
+	service.Heartbeat = 3 * time.Second
+	service.ErrorDelay = 10 * time.Second
 	service.topics = make(map[string]*topic)
 	service.readerPool = sync.Pool{
 		New: func() interface{} { return new(io.Reader) },

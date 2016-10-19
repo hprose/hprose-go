@@ -12,7 +12,7 @@
  *                                                        *
  * hprose rpc base client for Go.                         *
  *                                                        *
- * LastModified: Oct 15, 2016                             *
+ * LastModified: Oct 19, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -108,7 +108,7 @@ type baseClient struct {
 
 func (client *baseClient) initBaseClient() {
 	client.initHandlerManager()
-	client.timeout = 30 * 1000 * 1000 * 1000
+	client.timeout = 30 * time.Second
 	client.retry = 10
 	client.contextPool = sync.Pool{
 		New: func() interface{} { return new(ClientContext) },
