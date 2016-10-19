@@ -12,7 +12,7 @@
  *                                                        *
  * hprose struct decoder for Go.                          *
  *                                                        *
- * LastModified: Oct 15, 2016                             *
+ * LastModified: Oct 19, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -311,6 +311,12 @@ var structDecoders = [256]func(r *Reader, v reflect.Value, tag byte){
 }
 
 func structDecoder(r *Reader, v reflect.Value, tag byte) {
+	if (*reflectValue)(unsafe.Pointer(&v)).typ == reflectValueType {
+		rv := reflect.New(interfaceType).Elem()
+		interfaceDecoder(r, rv, tag)
+		v.Set(reflect.ValueOf(rv))
+		return
+	}
 	decoder := structDecoders[tag]
 	if decoder != nil {
 		decoder(r, v, tag)

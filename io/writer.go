@@ -12,7 +12,7 @@
  *                                                        *
  * hprose writer for Go.                                  *
  *                                                        *
- * LastModified: Oct 17, 2016                             *
+ * LastModified: Oct 19, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -52,6 +52,8 @@ func NewWriter(simple bool, buf ...byte) (w *Writer) {
 func (w *Writer) Serialize(v interface{}) *Writer {
 	if v == nil {
 		w.WriteNil()
+	} else if rv, ok := v.(reflect.Value); ok {
+		w.WriteValue(rv)
 	} else {
 		w.WriteValue(reflect.ValueOf(v))
 	}

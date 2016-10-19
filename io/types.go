@@ -12,7 +12,7 @@
  *                                                        *
  * reflect types for Go.                                  *
  *                                                        *
- * LastModified: Sep 16, 2016                             *
+ * LastModified: Oct 19, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -48,5 +48,6 @@ var bigRatType = getType(big.Rat{})
 var bigFloatType = getType(big.Float{})
 var timeType = getType(time.Time{})
 var listType = getType(list.List{})
+var reflectValueType = getType(reflect.Value{})
 
 var interfaceType = reflect.TypeOf((*interface{})(nil)).Elem()

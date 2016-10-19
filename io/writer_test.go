@@ -1209,3 +1209,11 @@ func TestSerializeBigIntPtr(t *testing.T) {
 		t.Error(w.String())
 	}
 }
+
+func TestSerializeValue(t *testing.T) {
+	w := NewWriter(true)
+	w.Serialize(reflect.ValueOf(123))
+	if w.String() != "i123;" {
+		t.Error(w.String())
+	}
+}

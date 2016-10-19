@@ -12,7 +12,7 @@
  *                                                        *
  * hprose encoder for Go.                                 *
  *                                                        *
- * LastModified: Sep 16, 2016                             *
+ * LastModified: Oct 19, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -153,6 +153,8 @@ func structPtrEncoder(w *Writer, v reflect.Value, ptr unsafe.Pointer) {
 		w.WriteTime((*time.Time)(ptr))
 	case listType:
 		w.WriteList((*list.List)(ptr))
+	case reflectValueType:
+		w.WriteValue(*(*reflect.Value)(ptr))
 	default:
 		if !writeRef(w, ptr) {
 			writeStruct(w, v)
