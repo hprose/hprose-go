@@ -8,14 +8,17 @@ import (
 	"github.com/hprose/hprose-golang/rpc"
 )
 
+// Args ...
 type Args struct {
 	A, B int
 }
 
+// Quotient ...
 type Quotient struct {
 	Quo, Rem int
 }
 
+// Stub ...
 type Stub struct {
 	// Synchronous call
 	Multiply func(args *Args) int
