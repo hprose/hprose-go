@@ -75,7 +75,9 @@ func (mm *methodManager) AddFunction(
 		name = options.NameSpace + "_" + name
 	}
 	mm.mmLocker.Lock()
-	mm.MethodNames = append(mm.MethodNames, name)
+	if mm.RemoteMethods[strings.ToLower(name)] == nil {
+		mm.MethodNames = append(mm.MethodNames, name)
+	}
 	mm.RemoteMethods[strings.ToLower(name)] = &Method{f, options}
 	mm.mmLocker.Unlock()
 }
@@ -140,8 +142,9 @@ func (mm *methodManager) addMethods(
 	}
 }
 
-func getPtrTo(v reflect.Value, t reflect.Type) (reflect.Value, reflect.Type) {
-	for ; t.Kind() == reflect.Ptr && !v.IsNil(); v = v.Elem() {
+func getPtrTo(v reflect.Value, t reflect.Type, kind reflect.Kind) (reflect.Value, reflect.Type) {
+	for t.Kind() == reflect.Ptr && !v.IsNil() && t.Elem().Kind() == kind {
+		v = v.Elem()
 		t = t.Elem()
 	}
 	return v, t
@@ -154,7 +157,7 @@ func (mm *methodManager) addFuncField(
 	if !f.CanInterface() || !f.IsValid() {
 		return
 	}
-	f, _ = getPtrTo(f, f.Type())
+	f, _ = getPtrTo(f, f.Type(), reflect.Func)
 	if f.Kind() == reflect.Func && !f.IsNil() {
 		mm.AddFunction(name, f, options)
 	}
@@ -168,7 +171,7 @@ func (mm *methodManager) recursiveAddFuncFields(
 	if !f.CanInterface() || !f.IsValid() {
 		return
 	}
-	f, _ = getPtrTo(f, f.Type())
+	f, _ = getPtrTo(f, f.Type(), reflect.Func)
 	switch f.Kind() {
 	case reflect.Func, reflect.Ptr, reflect.Interface, reflect.Slice, reflect.Map, reflect.Chan:
 		if f.IsNil() {
@@ -206,7 +209,7 @@ func (mm *methodManager) addInstanceMethods(
 	v := reflect.ValueOf(obj)
 	t := v.Type()
 	mm.addMethods(v, t, options)
-	v, t = getPtrTo(v, t)
+	v, t = getPtrTo(v, t, reflect.Struct)
 	if t.Kind() == reflect.Struct {
 		n := t.NumField()
 		for i := 0; i < n; i++ {
