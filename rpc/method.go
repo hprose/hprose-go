@@ -169,7 +169,13 @@ func (mm *methodManager) recursiveAddFuncFields(
 		return
 	}
 	f, _ = getPtrTo(f, f.Type())
-	if f.Kind() == reflect.Func && !f.IsNil() {
+	switch f.Kind() {
+	case reflect.Func, reflect.Ptr, reflect.Interface, reflect.Slice, reflect.Map, reflect.Chan:
+		if f.IsNil() {
+			return
+		}
+	}
+	if f.Kind() == reflect.Func {
 		mm.AddFunction(name, f, options)
 		return
 	}
