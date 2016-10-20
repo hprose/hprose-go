@@ -41,6 +41,9 @@ func (*Foobar) MethodC2() {}
 
 func main() {
 	service := rpc.NewHTTPService()
-	service.AddAllMethods(&Foobar{}, rpc.Options{})
+	foobar := &Foobar{}
+	foobar.BarField = new(Bar)
+	foobar.BarField.FuncB = func() {}
+	service.AddAllMethods(foobar, rpc.Options{})
 	http.ListenAndServe(":8080", service)
 }
