@@ -12,7 +12,7 @@
  *                                                        *
  * hprose method manager for Go.                          *
  *                                                        *
- * LastModified: Oct 19, 2016                             *
+ * LastModified: Oct 20, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -171,9 +171,6 @@ func (mm *methodManager) recursiveAddFuncFields(
 	f, _ = getPtrTo(f, f.Type())
 	if f.Kind() == reflect.Func && !f.IsNil() {
 		mm.AddFunction(name, f, options)
-		return
-	}
-	if f.Kind() != reflect.Struct {
 		return
 	}
 	if fs.Anonymous {
