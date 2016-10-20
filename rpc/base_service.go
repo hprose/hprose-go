@@ -358,7 +358,7 @@ func readArguments(
 	if method != nil {
 		reader.JSONCompatible = method.JSONCompatible
 	}
-	if method == nil && context.IsMissingMethod() {
+	if method == nil || context.IsMissingMethod() {
 		return reader.ReadSliceWithoutTag()
 	}
 	count := reader.ReadCount()
