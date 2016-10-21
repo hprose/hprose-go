@@ -12,7 +12,7 @@
  *                                                        *
  * hprose socket client for Go.                           *
  *                                                        *
- * LastModified: Oct 20, 2016                             *
+ * LastModified: Oct 21, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -88,10 +88,10 @@ func (client *SocketClient) SetMaxPoolSize(size int) {
 }
 
 func (client *SocketClient) getConn() *connEntry {
-	for {
+	for client.connPool != nil {
 		select {
-		case entry, closed := <-client.connPool:
-			if !closed {
+		case entry, ok := <-client.connPool:
+			if !ok {
 				panic(errClientIsAlreadyClosed)
 			}
 			if entry.timer != nil {
@@ -105,9 +105,10 @@ func (client *SocketClient) getConn() *connEntry {
 			return nil
 		}
 	}
+	panic(errClientIsAlreadyClosed)
 }
 
-func (client *SocketClient) fetchConn(fullDuplex bool) *connEntry {
+func (client *SocketClient) fetchConn() *connEntry {
 	client.cond.L.Lock()
 	for {
 		entry := client.getConn()
@@ -117,8 +118,7 @@ func (client *SocketClient) fetchConn(fullDuplex bool) *connEntry {
 		}
 		if int(atomic.AddInt32(&client.connCount, 1)) <= cap(client.connPool) {
 			client.cond.L.Unlock()
-			entry := &connEntry{conn: client.createConn()}
-			return entry
+			return &connEntry{conn: client.createConn()}
 		}
 		atomic.AddInt32(&client.connCount, -1)
 		client.cond.Wait()
@@ -133,7 +133,20 @@ func ifErrorPanic(err error) {
 
 // Close the client
 func (client *SocketClient) Close() {
-	close(client.connPool)
+	if client.connPool != nil {
+		connPool := client.connPool
+		client.connPool = nil
+		client.connCount = 0
+		close(connPool)
+		for entry := range connPool {
+			if entry.timer != nil {
+				entry.timer.Stop()
+			}
+			if entry.conn != nil {
+				entry.conn.Close()
+			}
+		}
+	}
 }
 
 func (client *SocketClient) close(conn net.Conn) {
@@ -143,7 +156,7 @@ func (client *SocketClient) close(conn net.Conn) {
 
 func (client *SocketClient) sendAndReceive(
 	data []byte, context *ClientContext) ([]byte, error) {
-	entry := client.fetchConn(false)
+	entry := client.fetchConn()
 	conn := entry.conn
 	err := conn.SetDeadline(time.Now().Add(context.Timeout))
 	if err == nil {
