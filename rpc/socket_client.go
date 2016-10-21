@@ -22,13 +22,17 @@ package rpc
 import (
 	"crypto/tls"
 	"net"
+	"time"
 )
 
 type socketTransport interface {
+	IdleTimeout() time.Duration
+	SetIdleTimeout(timeout time.Duration)
 	MaxPoolSize() int
 	SetMaxPoolSize(size int)
-	sendAndReceive(data []byte, context *ClientContext) ([]byte, error)
 	setCreateConn(createConn func() net.Conn)
+	sendAndReceive(data []byte, context *ClientContext) ([]byte, error)
+	close()
 }
 
 // SocketClient is base struct for TCPClient and UnixClient
@@ -57,4 +61,9 @@ func (client *SocketClient) TLSClientConfig() *tls.Config {
 // SetTLSClientConfig sets the tls.Config
 func (client *SocketClient) SetTLSClientConfig(config *tls.Config) {
 	client.TLSConfig = config
+}
+
+// Close the client
+func (client *SocketClient) Close() {
+	client.socketTransport.close()
 }

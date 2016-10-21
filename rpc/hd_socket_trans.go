@@ -122,8 +122,7 @@ func (hd *halfDuplexSocketTransport) fetchConn() *halfDuplexConnEntry {
 	}
 }
 
-// Close the client
-func (hd *halfDuplexSocketTransport) Close() {
+func (hd *halfDuplexSocketTransport) close() {
 	if hd.connPool != nil {
 		connPool := hd.connPool
 		hd.connPool = nil
@@ -140,7 +139,7 @@ func (hd *halfDuplexSocketTransport) Close() {
 	}
 }
 
-func (hd *halfDuplexSocketTransport) close(conn net.Conn) {
+func (hd *halfDuplexSocketTransport) closeConn(conn net.Conn) {
 	conn.Close()
 	atomic.AddInt32(&hd.connCount, -1)
 }
@@ -160,14 +159,14 @@ func (hd *halfDuplexSocketTransport) sendAndReceive(
 		err = conn.SetDeadline(time.Time{})
 	}
 	if err != nil {
-		hd.close(conn)
+		hd.closeConn(conn)
 		hd.cond.Signal()
 		return nil, err
 	}
 	if hd.idleTimeout > 0 {
 		if entry.timer == nil {
 			entry.timer = time.AfterFunc(hd.idleTimeout, func() {
-				hd.close(conn)
+				hd.closeConn(conn)
 				entry.conn = nil
 				entry.timer = nil
 			})
