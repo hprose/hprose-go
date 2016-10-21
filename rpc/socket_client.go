@@ -51,7 +51,7 @@ func (client *SocketClient) initSocketClient() {
 	client.initBaseClient()
 	client.ReadBuffer = 0
 	client.WriteBuffer = 0
-	client.IdleTimeout = 30 * time.Second
+	client.IdleTimeout = 0
 	client.TLSConfig = nil
 	client.connPool = make(chan *connEntry, runtime.NumCPU())
 	client.connCount = 0
@@ -173,14 +173,16 @@ func (client *SocketClient) sendAndReceive(
 		client.cond.Signal()
 		return nil, err
 	}
-	if entry.timer == nil {
-		entry.timer = time.AfterFunc(client.IdleTimeout, func() {
-			client.close(conn)
-			entry.conn = nil
-			entry.timer = nil
-		})
-	} else {
-		entry.timer.Reset(client.IdleTimeout)
+	if client.IdleTimeout > 0 {
+		if entry.timer == nil {
+			entry.timer = time.AfterFunc(client.IdleTimeout, func() {
+				client.close(conn)
+				entry.conn = nil
+				entry.timer = nil
+			})
+		} else {
+			entry.timer.Reset(client.IdleTimeout)
+		}
 	}
 	client.connPool <- entry
 	client.cond.Signal()

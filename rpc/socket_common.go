@@ -22,7 +22,6 @@ package rpc
 import (
 	"io"
 	"net"
-	"runtime"
 	"time"
 )
 
@@ -48,28 +47,19 @@ func fromUint32(b []byte, i uint32) {
 	b[3] = byte(i)
 }
 
-var bufferPool = make(chan []byte, runtime.NumCPU()*2)
-
-func acquireBuffer() (buf []byte) {
-	select {
-	case buf = <-bufferPool:
-		return
-	default:
-		return make([]byte, 2048)
-	}
-}
-
-func releaseBuffer(buf []byte) {
-	select {
-	case bufferPool <- buf:
-	default:
-	}
-}
-
 func serverSendData(writer io.Writer, data packet) (err error) {
 	n := len(data.body)
 	i := 4
-	buf := acquireBuffer()
+	var len int
+	switch {
+	case n > 1016 && n <= 1400:
+		len = 2048
+	case n > 504:
+		len = 1024
+	default:
+		len = 512
+	}
+	buf := make([]byte, len)
 	if data.fullDuplex {
 		fromUint32(buf, uint32(n|0x80000000))
 		buf[4] = data.id[0]
@@ -80,15 +70,13 @@ func serverSendData(writer io.Writer, data packet) (err error) {
 	} else {
 		fromUint32(buf, uint32(n))
 	}
-	p := 2048 - i
+	p := len - i
 	if n <= p {
 		copy(buf[i:], data.body)
 		_, err = writer.Write(buf[:n+i])
-		releaseBuffer(buf)
 	} else {
 		copy(buf[i:], data.body[:p])
 		_, err = writer.Write(buf)
-		releaseBuffer(buf)
 		if err != nil {
 			return err
 		}
@@ -124,17 +112,24 @@ func serverRecvData(reader io.Reader, data *packet) (err error) {
 func clientSendData(writer io.Writer, data []byte) (err error) {
 	n := len(data)
 	const i = 4
-	buf := acquireBuffer()
+	var len int
+	switch {
+	case n > 1020 && n <= 1400:
+		len = 2048
+	case n > 508:
+		len = 1024
+	default:
+		len = 512
+	}
+	buf := make([]byte, len)
 	fromUint32(buf, uint32(n))
-	p := 2048 - i
+	p := len - i
 	if n <= p {
 		copy(buf[i:], data)
 		_, err = writer.Write(buf[:n+i])
-		releaseBuffer(buf)
 	} else {
 		copy(buf[i:], data[:p])
 		_, err = writer.Write(buf)
-		releaseBuffer(buf)
 		if err != nil {
 			return err
 		}
