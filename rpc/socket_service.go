@@ -12,7 +12,7 @@
  *                                                        *
  * hprose socket service for Go.                          *
  *                                                        *
- * LastModified: Oct 20, 2016                             *
+ * LastModified: Oct 21, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -157,7 +157,7 @@ func (handler *connHandler) serve(service *SocketService) {
 	reader := bufio.NewReader(handler.conn)
 	var data packet
 	for {
-		if err := serverRecvData(reader, &data); err != nil {
+		if err := recvData(reader, &data); err != nil {
 			break
 		}
 		if data.fullDuplex {
@@ -176,7 +176,7 @@ func (handler *connHandler) handle(service *SocketService, data packet) {
 	if data.fullDuplex {
 		handler.Lock()
 	}
-	err := serverSendData(handler.conn, data)
+	err := sendData(handler.conn, data)
 	if data.fullDuplex {
 		handler.Unlock()
 	}

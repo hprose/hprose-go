@@ -42,7 +42,7 @@ func NewTCPClient(uri ...string) (client *TCPClient) {
 	client.Linger = -1
 	client.NoDelay = true
 	client.KeepAlive = true
-	client.createConn = client.createTCPConn
+	client.setCreateConn(client.createTCPConn)
 	client.SetURIList(uri)
 	return
 }

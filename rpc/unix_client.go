@@ -34,7 +34,7 @@ type UnixClient struct {
 func NewUnixClient(uri ...string) (client *UnixClient) {
 	client = new(UnixClient)
 	client.initSocketClient()
-	client.createConn = client.createUnixConn
+	client.setCreateConn(client.createUnixConn)
 	client.SetURIList(uri)
 	return
 }

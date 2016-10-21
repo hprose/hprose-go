@@ -12,7 +12,7 @@
  *                                                        *
  * hprose socket common for Go.                           *
  *                                                        *
- * LastModified: Oct 20, 2016                             *
+ * LastModified: Oct 21, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -36,6 +36,12 @@ type socketResponse struct {
 	err  error
 }
 
+func ifErrorPanic(err error) {
+	if err != nil {
+		panic(err)
+	}
+}
+
 func toUint32(b []byte) uint32 {
 	return uint32(b[0])<<24 | uint32(b[1])<<16 | uint32(b[2])<<8 | uint32(b[3])
 }
@@ -47,7 +53,7 @@ func fromUint32(b []byte, i uint32) {
 	b[3] = byte(i)
 }
 
-func serverSendData(writer io.Writer, data packet) (err error) {
+func sendData(writer io.Writer, data packet) (err error) {
 	n := len(data.body)
 	i := 4
 	var len int
@@ -85,7 +91,7 @@ func serverSendData(writer io.Writer, data packet) (err error) {
 	return err
 }
 
-func serverRecvData(reader io.Reader, data *packet) (err error) {
+func recvData(reader io.Reader, data *packet) (err error) {
 	header := data.id[:]
 	if _, err = reader.Read(header); err != nil {
 		return
@@ -109,7 +115,7 @@ func serverRecvData(reader io.Reader, data *packet) (err error) {
 	return
 }
 
-func clientSendData(writer io.Writer, data []byte) (err error) {
+func hdSendData(writer io.Writer, data []byte) (err error) {
 	n := len(data)
 	const i = 4
 	var len int
@@ -138,7 +144,7 @@ func clientSendData(writer io.Writer, data []byte) (err error) {
 	return err
 }
 
-func clientRecvData(reader io.Reader, buf []byte) (data []byte, err error) {
+func hdRecvData(reader io.Reader, buf []byte) (data []byte, err error) {
 	var header [4]byte
 	if _, err = reader.Read(header[:]); err != nil {
 		return
