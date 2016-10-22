@@ -12,7 +12,7 @@
  *                                                        *
  * hprose rpc client for Go.                              *
  *                                                        *
- * LastModified: Oct 15, 2016                             *
+ * LastModified: Oct 22, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -73,7 +73,8 @@ type Client interface {
 	Invoke(string, []reflect.Value, *InvokeSettings) ([]reflect.Value, error)
 	Go(string, []reflect.Value, Callback, *InvokeSettings)
 	Close()
-	ID() (string, error)
+	AutoID() (string, error)
+	ID() string
 	Subscribe(name string, id string, settings *InvokeSettings, callback interface{}) (err error)
 	Unsubscribe(name string, id ...string)
 	IsSubscribed(name string) bool

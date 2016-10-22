@@ -12,7 +12,7 @@
  *                                                        *
  * hprose rpc base client for Go.                         *
  *                                                        *
- * LastModified: Oct 19, 2016                             *
+ * LastModified: Oct 22, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -798,8 +798,9 @@ var autoIDSettings = InvokeSettings{
 	ResultTypes: []reflect.Type{stringType},
 }
 
-// ID returns the auto id of this hprose client
-func (client *baseClient) ID() (string, error) {
+// AutoID returns the auto id of this hprose client.
+// If the id is not initialized, it be initialized and returned.
+func (client *baseClient) AutoID() (string, error) {
 	client.topicManager.locker.RLock()
 	if client.id != "" {
 		client.topicManager.locker.RUnlock()
@@ -817,6 +818,12 @@ func (client *baseClient) ID() (string, error) {
 	}
 	client.id = results[0].String()
 	return client.id, nil
+}
+
+// ID returns the auto id of this hprose client.
+// If the id is not initialized, return empty string.
+func (client *baseClient) ID() string {
+	return client.id
 }
 
 func (client *baseClient) processCallback(
