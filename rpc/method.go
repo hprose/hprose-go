@@ -12,7 +12,7 @@
  *                                                        *
  * hprose method manager for Go.                          *
  *                                                        *
- * LastModified: Oct 20, 2016                             *
+ * LastModified: Oct 21, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -341,13 +341,16 @@ func (mm *methodManager) addNetRPCMethod(
 	name string, method reflect.Value, options Options) {
 	ft := method.Type()
 	if ft.NumIn() != 2 || ft.IsVariadic() {
-		panic("the method " + name + " must has two arguments")
+		// panic("the method " + name + " must has two arguments")
+		return
 	}
 	if ft.In(1).Kind() != reflect.Ptr {
-		panic("the second argument of method " + name + " must be a pointer")
+		// panic("the second argument of method " + name + " must be a pointer")
+		return
 	}
 	if ft.NumOut() != 1 || ft.Out(0) != errorType {
-		panic("the result type of method " + name + " must be error")
+		// panic("the result type of method " + name + " must be error")
+		return
 	}
 	argsType := ft.In(0)
 	resultType := ft.In(1).Elem()
