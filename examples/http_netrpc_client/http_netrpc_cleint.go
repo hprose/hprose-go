@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/hprose/hprose-golang/rpc"
 )
@@ -31,12 +30,14 @@ func main() {
 	var stub *Stub
 	client.UseService(&stub)
 	fmt.Println(stub.Multiply(&Args{8, 7}))
+	done := make(chan struct{})
 	stub.Divide(func(result *Quotient, err error) {
 		if err != nil {
 			log.Fatal("arith error:", err)
 		} else {
 			fmt.Println(result.Quo, result.Rem)
 		}
+		done <- struct{}{}
 	}, &Args{8, 7})
-	time.Sleep(1 * time.Second)
+	<-done
 }
