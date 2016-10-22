@@ -876,7 +876,7 @@ func (client *baseClient) Subscribe(
 	name string, id string,
 	settings *InvokeSettings, callback interface{}) (err error) {
 	if id == "" {
-		id, err = client.ID()
+		id, err = client.AutoID()
 		if err != nil {
 			return err
 		}
