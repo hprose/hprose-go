@@ -12,7 +12,7 @@
  *                                                        *
  * hprose writer test for Go.                             *
  *                                                        *
- * LastModified: Sep 16, 2016                             *
+ * LastModified: Oct 22, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -1142,9 +1142,9 @@ func TestSerializeStruct(t *testing.T) {
 	st.Age = &age
 	st.OOXX = false
 	st.Test.ID = 200
-	Register(reflect.TypeOf((*TestStruct)(nil)), "Test", "hprose")
-	Register(reflect.TypeOf((*TestStruct1)(nil)), "Test1", "hprose")
-	Register(reflect.TypeOf((*TestStruct2)(nil)), "Test2", "hprose")
+	Register((*TestStruct)(nil), "Test", "hprose")
+	Register((*TestStruct1)(nil), "Test1", "hprose")
+	Register((*TestStruct2)(nil), "Test2", "hprose")
 	w := NewWriter(false)
 	w.Serialize(st)
 	s := `c5"Test2"6{s4"ooxx"s11"testStruct2"s2"id"s4"name"s3"age"s4"test"}o0{fo0{fr7;i100;s3"Tom"i18;c4"Test"1{s2"id"}o1{i200;}}i100;s3"Tom"i18;o1{i200;}}`
@@ -1177,9 +1177,9 @@ func BenchmarkSerializeStruct(b *testing.B) {
 	st.Age = &age
 	st.OOXX = false
 	st.Test.ID = 200
-	Register(reflect.TypeOf((*TestStruct)(nil)), "Test", "hprose")
-	Register(reflect.TypeOf((*TestStruct1)(nil)), "Test1", "hprose")
-	Register(reflect.TypeOf((*TestStruct2)(nil)), "Test2", "hprose")
+	Register((*TestStruct)(nil), "Test", "hprose")
+	Register((*TestStruct1)(nil), "Test1", "hprose")
+	Register((*TestStruct2)(nil), "Test2", "hprose")
 	w := NewWriter(false)
 	for i := 0; i < b.N; i++ {
 		w.Serialize(st)

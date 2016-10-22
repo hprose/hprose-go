@@ -12,7 +12,7 @@
  *                                                        *
  * hprose struct encoder for Go.                          *
  *                                                        *
- * LastModified: Oct 15, 2015                             *
+ * LastModified: Oct 22, 2015                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -160,8 +160,9 @@ func getStructCache(structType reflect.Type) *structCache {
 	return cache
 }
 
-// Register structType with alias & tag.
-func Register(structType reflect.Type, alias string, tag ...string) {
+// Register the type of the proto with alias & tag.
+func Register(proto interface{}, alias string, tag ...string) {
+	structType := reflect.TypeOf(proto)
 	if structType.Kind() == reflect.Ptr {
 		structType = structType.Elem()
 	}
