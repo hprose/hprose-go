@@ -19,7 +19,8 @@ func newHproseProxy() *HproseProxy {
 }
 
 // MissingMethod ...
-func (proxy *HproseProxy) MissingMethod(name string, args []reflect.Value, context rpc.Context) []reflect.Value {
+func (proxy *HproseProxy) MissingMethod(
+	name string, args []reflect.Value, context rpc.Context) []reflect.Value {
 	result, err := proxy.client.Invoke(name, args, &rpc.InvokeSettings{
 		Mode:        rpc.Raw,
 		ResultTypes: []reflect.Type{reflect.TypeOf((*interface{})(nil)).Elem()},
