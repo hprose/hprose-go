@@ -311,7 +311,7 @@ func (mm *methodManager) AddMissingMethod(
 //		var methods = ['multiply', 'divide'];
 //		var client = hprose.Client.create('http://127.0.0.1:8080/', methods);
 //		// The first letter of the field name is convert to lowercase.
-//      client.multiply({a:8, b:7}).then(function(product) {
+//		client.multiply({a:8, b:7}).then(function(product) {
 //			return client.divide({a:product, b:6});
 //		}).then(function(quotient) {
 //			// The first letter of the field name is convert to lowercase.
