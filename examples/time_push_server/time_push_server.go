@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"runtime"
 	"time"
 
 	"github.com/hprose/hprose-golang/rpc"
@@ -19,7 +18,6 @@ func (event) OnUnsubscribe(topic string, id string, service rpc.Service) {
 }
 
 func main() {
-	runtime.GOMAXPROCS(runtime.NumCPU())
 	server := rpc.NewTCPServer("tcp4://0.0.0.0:2016/")
 	server.Publish("time", 0, 0)
 	server.Event = event{}

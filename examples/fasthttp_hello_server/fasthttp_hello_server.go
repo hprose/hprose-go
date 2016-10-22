@@ -1,8 +1,6 @@
 package main
 
 import (
-	"runtime"
-
 	"github.com/hprose/hprose-golang/rpc"
 	"github.com/valyala/fasthttp"
 )
@@ -25,7 +23,6 @@ func (Service) Sum(a ...int) int {
 }
 
 func main() {
-	runtime.GOMAXPROCS(runtime.NumCPU())
 	service := rpc.NewFastHTTPService()
 	service.Debug = true
 	service.AddInstanceMethods(Service{}, rpc.Options{})
