@@ -9,7 +9,7 @@ import (
 func main() {
 	client := rpc.NewTCPClient("tcp4://127.0.0.1:2016/")
 	count := 0
-	id, _ := client.ID()
+	id, _ := client.AutoID()
 	done := make(chan bool)
 	client.Subscribe("time", id, nil, func(data string) {
 		count++
