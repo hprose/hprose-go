@@ -44,6 +44,6 @@ func main() {
 	foobar := &Foobar{}
 	foobar.BarField = new(Bar)
 	foobar.BarField.FuncB = func() {}
-	service.AddAllMethods(foobar, rpc.Options{})
+	service.AddAllMethods(foobar)
 	http.ListenAndServe(":8080", service)
 }

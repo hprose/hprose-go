@@ -86,32 +86,32 @@ func (service *baseService) initBaseService() {
 // name is the method name
 // function is a func or bound method
 // options includes Mode, Simple, Oneway and NameSpace
-func (service *baseService) AddFunction(name string, function interface{}, options Options) Service {
-	service.methodManager.AddFunction(name, function, options)
+func (service *baseService) AddFunction(name string, function interface{}, option ...Options) Service {
+	service.methodManager.AddFunction(name, function, option...)
 	return service
 }
 
 // AddFunctions is used for batch publishing service method
-func (service *baseService) AddFunctions(names []string, functions []interface{}, options Options) Service {
-	service.methodManager.AddFunctions(names, functions, options)
+func (service *baseService) AddFunctions(names []string, functions []interface{}, option ...Options) Service {
+	service.methodManager.AddFunctions(names, functions, option...)
 	return service
 }
 
 // AddMethod is used for publishing a method on the obj with an alias
-func (service *baseService) AddMethod(name string, obj interface{}, options Options, alias ...string) Service {
-	service.methodManager.AddMethod(name, obj, options, alias...)
+func (service *baseService) AddMethod(name string, obj interface{}, alias string, option ...Options) Service {
+	service.methodManager.AddMethod(name, obj, alias, option...)
 	return service
 }
 
 // AddMethods is used for batch publishing methods on the obj with aliases
-func (service *baseService) AddMethods(names []string, obj interface{}, options Options, aliases ...[]string) Service {
-	service.methodManager.AddMethods(names, obj, options, aliases...)
+func (service *baseService) AddMethods(names []string, obj interface{}, aliases []string, option ...Options) Service {
+	service.methodManager.AddMethods(names, obj, aliases, option...)
 	return service
 }
 
 // AddInstanceMethods is used for publishing all the public methods and func fields with options.
-func (service *baseService) AddInstanceMethods(obj interface{}, options Options) Service {
-	service.methodManager.AddInstanceMethods(obj, options)
+func (service *baseService) AddInstanceMethods(obj interface{}, option ...Options) Service {
+	service.methodManager.AddInstanceMethods(obj, option...)
 	return service
 }
 
@@ -119,21 +119,21 @@ func (service *baseService) AddInstanceMethods(obj interface{}, options Options)
 // obj self and on its anonymous or non-anonymous struct fields (or pointer to
 // pointer ... to pointer struct fields). This is a recursive operation.
 // So it's a pit, if you do not know what you are doing, do not step on.
-func (service *baseService) AddAllMethods(obj interface{}, options Options) Service {
-	service.methodManager.AddAllMethods(obj, options)
+func (service *baseService) AddAllMethods(obj interface{}, option ...Options) Service {
+	service.methodManager.AddAllMethods(obj, option...)
 	return service
 }
 
 // AddMissingMethod is used for publishing a method,
 // all methods not explicitly published will be redirected to this method.
-func (service *baseService) AddMissingMethod(method MissingMethod, options Options) Service {
-	service.methodManager.AddMissingMethod(method, options)
+func (service *baseService) AddMissingMethod(method MissingMethod, option ...Options) Service {
+	service.methodManager.AddMissingMethod(method, option...)
 	return service
 }
 
 // AddNetRPCMethods is used for publishing methods defined for net/rpc.
-func (service *baseService) AddNetRPCMethods(rcvr interface{}, options Options) Service {
-	service.methodManager.AddNetRPCMethods(rcvr, options)
+func (service *baseService) AddNetRPCMethods(rcvr interface{}, option ...Options) Service {
+	service.methodManager.AddNetRPCMethods(rcvr, option...)
 	return service
 }
 

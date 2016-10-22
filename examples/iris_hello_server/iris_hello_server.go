@@ -11,7 +11,7 @@ func hello(name string) string {
 
 func main() {
 	service := rpc.NewFastHTTPService()
-	service.AddFunction("hello", hello, rpc.Options{})
+	service.AddFunction("hello", hello)
 	iris.Any("/hello", func(c *iris.Context) {
 		service.ServeFastHTTP(c.RequestCtx)
 	})

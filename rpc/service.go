@@ -12,7 +12,7 @@
  *                                                        *
  * hprose service for Go.                                 *
  *                                                        *
- * LastModified: Sep 23, 2016                             *
+ * LastModified: Oct 23, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -23,14 +23,14 @@ import "time"
 
 // Service interface
 type Service interface {
-	AddFunction(name string, function interface{}, options Options) Service
-	AddFunctions(names []string, functions []interface{}, options Options) Service
-	AddMethod(name string, obj interface{}, options Options, alias ...string) Service
-	AddMethods(names []string, obj interface{}, options Options, aliases ...[]string) Service
-	AddInstanceMethods(obj interface{}, options Options) Service
-	AddAllMethods(obj interface{}, options Options) Service
-	AddMissingMethod(method MissingMethod, options Options) Service
-	AddNetRPCMethods(rcvr interface{}, options Options) Service
+	AddFunction(name string, function interface{}, option ...Options) Service
+	AddFunctions(names []string, functions []interface{}, option ...Options) Service
+	AddMethod(name string, obj interface{}, alias string, option ...Options) Service
+	AddMethods(names []string, obj interface{}, aliases []string, option ...Options) Service
+	AddInstanceMethods(obj interface{}, option ...Options) Service
+	AddAllMethods(obj interface{}, option ...Options) Service
+	AddMissingMethod(method MissingMethod, option ...Options) Service
+	AddNetRPCMethods(rcvr interface{}, option ...Options) Service
 	Remove(name string) Service
 	Filter() Filter
 	FilterByIndex(index int) Filter

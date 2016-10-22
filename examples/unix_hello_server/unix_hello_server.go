@@ -8,6 +8,6 @@ func hello(name string) string {
 
 func main() {
 	server := rpc.NewUnixServer("unix:/tmp/my.sock")
-	server.AddFunction("hello", hello, rpc.Options{})
+	server.AddFunction("hello", hello)
 	server.Start()
 }

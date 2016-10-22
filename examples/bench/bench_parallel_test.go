@@ -17,7 +17,7 @@ import (
 func BenchmarkParallelHprose2(b *testing.B) {
 	b.StopTimer()
 	server := hproserpc.NewTCPServer("")
-	server.AddFunction("hello", hello, hproserpc.Options{})
+	server.AddFunction("hello", hello)
 	server.Handle()
 	client := hproserpc.NewClient(server.URI())
 	var ro *RO
@@ -37,7 +37,7 @@ func BenchmarkParallelHprose2(b *testing.B) {
 func BenchmarkParallelHprose2Unix(b *testing.B) {
 	b.StopTimer()
 	server := hproserpc.NewUnixServer("")
-	server.AddFunction("hello", hello, hproserpc.Options{})
+	server.AddFunction("hello", hello)
 	server.Handle()
 	client := hproserpc.NewClient(server.URI())
 	var ro *RO

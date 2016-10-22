@@ -38,6 +38,6 @@ func (t *Arith) Divide(args *Args, quo *Quotient) error {
 
 func main() {
 	service := rpc.NewHTTPService()
-	service.AddNetRPCMethods(new(Arith), rpc.Options{})
+	service.AddNetRPCMethods(new(Arith))
 	http.ListenAndServe(":8080", service)
 }

@@ -12,6 +12,6 @@ func hello(name string) string {
 
 func main() {
 	service := rpc.NewHTTPService()
-	service.AddFunction("hello", hello, rpc.Options{})
+	service.AddFunction("hello", hello)
 	http.ListenAndServe(":8080", service)
 }

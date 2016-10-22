@@ -25,7 +25,6 @@ func (Service) Sum(a ...int) int {
 func main() {
 	service := rpc.NewFastHTTPService()
 	service.Debug = true
-	service.AddInstanceMethods(Service{}, rpc.Options{})
-	//	service.AddFunction("hello", hello, rpc.Options{})
+	service.AddInstanceMethods(Service{})
 	fasthttp.ListenAndServe(":8080", service.ServeFastHTTP)
 }

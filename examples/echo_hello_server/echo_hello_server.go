@@ -12,7 +12,7 @@ func hello(name string) string {
 
 func main() {
 	service := rpc.NewHTTPService()
-	service.AddFunction("hello", hello, rpc.Options{})
+	service.AddFunction("hello", hello)
 	e := echo.New()
 	e.Any("/hello", standard.WrapHandler(service))
 	e.Run(standard.New(":8080"))

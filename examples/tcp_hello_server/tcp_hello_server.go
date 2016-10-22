@@ -8,6 +8,6 @@ func hello(name string) string {
 
 func main() {
 	server := rpc.NewTCPServer("tcp4://0.0.0.0:4321/")
-	server.AddFunction("hello", hello, rpc.Options{})
+	server.AddFunction("hello", hello)
 	server.Start()
 }

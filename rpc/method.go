@@ -12,7 +12,7 @@
  *                                                        *
  * hprose method manager for Go.                          *
  *                                                        *
- * LastModified: Oct 21, 2016                             *
+ * LastModified: Oct 23, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -55,9 +55,9 @@ func (mm *methodManager) initMethodManager() {
 // AddFunction publish a func or bound method
 // name is the method name
 // function is a func or bound method
-// options includes Mode, Simple, Oneway and NameSpace
+// option includes Mode, Simple, Oneway and NameSpace
 func (mm *methodManager) AddFunction(
-	name string, function interface{}, options Options) {
+	name string, function interface{}, option ...Options) {
 	if name == "" {
 		panic("name can't be empty")
 	}
@@ -70,6 +70,10 @@ func (mm *methodManager) AddFunction(
 	}
 	if f.Kind() != reflect.Func {
 		panic("function must be func or bound method")
+	}
+	var options Options
+	if len(option) > 0 {
+		options = option[0]
 	}
 	if options.NameSpace != "" && name != "*" {
 		name = options.NameSpace + "_" + name
@@ -84,60 +88,60 @@ func (mm *methodManager) AddFunction(
 
 // AddFunctions is used for batch publishing service method
 func (mm *methodManager) AddFunctions(
-	names []string, functions []interface{}, options Options) {
+	names []string, functions []interface{}, option ...Options) {
 	count := len(names)
 	if count != len(functions) {
 		panic("names and functions must have the same length")
 	}
 	for i := 0; i < count; i++ {
-		mm.AddFunction(names[i], functions[i], options)
+		mm.AddFunction(names[i], functions[i], option...)
 	}
 }
 
 // AddMethod is used for publishing a method on the obj with an alias
 func (mm *methodManager) AddMethod(
-	name string, obj interface{}, options Options, alias ...string) {
+	name string, obj interface{}, alias string, option ...Options) {
 	if obj == nil {
 		panic("obj can't be nil")
 	}
 	f := reflect.ValueOf(obj).MethodByName(name)
-	if len(alias) == 1 && alias[0] != "" {
-		name = alias[0]
+	if alias != "" {
+		name = alias
 	}
 	if f.CanInterface() {
-		mm.AddFunction(name, f, options)
+		mm.AddFunction(name, f, option...)
 	}
 }
 
 // AddMethods is used for batch publishing methods on the obj with aliases
 func (mm *methodManager) AddMethods(
-	names []string, obj interface{}, options Options, aliases ...[]string) {
+	names []string, obj interface{}, aliases []string, option ...Options) {
 	if obj == nil {
 		panic("obj can't be nil")
 	}
 	count := len(names)
-	if len(aliases) == 1 {
-		if len(aliases[0]) != count {
-			panic("names and aliases must have the same length")
-		}
+	if aliases == nil {
 		for i := 0; i < count; i++ {
-			mm.AddMethod(names[i], obj, options, aliases[0][i])
+			mm.AddMethod(names[i], obj, "", option...)
 		}
 		return
 	}
+	if len(aliases) != count {
+		panic("names and aliases must have the same length")
+	}
 	for i := 0; i < count; i++ {
-		mm.AddMethod(names[i], obj, options)
+		mm.AddMethod(names[i], obj, aliases[i], option...)
 	}
 }
 
 func (mm *methodManager) addMethods(
-	v reflect.Value, t reflect.Type, options Options) {
+	v reflect.Value, t reflect.Type, option ...Options) {
 	n := t.NumMethod()
 	for i := 0; i < n; i++ {
 		name := t.Method(i).Name
 		method := v.Method(i)
 		if method.CanInterface() {
-			mm.AddFunction(name, method, options)
+			mm.AddFunction(name, method, option...)
 		}
 	}
 }
@@ -151,7 +155,7 @@ func getPtrTo(v reflect.Value, t reflect.Type, kind reflect.Kind) (reflect.Value
 }
 
 func (mm *methodManager) addFuncField(
-	v reflect.Value, t reflect.Type, i int, options Options) {
+	v reflect.Value, t reflect.Type, i int, option ...Options) {
 	f := v.Field(i)
 	name := t.Field(i).Name
 	if !f.CanInterface() || !f.IsValid() {
@@ -159,12 +163,12 @@ func (mm *methodManager) addFuncField(
 	}
 	f, _ = getPtrTo(f, f.Type(), reflect.Func)
 	if f.Kind() == reflect.Func && !f.IsNil() {
-		mm.AddFunction(name, f, options)
+		mm.AddFunction(name, f, option...)
 	}
 }
 
 func (mm *methodManager) recursiveAddFuncFields(
-	v reflect.Value, t reflect.Type, i int, options Options) {
+	v reflect.Value, t reflect.Type, i int, option ...Options) {
 	f := v.Field(i)
 	fs := t.Field(i)
 	name := fs.Name
@@ -179,13 +183,16 @@ func (mm *methodManager) recursiveAddFuncFields(
 		}
 	}
 	if f.Kind() == reflect.Func {
-		mm.AddFunction(name, f, options)
+		mm.AddFunction(name, f, option...)
 		return
 	}
 	if fs.Anonymous {
-		mm.AddAllMethods(f.Interface(), options)
+		mm.AddAllMethods(f.Interface(), option...)
 	} else {
-		newOptions := options
+		var newOptions Options
+		if len(option) > 1 {
+			newOptions = option[0]
+		}
 		if newOptions.NameSpace == "" {
 			newOptions.NameSpace = name
 		} else {
@@ -199,29 +206,29 @@ type addFuncFunc func(
 	v reflect.Value,
 	t reflect.Type,
 	i int,
-	options Options)
+	option ...Options)
 
 func (mm *methodManager) addInstanceMethods(
-	obj interface{}, options Options, addFunc addFuncFunc) {
+	obj interface{}, addFunc addFuncFunc, option ...Options) {
 	if obj == nil {
 		panic("obj can't be nil")
 	}
 	v := reflect.ValueOf(obj)
 	t := v.Type()
-	mm.addMethods(v, t, options)
+	mm.addMethods(v, t, option...)
 	v, t = getPtrTo(v, t, reflect.Struct)
 	if t.Kind() == reflect.Struct {
 		n := t.NumField()
 		for i := 0; i < n; i++ {
-			addFunc(v, t, i, options)
+			addFunc(v, t, i, option...)
 		}
 	}
 }
 
 // AddInstanceMethods is used for publishing all the public methods and func fields with options.
 func (mm *methodManager) AddInstanceMethods(
-	obj interface{}, options Options) {
-	mm.addInstanceMethods(obj, options, mm.addFuncField)
+	obj interface{}, option ...Options) {
+	mm.addInstanceMethods(obj, mm.addFuncField, option...)
 }
 
 // AddAllMethods will publish all methods and non-nil function fields on the
@@ -229,8 +236,8 @@ func (mm *methodManager) AddInstanceMethods(
 // pointer ... to pointer struct fields). This is a recursive operation.
 // So it's a pit, if you do not know what you are doing, do not step on.
 func (mm *methodManager) AddAllMethods(
-	obj interface{}, options Options) {
-	mm.addInstanceMethods(obj, options, mm.recursiveAddFuncFields)
+	obj interface{}, option ...Options) {
+	mm.addInstanceMethods(obj, mm.recursiveAddFuncFields, option...)
 }
 
 // MissingMethod is missing method
@@ -239,8 +246,8 @@ type MissingMethod func(name string, args []reflect.Value, context Context) (res
 // AddMissingMethod is used for publishing a method,
 // all methods not explicitly published will be redirected to this method.
 func (mm *methodManager) AddMissingMethod(
-	method MissingMethod, options Options) {
-	mm.AddFunction("*", method, options)
+	method MissingMethod, option ...Options) {
+	mm.AddFunction("*", method, option...)
 }
 
 // AddNetRPCMethods is used for publishing methods defined for net/rpc.
@@ -321,7 +328,7 @@ func (mm *methodManager) AddMissingMethod(
 //			console.error(err);
 //		});
 //
-func (mm *methodManager) AddNetRPCMethods(rcvr interface{}, options Options) {
+func (mm *methodManager) AddNetRPCMethods(rcvr interface{}, option ...Options) {
 	if rcvr == nil {
 		panic("rcvr can't be nil")
 	}
@@ -332,13 +339,13 @@ func (mm *methodManager) AddNetRPCMethods(rcvr interface{}, options Options) {
 		name := t.Method(i).Name
 		method := v.Method(i)
 		if method.CanInterface() {
-			mm.addNetRPCMethod(name, method, options)
+			mm.addNetRPCMethod(name, method, option...)
 		}
 	}
 }
 
 func (mm *methodManager) addNetRPCMethod(
-	name string, method reflect.Value, options Options) {
+	name string, method reflect.Value, option ...Options) {
 	ft := method.Type()
 	if ft.NumIn() != 2 || ft.IsVariadic() {
 		// panic("the method " + name + " must has two arguments")
@@ -365,7 +372,7 @@ func (mm *methodManager) addNetRPCMethod(
 		results = []reflect.Value{result.Elem(), err}
 		return
 	})
-	mm.AddFunction(name, newMethod, options)
+	mm.AddFunction(name, newMethod, option...)
 }
 
 // Remove the published func or method by name
