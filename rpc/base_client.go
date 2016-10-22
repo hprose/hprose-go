@@ -742,6 +742,7 @@ func getAsyncRemoteMethod(
 			out, err := client.Invoke(name, in, settings)
 			if hasError {
 				out = append(out, reflect.ValueOf(&err).Elem())
+				err = nil
 			}
 			defer client.fireErrorEvent(name, err)
 			callback.Call(out)
