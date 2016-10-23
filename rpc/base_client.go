@@ -273,16 +273,9 @@ func (client *baseClient) UseService(
 	client.buildRemoteService(v, ns)
 }
 
-func (client *baseClient) acquireContext() *ClientContext {
-	return client.contextPool.Get().(*ClientContext)
-}
-
-func (client *baseClient) releaseContext(context *ClientContext) {
-	client.contextPool.Put(context)
-}
-
-func (client *baseClient) initClientContext(
-	context *ClientContext, settings *InvokeSettings) {
+func (client *baseClient) getClientContext(
+	settings *InvokeSettings) (context *ClientContext) {
+	context = client.contextPool.Get().(*ClientContext)
 	context.initBaseContext()
 	context.Client = client
 	context.Retried = 0
@@ -305,6 +298,7 @@ func (client *baseClient) initClientContext(
 			context.Retry = client.retry
 		}
 	}
+	return context
 }
 
 // Invoke the remote method synchronous
@@ -312,8 +306,7 @@ func (client *baseClient) Invoke(
 	name string,
 	args []reflect.Value,
 	settings *InvokeSettings) (results []reflect.Value, err error) {
-	context := client.acquireContext()
-	client.initClientContext(context, settings)
+	context := client.getClientContext(settings)
 	results, err = client.handlerManager.invokeHandler(name, args, context)
 	if results == nil && len(context.ResultTypes) > 0 {
 		n := len(context.ResultTypes)
@@ -322,7 +315,7 @@ func (client *baseClient) Invoke(
 			results[i] = reflect.New(context.ResultTypes[i]).Elem()
 		}
 	}
-	client.releaseContext(context)
+	client.contextPool.Put(context)
 	return
 }
 
@@ -457,9 +450,8 @@ func readMultiResults(
 	return
 }
 
-func (client *baseClient) readResults(
-	reader *hio.Reader,
-	context *ClientContext) (results []reflect.Value) {
+func readResults(
+	reader *hio.Reader, context *ClientContext) (results []reflect.Value) {
 	length := len(context.ResultTypes)
 	switch length {
 	case 0:
@@ -540,7 +532,7 @@ func (client *baseClient) decode(
 	if tag == hio.TagResult {
 		switch context.Mode {
 		case Normal:
-			results = client.readResults(reader, context)
+			results = readResults(reader, context)
 		case Serialized:
 			results = make([]reflect.Value, 1)
 			results[0] = reflect.ValueOf(reader.ReadRaw())
