@@ -467,10 +467,7 @@ func readResults(
 	return
 }
 
-func (client *baseClient) readArguments(
-	reader *hio.Reader,
-	args []reflect.Value,
-	context *ClientContext) byte {
+func readArgs(reader *hio.Reader, args []reflect.Value) byte {
 	length := len(args)
 	reader.Reset()
 	reader.CheckTag(hio.TagList)
@@ -539,7 +536,7 @@ func (client *baseClient) decode(
 		}
 		tag, _ = reader.ReadByte()
 		if tag == hio.TagArgument {
-			tag = client.readArguments(reader, args, context)
+			tag = readArgs(reader, args)
 		}
 	} else if tag == hio.TagError {
 		return nil, errors.New(reader.ReadString())
