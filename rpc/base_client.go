@@ -12,7 +12,7 @@
  *                                                        *
  * hprose rpc base client for Go.                         *
  *                                                        *
- * LastModified: Oct 22, 2016                             *
+ * LastModified: Oct 24, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -260,7 +260,8 @@ func (client *baseClient) AddAfterFilterHandler(handler ...FilterHandler) Client
 }
 
 // UseService build a remote service proxy object with namespace
-func (client *baseClient) UseService(remoteService interface{}, namespace ...string) {
+func (client *baseClient) UseService(
+	remoteService interface{}, namespace ...string) {
 	ns := ""
 	if len(namespace) == 1 {
 		ns = namespace[0]
@@ -272,7 +273,7 @@ func (client *baseClient) UseService(remoteService interface{}, namespace ...str
 	client.buildRemoteService(v, ns)
 }
 
-func (client *baseClient) acquireContext() (context *ClientContext) {
+func (client *baseClient) acquireContext() *ClientContext {
 	return client.contextPool.Get().(*ClientContext)
 }
 
@@ -307,7 +308,10 @@ func (client *baseClient) initClientContext(
 }
 
 // Invoke the remote method synchronous
-func (client *baseClient) Invoke(name string, args []reflect.Value, settings *InvokeSettings) (results []reflect.Value, err error) {
+func (client *baseClient) Invoke(
+	name string,
+	args []reflect.Value,
+	settings *InvokeSettings) (results []reflect.Value, err error) {
 	context := client.acquireContext()
 	client.initClientContext(context, settings)
 	results, err = client.handlerManager.invokeHandler(name, args, context)
@@ -323,7 +327,11 @@ func (client *baseClient) Invoke(name string, args []reflect.Value, settings *In
 }
 
 // Go invoke the remote method asynchronous
-func (client *baseClient) Go(name string, args []reflect.Value, callback Callback, settings *InvokeSettings) {
+func (client *baseClient) Go(
+	name string,
+	args []reflect.Value,
+	callback Callback,
+	settings *InvokeSettings) {
 	go func() {
 		defer client.fireErrorEvent(name, nil)
 		callback(client.Invoke(name, args, settings))
@@ -358,7 +366,7 @@ func (client *baseClient) beforeFilter(
 }
 
 func (client *baseClient) afterFilter(
-	request []byte, context Context) (response []byte, err error) {
+	request []byte, context Context) ([]byte, error) {
 	return client.SendAndReceive(request, context.(*ClientContext))
 }
 
@@ -553,7 +561,7 @@ func (client *baseClient) decode(
 func (client *baseClient) invoke(
 	name string,
 	args []reflect.Value,
-	context *ClientContext) (results []reflect.Value, err error) {
+	context *ClientContext) ([]reflect.Value, error) {
 	request := client.encode(name, args, context)
 	response, err := client.sendRequest(request, context)
 	if err != nil {
