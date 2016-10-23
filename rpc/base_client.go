@@ -269,7 +269,7 @@ func (client *baseClient) UseService(remoteService interface{}, namespace ...str
 	if v.Kind() != reflect.Ptr {
 		panic("UseService: remoteService argument must be a pointer")
 	}
-	buildRemoteService(client, v, ns)
+	client.buildRemoteService(v, ns)
 }
 
 func (client *baseClient) acquireContext() (context *ClientContext) {
@@ -562,7 +562,7 @@ func (client *baseClient) invoke(
 	return client.decode(response, args, context)
 }
 
-func buildRemoteService(client *baseClient, v reflect.Value, ns string) {
+func (client *baseClient) buildRemoteService(v reflect.Value, ns string) {
 	v = v.Elem()
 	t := v.Type()
 	et := t
@@ -582,9 +582,9 @@ func buildRemoteService(client *baseClient, v reflect.Value, ns string) {
 		if f.CanSet() {
 			switch ft.Kind() {
 			case reflect.Struct:
-				buildRemoteSubService(client, f, ft, sf, ns)
+				client.buildRemoteSubService(f, ft, sf, ns)
 			case reflect.Func:
-				buildRemoteMethod(client, f, ft, sf, ns)
+				client.buildRemoteMethod(f, ft, sf, ns)
 			}
 		}
 	}
@@ -595,8 +595,8 @@ func buildRemoteService(client *baseClient, v reflect.Value, ns string) {
 	}
 }
 
-func buildRemoteSubService(client *baseClient, f reflect.Value, ft reflect.Type,
-	sf reflect.StructField, ns string) {
+func (client *baseClient) buildRemoteSubService(
+	f reflect.Value, ft reflect.Type, sf reflect.StructField, ns string) {
 	namespace := ns
 	if !sf.Anonymous {
 		if ns == "" {
@@ -606,7 +606,7 @@ func buildRemoteSubService(client *baseClient, f reflect.Value, ft reflect.Type,
 		}
 	}
 	fp := reflect.New(ft)
-	buildRemoteService(client, fp, namespace)
+	client.buildRemoteService(fp, namespace)
 	if f.Kind() == reflect.Ptr {
 		f.Set(fp)
 	} else {
@@ -717,8 +717,7 @@ func getIn(in []reflect.Value) []reflect.Value {
 	return args
 }
 
-func getSyncRemoteMethod(
-	client *baseClient,
+func (client *baseClient) getSyncRemoteMethod(
 	name string,
 	settings *InvokeSettings,
 	isVariadic, hasError bool) func(in []reflect.Value) (out []reflect.Value) {
@@ -741,8 +740,7 @@ func getSyncRemoteMethod(
 	}
 }
 
-func getAsyncRemoteMethod(
-	client *baseClient,
+func (client *baseClient) getAsyncRemoteMethod(
 	name string,
 	settings *InvokeSettings,
 	isVariadic, hasError bool) func(in []reflect.Value) (out []reflect.Value) {
@@ -765,7 +763,8 @@ func getAsyncRemoteMethod(
 	}
 }
 
-func buildRemoteMethod(client *baseClient, f reflect.Value, ft reflect.Type, sf reflect.StructField, ns string) {
+func (client *baseClient) buildRemoteMethod(
+	f reflect.Value, ft reflect.Type, sf reflect.StructField, ns string) {
 	name := getRemoteMethodName(sf, ns)
 	outTypes, hasError := getResultTypes(ft)
 	async := false
@@ -794,9 +793,9 @@ func buildRemoteMethod(client *baseClient, f reflect.Value, ft reflect.Type, sf 
 	}
 	var fn func(in []reflect.Value) (out []reflect.Value)
 	if async {
-		fn = getAsyncRemoteMethod(client, name, settings, ft.IsVariadic(), hasError)
+		fn = client.getAsyncRemoteMethod(name, settings, ft.IsVariadic(), hasError)
 	} else {
-		fn = getSyncRemoteMethod(client, name, settings, ft.IsVariadic(), hasError)
+		fn = client.getSyncRemoteMethod(name, settings, ft.IsVariadic(), hasError)
 	}
 	if f.Kind() == reflect.Ptr {
 		fp := reflect.New(ft)
