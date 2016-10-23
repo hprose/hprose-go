@@ -21,6 +21,7 @@ package rpc
 
 import (
 	"crypto/tls"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -290,6 +291,11 @@ func (client *baseClient) initClientContext(
 			Retry:   client.retry,
 		}
 	} else {
+		if settings.userData != nil {
+			for k, v := range settings.userData {
+				context.SetInterface(k, v)
+			}
+		}
 		context.InvokeSettings = *settings
 		if settings.Timeout <= 0 {
 			context.Timeout = client.timeout
@@ -652,6 +658,14 @@ func getInt64Value(tag reflect.StructTag, key string) int64 {
 	return result
 }
 
+func getUserData(tag reflect.StructTag) (userdata map[string]interface{}) {
+	value := tag.Get("userdata")
+	if value != "" {
+		json.Unmarshal([]byte(value), &userdata)
+	}
+	return
+}
+
 func getResultTypes(ft reflect.Type) ([]reflect.Type, bool) {
 	n := ft.NumOut()
 	if n == 0 {
@@ -776,6 +790,7 @@ func buildRemoteMethod(client *baseClient, f reflect.Value, ft reflect.Type, sf 
 		Mode:           getResultMode(sf.Tag),
 		Timeout:        time.Duration(getInt64Value(sf.Tag, "timeout")),
 		ResultTypes:    outTypes,
+		userData:       getUserData(sf.Tag),
 	}
 	var fn func(in []reflect.Value) (out []reflect.Value)
 	if async {

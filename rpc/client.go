@@ -12,7 +12,7 @@
  *                                                        *
  * hprose rpc client for Go.                              *
  *                                                        *
- * LastModified: Oct 22, 2016                             *
+ * LastModified: Oct 23, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -41,6 +41,12 @@ type InvokeSettings struct {
 	Mode           ResultMode
 	Timeout        time.Duration
 	ResultTypes    []reflect.Type
+	userData       map[string]interface{}
+}
+
+// SetUserData on InvokeSettings
+func (settings *InvokeSettings) SetUserData(data map[string]interface{}) {
+	settings.userData = data
 }
 
 // Callback is the callback function type of Client.Go
