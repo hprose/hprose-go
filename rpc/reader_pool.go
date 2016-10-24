@@ -25,6 +25,7 @@ import (
 	"github.com/hprose/hprose-golang/io"
 )
 
+// ReaderPool is a reader pool for hprose client & service
 type ReaderPool struct {
 	sync.Pool
 }
