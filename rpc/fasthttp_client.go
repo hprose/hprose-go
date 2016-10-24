@@ -69,6 +69,11 @@ func (client *FastHTTPClient) SetTLSClientConfig(config *tls.Config) {
 	client.TLSConfig = config
 }
 
+// KeepAlive return the keepalive status of hprose client
+func (client *FastHTTPClient) KeepAlive() bool {
+	return client.keepAlive
+}
+
 // SetKeepAlive set the keepalive status of hprose client
 func (client *FastHTTPClient) SetKeepAlive(enable bool) {
 	client.keepAlive = enable
