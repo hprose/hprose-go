@@ -12,7 +12,7 @@
  *                                                        *
  * hprose socket common for Go.                           *
  *                                                        *
- * LastModified: Oct 21, 2016                             *
+ * LastModified: Oct 24, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -23,6 +23,8 @@ import (
 	"io"
 	"net"
 	"time"
+
+	hio "github.com/hprose/hprose-golang/io"
 )
 
 type packet struct {
@@ -65,7 +67,7 @@ func sendData(writer io.Writer, data packet) (err error) {
 	default:
 		len = 512
 	}
-	buf := make([]byte, len)
+	buf := hio.AcquireBytes(len)
 	if data.fullDuplex {
 		fromUint32(buf, uint32(n|0x80000000))
 		buf[4] = data.id[0]
@@ -80,9 +82,11 @@ func sendData(writer io.Writer, data packet) (err error) {
 	if n <= p {
 		copy(buf[i:], data.body)
 		_, err = writer.Write(buf[:n+i])
+		hio.ReleaseBytes(buf)
 	} else {
 		copy(buf[i:], data.body[:p])
 		_, err = writer.Write(buf)
+		hio.ReleaseBytes(buf)
 		if err != nil {
 			return err
 		}
@@ -127,15 +131,17 @@ func hdSendData(writer io.Writer, data []byte) (err error) {
 	default:
 		len = 512
 	}
-	buf := make([]byte, len)
+	buf := hio.AcquireBytes(len)
 	fromUint32(buf, uint32(n))
 	p := len - i
 	if n <= p {
 		copy(buf[i:], data)
 		_, err = writer.Write(buf[:n+i])
+		hio.ReleaseBytes(buf)
 	} else {
 		copy(buf[i:], data[:p])
 		_, err = writer.Write(buf)
+		hio.ReleaseBytes(buf)
 		if err != nil {
 			return err
 		}

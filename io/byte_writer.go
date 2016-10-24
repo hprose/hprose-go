@@ -12,7 +12,7 @@
  *                                                        *
  * byte writer for Go.                                    *
  *                                                        *
- * LastModified: Sep 13, 2016                             *
+ * LastModified: Oct 24, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -67,8 +67,9 @@ func (w *ByteWriter) grow(n int) int {
 		if w.buf == nil && n <= len(w.bootstrap) {
 			buf = w.bootstrap[0:]
 		} else {
-			buf = make([]byte, 2*c+n)
+			buf = AcquireBytes(c + n)
 			copy(buf, w.buf[0:])
+			ReleaseBytes(w.buf)
 		}
 		w.buf = buf
 	}
