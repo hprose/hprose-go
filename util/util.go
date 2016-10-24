@@ -12,7 +12,7 @@
  *                                                        *
  * some utility functions for Go.                         *
  *                                                        *
- * LastModified: Oct 11, 2016                             *
+ * LastModified: Oct 24, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
