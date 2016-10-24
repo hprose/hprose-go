@@ -26,6 +26,7 @@ import (
 	"fmt"
 	"io"
 	"math/rand"
+	"net/url"
 	"reflect"
 	"strconv"
 	"strings"
@@ -94,6 +95,7 @@ type baseClient struct {
 	handlerManager
 	filterManager
 	topicManager
+	url            *url.URL
 	uri            string
 	uriList        []string
 	index          int32
@@ -133,6 +135,11 @@ func (client *baseClient) initBaseClient() {
 	client.allTopics = make(map[string]map[string]*clientTopic)
 }
 
+// URL returns the current hprose service address.
+func (client *baseClient) URL() url.URL {
+	return client.url
+}
+
 // URI returns the current hprose service address.
 func (client *baseClient) URI() string {
 	return client.uri
@@ -167,6 +174,7 @@ func (client *baseClient) SetURIList(uriList []string) {
 	client.index = 0
 	client.failround = 0
 	client.uri = client.uriList[0]
+	client.url, _ = url.Parse(client.uri)
 }
 
 // TLSClientConfig returns the tls config of hprose client
@@ -406,6 +414,7 @@ func (client *baseClient) failswitch() {
 		} else {
 			client.uri = client.uriList[atomic.AddInt32(&client.index, 1)]
 		}
+		client.url, _ = url.Parse(client.uri)
 	} else {
 		client.failround++
 	}

@@ -12,7 +12,7 @@
  *                                                        *
  * hprose rpc client for Go.                              *
  *                                                        *
- * LastModified: Oct 23, 2016                             *
+ * LastModified: Oct 24, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -54,6 +54,7 @@ type Callback func([]reflect.Value, error)
 
 // Client is hprose client
 type Client interface {
+	URL() url.URL
 	URI() string
 	SetURI(uri string)
 	URIList() []string
