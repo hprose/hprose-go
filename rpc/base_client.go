@@ -136,7 +136,7 @@ func (client *baseClient) initBaseClient() {
 }
 
 // URL returns the current hprose service address.
-func (client *baseClient) URL() url.URL {
+func (client *baseClient) URL() *url.URL {
 	return client.url
 }
 

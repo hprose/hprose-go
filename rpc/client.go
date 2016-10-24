@@ -54,7 +54,7 @@ type Callback func([]reflect.Value, error)
 
 // Client is hprose client
 type Client interface {
-	URL() url.URL
+	URL() *url.URL
 	URI() string
 	SetURI(uri string)
 	URIList() []string
