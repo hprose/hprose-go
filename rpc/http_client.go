@@ -12,7 +12,7 @@
  *                                                        *
  * hprose http client for Go.                             *
  *                                                        *
- * LastModified: Oct 11, 2016                             *
+ * LastModified: Oct 24, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -25,7 +25,6 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/cookiejar"
-	"time"
 
 	hio "github.com/hprose/hprose-golang/io"
 )
@@ -39,9 +38,9 @@ var DisableGlobalCookie = false
 type HTTPClient struct {
 	baseClient
 	limiter
-	http.Client
 	http.Transport
-	Header http.Header
+	Header     http.Header
+	httpClient http.Client
 }
 
 // NewHTTPClient is the constructor of HTTPClient
@@ -49,13 +48,13 @@ func NewHTTPClient(uri ...string) (client *HTTPClient) {
 	client = new(HTTPClient)
 	client.initBaseClient()
 	client.initLimiter()
-	client.Client.Transport = &client.Transport
+	client.httpClient.Transport = &client.Transport
 	client.DisableCompression = true
 	client.DisableKeepAlives = false
-	client.MaxIdleConnsPerHost = 4
-	client.Jar = cookieJar
+	client.MaxIdleConnsPerHost = 10
+	client.httpClient.Jar = cookieJar
 	if DisableGlobalCookie {
-		client.Jar, _ = cookiejar.New(nil)
+		client.httpClient.Jar, _ = cookiejar.New(nil)
 	}
 	client.SetURIList(uri)
 	client.SendAndReceive = client.sendAndReceive
@@ -82,11 +81,6 @@ func (client *HTTPClient) TLSClientConfig() *tls.Config {
 // SetTLSClientConfig set the tls.Config
 func (client *HTTPClient) SetTLSClientConfig(config *tls.Config) {
 	client.Transport.TLSClientConfig = config
-}
-
-// Timeout returns the client timeout setting
-func (client *HTTPClient) Timeout() time.Duration {
-	return client.baseClient.timeout
 }
 
 // KeepAlive return the keepalive status of hprose client
@@ -138,8 +132,8 @@ func (client *HTTPClient) sendAndReceive(
 	}
 	req.ContentLength = int64(len(data))
 	req.Header.Set("Content-Type", "application/hprose")
-	client.Client.Timeout = context.Timeout
-	resp, err := client.Do(req)
+	client.httpClient.Timeout = context.Timeout
+	resp, err := client.httpClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
