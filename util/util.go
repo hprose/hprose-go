@@ -26,6 +26,7 @@ import (
 	"crypto/rand"
 	"fmt"
 	"math"
+	"reflect"
 	"unsafe"
 )
 
@@ -265,9 +266,20 @@ func UTF16Length(str string) (n int) {
 	return n
 }
 
-// ByteString converts []byte to string by block magic
+// ByteString converts []byte to string without memory allocation by block magic
 func ByteString(b []byte) string {
 	return *(*string)(unsafe.Pointer(&b))
+}
+
+// StringByte converts string to string without memory allocation by block magic
+func StringByte(s string) []byte {
+	sh := (*reflect.StringHeader)(unsafe.Pointer(&s))
+	bh := reflect.SliceHeader{
+		Data: sh.Data,
+		Len:  sh.Len,
+		Cap:  sh.Len,
+	}
+	return *(*[]byte)(unsafe.Pointer(&bh))
 }
 
 // Itoa returns the string representation of i

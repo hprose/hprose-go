@@ -12,7 +12,7 @@
  *                                                        *
  * util test for Go.                                      *
  *                                                        *
- * LastModified: Aug 24, 2016                             *
+ * LastModified: Oct 24, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -181,6 +181,13 @@ func TestUTF16Length(t *testing.T) {
 func TestByteString(t *testing.T) {
 	s := ([]byte)("你好")
 	if ByteString(s) != "你好" {
+		t.Error(s)
+	}
+}
+
+func TestStringByte(t *testing.T) {
+	s := "你好"
+	if ByteString(StringByte(s)) != "你好" {
 		t.Error(s)
 	}
 }
