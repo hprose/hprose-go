@@ -12,7 +12,7 @@
  *                                                        *
  * hprose base service for Go.                            *
  *                                                        *
- * LastModified: Oct 19, 2016                             *
+ * LastModified: Oct 24, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -43,7 +43,6 @@ type baseService struct {
 	Heartbeat    time.Duration
 	ErrorDelay   time.Duration
 	UserData     map[string]interface{}
-	readerPool   sync.Pool
 	topics       map[string]*topic
 	topicLock    sync.RWMutex
 }
@@ -63,9 +62,6 @@ func (service *baseService) initBaseService() {
 	service.Heartbeat = 3 * time.Second
 	service.ErrorDelay = 10 * time.Second
 	service.topics = make(map[string]*topic)
-	service.readerPool = sync.Pool{
-		New: func() interface{} { return new(io.Reader) },
-	}
 	service.AddFunction("#", util.UUIDv4, Options{Simple: true})
 	service.override.invokeHandler = func(
 		name string, args []reflect.Value,
@@ -338,11 +334,14 @@ func (service *baseService) endError(err error, context Context) []byte {
 }
 
 func invoke(
-	name string, args []reflect.Value,
-	context ServiceContext) (results []reflect.Value, err error) {
+	name string,
+	args []reflect.Value,
+	context ServiceContext) ([]reflect.Value, error) {
 	if context.Method().Oneway {
 		go func() {
-			defer recover()
+			defer func() {
+				recover()
+			}()
 			callService(name, args, context)
 		}()
 		return nil, nil
@@ -393,8 +392,8 @@ func readArguments(
 func (service *baseService) beforeInvoke(
 	name string,
 	args []reflect.Value,
-	context ServiceContext) (response []byte, err error) {
-	err = fireBeforeInvokeEvent(service.Event, name, args, context)
+	context ServiceContext) ([]byte, error) {
+	err := fireBeforeInvokeEvent(service.Event, name, args, context)
 	if err != nil {
 		return nil, err
 	}
@@ -478,23 +477,10 @@ func (service *baseService) doFunctionList(context ServiceContext) []byte {
 	return writer.Bytes()
 }
 
-func (service *baseService) acquireReader(buf []byte) (reader *io.Reader) {
-	reader = service.readerPool.Get().(*io.Reader)
-	reader.Init(buf)
-	return
-}
-
-func (service *baseService) releaseReader(reader *io.Reader) {
-	reader.Init(nil)
-	reader.Reset()
-	service.readerPool.Put(reader)
-}
-
 func (service *baseService) afterFilter(
-	request []byte,
-	context ServiceContext) (response []byte, err error) {
-	reader := service.acquireReader(request)
-	defer service.releaseReader(reader)
+	request []byte, context ServiceContext) ([]byte, error) {
+	reader := defaultReaderPool.acquireReader(request)
+	defer defaultReaderPool.releaseReader(reader)
 	reader.Init(request)
 	tag, err := reader.ReadByte()
 	if err != nil {
@@ -547,7 +533,9 @@ func fireSubscribeEvent(
 	topic string,
 	id string,
 	service *baseService) {
-	defer recover()
+	defer func() {
+		recover()
+	}()
 	if event, ok := service.Event.(subscribeEvent); ok {
 		event.OnSubscribe(topic, id, service)
 	}
@@ -557,7 +545,9 @@ func fireUnsubscribeEvent(
 	topic string,
 	id string,
 	service *baseService) {
-	defer recover()
+	defer func() {
+		recover()
+	}()
 	if event, ok := service.Event.(unsubscribeEvent); ok {
 		event.OnUnsubscribe(topic, id, service)
 	}
@@ -612,8 +602,8 @@ func (service *baseService) getTopic(topic string) (t *topic) {
 	return
 }
 
-func (service *baseService) unicast(t *topic,
-	topic string, id string, result interface{}, callback func(bool)) {
+func (service *baseService) unicast(
+	t *topic, topic string, id string, result interface{}, callback func(bool)) {
 	message := t.get(id)
 	if message == nil {
 		if callback != nil {
@@ -664,12 +654,14 @@ func (service *baseService) Push(topic string, result interface{}, id ...string)
 }
 
 // Broadcast push result to all clients
-func (service *baseService) Broadcast(topic string, result interface{}, callback func([]string)) {
+func (service *baseService) Broadcast(
+	topic string, result interface{}, callback func([]string)) {
 	service.Multicast(topic, service.IDList(topic), result, callback)
 }
 
 // Multicast result to the specified clients
-func (service *baseService) Multicast(topic string, ids []string, result interface{}, callback func([]string)) {
+func (service *baseService) Multicast(
+	topic string, ids []string, result interface{}, callback func([]string)) {
 	t := service.getTopic(topic)
 	m := 0
 	n := len(ids)

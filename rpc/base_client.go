@@ -104,7 +104,6 @@ type baseClient struct {
 	timeout        time.Duration
 	event          ClientEvent
 	contextPool    sync.Pool
-	readerPool     sync.Pool
 	SendAndReceive func([]byte, *ClientContext) ([]byte, error)
 	id             string
 }
@@ -115,9 +114,6 @@ func (client *baseClient) initBaseClient() {
 	client.retry = 10
 	client.contextPool = sync.Pool{
 		New: func() interface{} { return new(ClientContext) },
-	}
-	client.readerPool = sync.Pool{
-		New: func() interface{} { return new(hio.Reader) },
 	}
 	client.override.invokeHandler = func(
 		name string, args []reflect.Value,
@@ -423,10 +419,7 @@ func (client *baseClient) failswitch() {
 	}
 }
 
-func (client *baseClient) encode(
-	name string,
-	args []reflect.Value,
-	context *ClientContext) []byte {
+func encode(name string, args []reflect.Value, context *ClientContext) []byte {
 	writer := hio.NewWriter(context.Simple)
 	writer.WriteByte(hio.TagCall)
 	writer.WriteString(name)
@@ -495,19 +488,7 @@ func readArgs(reader *hio.Reader, args []reflect.Value) byte {
 	return tag
 }
 
-func (client *baseClient) acquireReader(buf []byte) (reader *hio.Reader) {
-	reader = client.readerPool.Get().(*hio.Reader)
-	reader.Init(buf)
-	return
-}
-
-func (client *baseClient) releaseReader(reader *hio.Reader) {
-	reader.Init(nil)
-	reader.Reset()
-	client.readerPool.Put(reader)
-}
-
-func (client *baseClient) decode(
+func decode(
 	data []byte,
 	args []reflect.Value,
 	context *ClientContext) (results []reflect.Value, err error) {
@@ -531,8 +512,8 @@ func (client *baseClient) decode(
 		results[0] = reflect.ValueOf(data[:n-1])
 		return
 	}
-	reader := client.acquireReader(data)
-	defer client.releaseReader(reader)
+	reader := defaultReaderPool.acquireReader(data)
+	defer defaultReaderPool.releaseReader(reader)
 	reader.JSONCompatible = context.JSONCompatible
 	tag, _ := reader.ReadByte()
 	if tag == hio.TagResult {
@@ -560,12 +541,12 @@ func (client *baseClient) invoke(
 	name string,
 	args []reflect.Value,
 	context *ClientContext) ([]reflect.Value, error) {
-	request := client.encode(name, args, context)
+	request := encode(name, args, context)
 	response, err := client.sendRequest(request, context)
 	if err != nil {
 		return nil, err
 	}
-	return client.decode(response, args, context)
+	return decode(response, args, context)
 }
 
 func (client *baseClient) buildRemoteService(v reflect.Value, ns string) {
@@ -857,7 +838,7 @@ func (client *baseClient) processCallback(
 	if resultTypes != nil && len(resultTypes) > 0 {
 		writer := hio.NewWriter(false)
 		writer.WriteValue(results[0])
-		reader := client.acquireReader(writer.Bytes())
+		reader := defaultReaderPool.acquireReader(writer.Bytes())
 		if len(resultTypes) == 1 {
 			results = make([]reflect.Value, 1)
 			results[0] = reflect.New(resultTypes[0]).Elem()
@@ -865,7 +846,7 @@ func (client *baseClient) processCallback(
 		} else {
 			results = readMultiResults(reader, resultTypes)
 		}
-		client.releaseReader(reader)
+		defaultReaderPool.releaseReader(reader)
 	}
 	for _, callback := range callbacks {
 		callback(results, err)
