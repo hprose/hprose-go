@@ -12,7 +12,7 @@
  *                                                        *
  * byte pool for Go.                                      *
  *                                                        *
- * LastModified: Oct 24, 2016                             *
+ * LastModified: Oct 25, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -37,6 +37,7 @@ func pow2roundup(x int) int {
 	x |= x >> 4
 	x |= x >> 8
 	x |= x >> 16
+	x |= x >> 32
 	return x + 1
 }
 
@@ -68,10 +69,10 @@ func AcquireBytes(size int) []byte {
 	if size < 1 {
 		return nil
 	}
-	if size > maxSize {
-		return make([]byte, size)
-	}
 	capacity := pow2roundup(size)
+	if capacity > maxSize {
+		return make([]byte, size, capacity)
+	}
 	if capacity < 512 {
 		capacity = 512
 	}
