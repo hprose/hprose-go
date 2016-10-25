@@ -12,7 +12,7 @@
  *                                                        *
  * hprose socket common for Go.                           *
  *                                                        *
- * LastModified: Oct 24, 2016                             *
+ * LastModified: Oct 25, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -97,7 +97,7 @@ func sendData(writer io.Writer, data packet) (err error) {
 
 func recvData(reader io.Reader, data *packet) (err error) {
 	header := data.id[:]
-	if _, err = reader.Read(header); err != nil {
+	if _, err = io.ReadAtLeast(reader, header, 4); err != nil {
 		return
 	}
 	size := toUint32(header)
@@ -106,7 +106,7 @@ func recvData(reader io.Reader, data *packet) (err error) {
 		size &= 0x7FFFFFFF
 		data.fullDuplex = true
 		data.body = nil
-		if _, err = reader.Read(data.id[:]); err != nil {
+		if _, err = io.ReadAtLeast(reader, data.id[:], 4); err != nil {
 			return
 		}
 	}
@@ -115,7 +115,7 @@ func recvData(reader io.Reader, data *packet) (err error) {
 	} else {
 		data.body = make([]byte, size)
 	}
-	_, err = reader.Read(data.body)
+	_, err = io.ReadAtLeast(reader, data.body, int(size))
 	return
 }
 
@@ -152,7 +152,7 @@ func hdSendData(writer io.Writer, data []byte) (err error) {
 
 func hdRecvData(reader io.Reader, buf []byte) (data []byte, err error) {
 	var header [4]byte
-	if _, err = reader.Read(header[:]); err != nil {
+	if _, err = io.ReadAtLeast(reader, header[:], 4); err != nil {
 		return
 	}
 	size := toUint32(header[:])
@@ -161,7 +161,7 @@ func hdRecvData(reader io.Reader, buf []byte) (data []byte, err error) {
 	} else {
 		data = make([]byte, size)
 	}
-	_, err = reader.Read(data)
+	_, err = io.ReadAtLeast(reader, data, int(size))
 	return
 }
 
