@@ -12,7 +12,7 @@
  *                                                        *
  * hprose map decoder for Go.                             *
  *                                                        *
- * LastModified: Sep 12, 2016                             *
+ * LastModified: Oct 25, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -42,7 +42,7 @@ func setIntKey(kind reflect.Kind, k reflect.Value, i int) {
 	}
 }
 
-func readListAsMap(r *Reader, v reflect.Value, tag byte) {
+func readListAsMap(r *Reader, v reflect.Value) {
 	if v.IsNil() {
 		v.Set(reflect.MakeMap(v.Type()))
 	}
@@ -63,7 +63,7 @@ func readListAsMap(r *Reader, v reflect.Value, tag byte) {
 	r.readByte()
 }
 
-func readMap(r *Reader, v reflect.Value, tag byte) {
+func readMap(r *Reader, v reflect.Value) {
 	if v.IsNil() {
 		v.Set(reflect.MakeMap(v.Type()))
 	}
@@ -84,7 +84,7 @@ func readMap(r *Reader, v reflect.Value, tag byte) {
 	r.readByte()
 }
 
-func readStructAsMap(r *Reader, v reflect.Value, tag byte) {
+func readStructAsMap(r *Reader, v reflect.Value) {
 	if v.IsNil() {
 		v.Set(reflect.MakeMap(v.Type()))
 	}
@@ -108,7 +108,7 @@ func readStructAsMap(r *Reader, v reflect.Value, tag byte) {
 	r.readByte()
 }
 
-func readRefAsMap(r *Reader, v reflect.Value, tag byte) {
+func readRefAsMap(r *Reader, v reflect.Value) {
 	ref := r.readRef()
 	if m, ok := ref.(reflect.Value); ok {
 		if m.Kind() == reflect.Map {
@@ -121,7 +121,7 @@ func readRefAsMap(r *Reader, v reflect.Value, tag byte) {
 		" cannot be converted to type map"))
 }
 
-var mapDecoders = [256]func(r *Reader, v reflect.Value, tag byte){
+var mapDecoders = [256]func(r *Reader, v reflect.Value){
 	TagNull:   nilDecoder,
 	TagEmpty:  nilDecoder,
 	TagList:   readListAsMap,
@@ -134,7 +134,7 @@ var mapDecoders = [256]func(r *Reader, v reflect.Value, tag byte){
 func mapDecoder(r *Reader, v reflect.Value, tag byte) {
 	decoder := mapDecoders[tag]
 	if decoder != nil {
-		decoder(r, v, tag)
+		decoder(r, v)
 		return
 	}
 	castError(tag, v.Type().String())

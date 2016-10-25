@@ -12,7 +12,7 @@
  *                                                        *
  * hprose struct decoder for Go.                          *
  *                                                        *
- * LastModified: Oct 19, 2016                             *
+ * LastModified: Oct 25, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -214,58 +214,6 @@ func readMapAsStruct(r *Reader, v reflect.Value, tag byte) {
 	r.readByte()
 }
 
-func readStructMeta(r *Reader, v reflect.Value, tag byte) {
-	structName := r.readString()
-	structType := v.Type()
-	if structType.Kind() != reflect.Struct {
-		structType = GetStructType(structName)
-		if structType == nil {
-			panic(errors.New("cannot convert " + structName +
-				" to type " + v.Type().String()))
-		}
-	}
-	structCache := getStructCache(structType)
-	fieldMap := structCache.FieldMap
-	count := r.ReadCount()
-	fields := make([]*fieldCache, count)
-	for i := 0; i < count; i++ {
-		fields[i] = fieldMap[r.ReadString()]
-	}
-	r.structTypeRef = append(r.structTypeRef, structType)
-	r.fieldsRef = append(r.fieldsRef, fields)
-	r.readByte()
-	r.ReadValue(v)
-}
-
-func readStructData(r *Reader, v reflect.Value, tag byte) {
-	index := r.ReadCount()
-	if v.Kind() == reflect.Interface {
-		typ := r.structTypeRef[index]
-		if !reflect.PtrTo(typ).Implements(v.Type()) {
-			panic(errors.New("*" + typ.String() + " does not implements " + v.Type().String() + " interface"))
-		} else {
-			ptr := reflect.New(typ)
-			v.Set(ptr)
-			v = ptr.Elem()
-		}
-	}
-	fields := r.fieldsRef[index]
-	count := len(fields)
-	if !r.Simple {
-		setReaderRef(r, v)
-	}
-	for i := 0; i < count; i++ {
-		if field := fields[i]; field != nil {
-			f := v.FieldByIndex(field.Index)
-			r.ReadValue(f)
-		} else {
-			var x interface{}
-			r.Unserialize(&x)
-		}
-	}
-	r.readByte()
-}
-
 func readRefAsStruct(r *Reader, v reflect.Value, tag byte) {
 	ref := r.readRef()
 	if str, ok := ref.(string); ok {
@@ -286,7 +234,7 @@ func readRefAsStruct(r *Reader, v reflect.Value, tag byte) {
 }
 
 var structDecoders = [256]func(r *Reader, v reflect.Value, tag byte){
-	TagNull:    nilDecoder,
+	TagNull:    func(r *Reader, v reflect.Value, tag byte) { nilDecoder(r, v) },
 	'0':        readDigitAsStruct,
 	'1':        readDigitAsStruct,
 	'2':        readDigitAsStruct,
@@ -305,8 +253,8 @@ var structDecoders = [256]func(r *Reader, v reflect.Value, tag byte){
 	TagTime:    readTimeStruct,
 	TagList:    readListAsStruct,
 	TagMap:     readMapAsStruct,
-	TagClass:   readStructMeta,
-	TagObject:  readStructData,
+	TagClass:   func(r *Reader, v reflect.Value, tag byte) { readStructMeta(r, v) },
+	TagObject:  func(r *Reader, v reflect.Value, tag byte) { readStructData(r, v) },
 	TagRef:     readRefAsStruct,
 }
 

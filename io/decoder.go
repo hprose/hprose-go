@@ -12,7 +12,7 @@
  *                                                        *
  * hprose decoder for Go.                                 *
  *                                                        *
- * LastModified: Sep 10, 2016                             *
+ * LastModified: Oct 25, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -28,14 +28,13 @@ type valueDecoder func(r *Reader, v reflect.Value, tag byte)
 
 var valueDecoders []valueDecoder
 
-func invalidDecoder(r *Reader, v reflect.Value, tag byte) {
-	panic(errors.New("can't unserialize the type: " + v.Type().String()))
-}
-
-func nilDecoder(r *Reader, v reflect.Value, tag byte) {
+func nilDecoder(r *Reader, v reflect.Value) {
 	v.Set(reflect.Zero(v.Type()))
 }
 
+func invalidDecoder(r *Reader, v reflect.Value, tag byte) {
+	panic(errors.New("can't unserialize the type: " + v.Type().String()))
+}
 func init() {
 	valueDecoders = []valueDecoder{
 		reflect.Invalid:       invalidDecoder,

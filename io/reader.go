@@ -12,7 +12,7 @@
  *                                                        *
  * hprose reader for Go.                                  *
  *                                                        *
- * LastModified: Oct 15, 2016                             *
+ * LastModified: Oct 26, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -86,11 +86,10 @@ func (r *Reader) CheckTags(expectTags []byte) (tag byte) {
 func (r *Reader) ReadBool() bool {
 	tag := r.readByte()
 	decoder := boolDecoders[tag]
-	if decoder != nil {
-		return decoder(r)
+	if decoder == nil {
+		castError(tag, "bool")
 	}
-	castError(tag, "bool")
-	return false
+	return decoder(r)
 }
 
 // ReadIntWithoutTag from the reader
@@ -102,66 +101,60 @@ func (r *Reader) ReadIntWithoutTag() int {
 func (r *Reader) ReadInt() int64 {
 	tag := r.readByte()
 	decoder := intDecoders[tag]
-	if decoder != nil {
-		return decoder(r)
+	if decoder == nil {
+		castError(tag, "int64")
 	}
-	castError(tag, "int64")
-	return 0
+	return decoder(r)
 }
 
 // ReadUint from the reader
 func (r *Reader) ReadUint() uint64 {
 	tag := r.readByte()
 	decoder := uintDecoders[tag]
-	if decoder != nil {
-		return decoder(r)
+	if decoder == nil {
+		castError(tag, "uint64")
 	}
-	castError(tag, "uint64")
-	return 0
+	return decoder(r)
 }
 
 // ReadFloat32 from the reader
 func (r *Reader) ReadFloat32() float32 {
 	tag := r.readByte()
 	decoder := float32Decoders[tag]
-	if decoder != nil {
-		return decoder(r)
+	if decoder == nil {
+		castError(tag, "float32")
 	}
-	castError(tag, "float32")
-	return 0
+	return decoder(r)
 }
 
 // ReadFloat64 from the reader
 func (r *Reader) ReadFloat64() float64 {
 	tag := r.readByte()
 	decoder := float64Decoders[tag]
-	if decoder != nil {
-		return decoder(r)
+	if decoder == nil {
+		castError(tag, "float64")
 	}
-	castError(tag, "float64")
-	return 0
+	return decoder(r)
 }
 
 // ReadComplex64 from the reader
 func (r *Reader) ReadComplex64() complex64 {
 	tag := r.readByte()
 	decoder := complex64Decoders[tag]
-	if decoder != nil {
-		return decoder(r)
+	if decoder == nil {
+		castError(tag, "complex64")
 	}
-	castError(tag, "complex64")
-	return 0
+	return decoder(r)
 }
 
 // ReadComplex128 from the reader
 func (r *Reader) ReadComplex128() complex128 {
 	tag := r.readByte()
 	decoder := complex128Decoders[tag]
-	if decoder != nil {
-		return decoder(r)
+	if decoder == nil {
+		castError(tag, "complex128")
 	}
-	castError(tag, "complex128")
-	return 0
+	return decoder(r)
 }
 
 // ReadStringWithoutTag from the reader
@@ -177,11 +170,10 @@ func (r *Reader) ReadStringWithoutTag() (str string) {
 func (r *Reader) ReadString() string {
 	tag := r.readByte()
 	decoder := stringDecoders[tag]
-	if decoder != nil {
-		return decoder(r)
+	if decoder == nil {
+		castError(tag, "string")
 	}
-	castError(tag, "string")
-	return ""
+	return decoder(r)
 }
 
 // ReadBytesWithoutTag from the reader
@@ -195,6 +187,28 @@ func (r *Reader) ReadBytesWithoutTag() (b []byte) {
 	if !r.Simple {
 		setReaderRef(r, b)
 	}
+	return
+}
+
+// ReadBytes from the reader
+func (r *Reader) ReadBytes() (b []byte) {
+	tag := r.readByte()
+	decoder := sliceDecoders[tag]
+	if decoder == nil {
+		castError(tag, "[]byte")
+	}
+	decoder(r, reflect.ValueOf(&b).Elem())
+	return
+}
+
+// ReadInterface from the reader
+func (r *Reader) ReadInterface() (v interface{}) {
+	tag := r.readByte()
+	decoder := interfaceDecoders[tag]
+	if decoder == nil {
+		castError(tag, "interface{}")
+	}
+	decoder(r, reflect.ValueOf(&v).Elem())
 	return
 }
 

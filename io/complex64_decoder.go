@@ -12,7 +12,7 @@
  *                                                        *
  * hprose complex64 decoder for Go.                       *
  *                                                        *
- * LastModified: Oct 15, 2016                             *
+ * LastModified: Oct 25, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -54,7 +54,7 @@ func readStringAsComplex64(r *Reader) complex64 {
 
 func readListAsComplex64(r *Reader) complex64 {
 	var floatPair [2]float32
-	readListAsArray(r, reflect.ValueOf(&floatPair).Elem(), TagList)
+	readListAsArray(r, reflect.ValueOf(&floatPair).Elem())
 	return complex(floatPair[0], floatPair[1])
 }
 

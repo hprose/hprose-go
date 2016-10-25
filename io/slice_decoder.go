@@ -12,7 +12,7 @@
  *                                                        *
  * hprose slice decoder for Go.                           *
  *                                                        *
- * LastModified: Oct 15, 2016                             *
+ * LastModified: Oct 25, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -24,7 +24,7 @@ import (
 	"reflect"
 )
 
-func readBytesAsSlice(r *Reader, v reflect.Value, tag byte) {
+func readBytesAsSlice(r *Reader, v reflect.Value) {
 	if v.Type().Elem().Kind() != reflect.Uint8 {
 		panic(errors.New("cannot be converted []byte to " + v.Type().String()))
 	}
@@ -47,7 +47,7 @@ func readBytesAsSlice(r *Reader, v reflect.Value, tag byte) {
 	r.readByte()
 }
 
-func readListAsSlice(r *Reader, v reflect.Value, tag byte) {
+func readListAsSlice(r *Reader, v reflect.Value) {
 	n := v.Cap()
 	l := r.ReadCount()
 	if n >= l {
@@ -64,7 +64,7 @@ func readListAsSlice(r *Reader, v reflect.Value, tag byte) {
 	r.readByte()
 }
 
-func readRefAsSlice(r *Reader, v reflect.Value, tag byte) {
+func readRefAsSlice(r *Reader, v reflect.Value) {
 	ref := r.readRef()
 	if b, ok := ref.([]byte); ok {
 		reflect.Copy(v, reflect.ValueOf(b))
@@ -83,7 +83,7 @@ func readRefAsSlice(r *Reader, v reflect.Value, tag byte) {
 		" cannot be converted to type slice"))
 }
 
-var sliceDecoders = [256]func(r *Reader, v reflect.Value, tag byte){
+var sliceDecoders = [256]func(r *Reader, v reflect.Value){
 	TagNull:  nilDecoder,
 	TagEmpty: nilDecoder,
 	TagBytes: readBytesAsSlice,
@@ -94,7 +94,7 @@ var sliceDecoders = [256]func(r *Reader, v reflect.Value, tag byte){
 func sliceDecoder(r *Reader, v reflect.Value, tag byte) {
 	decoder := sliceDecoders[tag]
 	if decoder != nil {
-		decoder(r, v, tag)
+		decoder(r, v)
 		return
 	}
 	castError(tag, v.Type().String())

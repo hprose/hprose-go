@@ -12,7 +12,7 @@
  *                                                        *
  * hprose complex128 decoder for Go.                      *
  *                                                        *
- * LastModified: Oct 15, 2016                             *
+ * LastModified: Oct 25, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -54,7 +54,7 @@ func readStringAsComplex128(r *Reader) complex128 {
 
 func readListAsComplex128(r *Reader) complex128 {
 	var floatPair [2]float64
-	readListAsArray(r, reflect.ValueOf(&floatPair).Elem(), TagList)
+	readListAsArray(r, reflect.ValueOf(&floatPair).Elem())
 	return complex(floatPair[0], floatPair[1])
 }
 
