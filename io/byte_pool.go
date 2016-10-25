@@ -40,7 +40,7 @@ func pow2roundup(x int) int {
 	return x + 1
 }
 
-var debruijn = []int{
+var debruijn = [...]int{
 	0, 1, 28, 2, 29, 14, 24, 3,
 	30, 22, 20, 15, 25, 17, 4, 8,
 	31, 27, 13, 23, 21, 19, 16, 7,
