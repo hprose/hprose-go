@@ -12,7 +12,7 @@
  *                                                        *
  * hprose base service for Go.                            *
  *                                                        *
- * LastModified: Oct 24, 2016                             *
+ * LastModified: Oct 25, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -137,16 +137,6 @@ func (service *baseService) AddNetRPCMethods(rcvr interface{}, option ...Options
 func (service *baseService) Remove(name string) Service {
 	service.methodManager.Remove(name)
 	return service
-}
-
-// Filter return the first filter
-func (service *baseService) Filter() Filter {
-	return service.filterManager.Filter()
-}
-
-// FilterByIndex return the filter by index
-func (service *baseService) FilterByIndex(index int) Filter {
-	return service.filterManager.FilterByIndex(index)
 }
 
 // SetFilter will replace the current filter settings

@@ -12,7 +12,7 @@
  *                                                        *
  * hprose rpc base client for Go.                         *
  *                                                        *
- * LastModified: Oct 24, 2016                             *
+ * LastModified: Oct 25, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -209,16 +209,6 @@ func (client *baseClient) Failround() int {
 // SetEvent set the client event
 func (client *baseClient) SetEvent(event ClientEvent) {
 	client.event = event
-}
-
-// Filter return the first filter
-func (client *baseClient) Filter() Filter {
-	return client.filterManager.Filter()
-}
-
-// FilterByIndex return the filter by index
-func (client *baseClient) FilterByIndex(index int) Filter {
-	return client.filterManager.FilterByIndex(index)
 }
 
 // SetFilter will replace the current filter settings

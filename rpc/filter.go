@@ -12,7 +12,7 @@
  *                                                        *
  * hprose filter interface for Go.                        *
  *                                                        *
- * LastModified: Oct 2, 2016                              *
+ * LastModified: Oct 25, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -41,6 +41,13 @@ func (fm *filterManager) Filter() Filter {
 		return nil
 	}
 	return fm.filters[0]
+}
+
+// NumFilter return the filter count
+func (fm *filterManager) NumFilter() int {
+	fm.fmLocker.RLock()
+	defer fm.fmLocker.RUnlock()
+	return len(fm.filters)
 }
 
 // FilterByIndex return the filter by index
