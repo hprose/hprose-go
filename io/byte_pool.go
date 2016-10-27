@@ -30,7 +30,7 @@ const (
 
 var bytePool [poolNum]*sync.Pool
 
-func pow2roundup(x int) int {
+func pow2roundup(x int64) int64 {
 	x--
 	x |= x >> 1
 	x |= x >> 2
@@ -48,7 +48,7 @@ var debruijn = [...]int{
 	26, 12, 18, 6, 11, 5, 10, 9,
 }
 
-func log2(x int) int {
+func log2(x int64) int {
 	return debruijn[uint32(x*0x077CB531)>>27]
 }
 
@@ -69,7 +69,7 @@ func AcquireBytes(size int) []byte {
 	if size < 1 {
 		return nil
 	}
-	capacity := pow2roundup(size)
+	capacity := pow2roundup(int64(size))
 	if capacity > maxSize {
 		return make([]byte, size, capacity)
 	}
@@ -81,7 +81,7 @@ func AcquireBytes(size int) []byte {
 
 // ReleaseBytes to pool.
 func ReleaseBytes(bytes []byte) bool {
-	capacity := cap(bytes)
+	capacity := int64(cap(bytes))
 	if capacity < 512 || capacity > maxSize || capacity != pow2roundup(capacity) {
 		return false
 	}

@@ -12,7 +12,7 @@
  *                                                        *
  * byte pool test for Go.                                 *
  *                                                        *
- * LastModified: Oct 25, 2016                             *
+ * LastModified: Oct 26, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -40,18 +40,9 @@ func TestBytesPool(t *testing.T) {
 			t.Error(len(bytes), cap(bytes), 1<<i)
 		}
 	}
-	for i := uint(10); i < 20; i++ {
+	for i := uint(10); i < 29; i++ {
 		bytes := AcquireBytes((1 << i) - 500)
 		if len(bytes) != ((1<<i)-500) || cap(bytes) != 1<<i {
-			t.Error(len(bytes), cap(bytes), 1<<i)
-		}
-		if !ReleaseBytes(bytes) {
-			t.Error(len(bytes), cap(bytes), 1<<i)
-		}
-	}
-	for i := uint(20); i < 29; i++ {
-		bytes := AcquireBytes((1 << i) - 500)
-		if len(bytes) != ((1<<i)-500) || cap(bytes) != (1<<i) {
 			t.Error(len(bytes), cap(bytes), 1<<i)
 		}
 		if !ReleaseBytes(bytes) {
