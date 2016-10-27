@@ -12,7 +12,7 @@
  *                                                        *
  * hprose service for Go.                                 *
  *                                                        *
- * LastModified: Oct 23, 2016                             *
+ * LastModified: Oct 27, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -41,6 +41,7 @@ type Service interface {
 	AddInvokeHandler(handler ...InvokeHandler) Service
 	AddBeforeFilterHandler(handler ...FilterHandler) Service
 	AddAfterFilterHandler(handler ...FilterHandler) Service
+	SetUserData(userdata map[string]interface{}) Service
 	Publish(topic string, timeout time.Duration, heartbeat time.Duration) Service
 	Clients
 }

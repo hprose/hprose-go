@@ -12,7 +12,7 @@
  *                                                        *
  * hprose rpc base client for Go.                         *
  *                                                        *
- * LastModified: Oct 25, 2016                             *
+ * LastModified: Oct 27, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -105,6 +105,7 @@ type baseClient struct {
 	event          ClientEvent
 	contextPool    sync.Pool
 	SendAndReceive func([]byte, *ClientContext) ([]byte, error)
+	UserData       map[string]interface{}
 	id             string
 }
 
@@ -253,6 +254,13 @@ func (client *baseClient) AddAfterFilterHandler(handler ...FilterHandler) Client
 	return client
 }
 
+// SetUserData for client
+func (client *baseClient) SetUserData(
+	userdata map[string]interface{}) Client {
+	client.UserData = userdata
+	return client
+}
+
 // UseService build a remote service proxy object with namespace
 func (client *baseClient) UseService(
 	remoteService interface{}, namespace ...string) {
@@ -273,6 +281,11 @@ func (client *baseClient) getClientContext(
 	context.initBaseContext()
 	context.Client = client
 	context.Retried = 0
+	if client.UserData != nil {
+		for k, v := range client.UserData {
+			context.SetInterface(k, v)
+		}
+	}
 	if settings == nil {
 		context.InvokeSettings = InvokeSettings{
 			Timeout: client.timeout,

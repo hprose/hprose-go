@@ -12,7 +12,7 @@
  *                                                        *
  * hprose rpc client for Go.                              *
  *                                                        *
- * LastModified: Oct 24, 2016                             *
+ * LastModified: Oct 27, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -76,6 +76,7 @@ type Client interface {
 	AddInvokeHandler(handler ...InvokeHandler) Client
 	AddBeforeFilterHandler(handler ...FilterHandler) Client
 	AddAfterFilterHandler(handler ...FilterHandler) Client
+	SetUserData(userdata map[string]interface{}) Client
 	UseService(remoteService interface{}, namespace ...string)
 	Invoke(string, []reflect.Value, *InvokeSettings) ([]reflect.Value, error)
 	Go(string, []reflect.Value, Callback, *InvokeSettings)

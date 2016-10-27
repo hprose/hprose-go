@@ -12,7 +12,7 @@
  *                                                        *
  * hprose base service for Go.                            *
  *                                                        *
- * LastModified: Oct 25, 2016                             *
+ * LastModified: Oct 27, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -178,6 +178,13 @@ func (service *baseService) AddBeforeFilterHandler(handler ...FilterHandler) Ser
 // AddAfterFilterHandler add the filter handler after filters
 func (service *baseService) AddAfterFilterHandler(handler ...FilterHandler) Service {
 	service.handlerManager.AddAfterFilterHandler(handler...)
+	return service
+}
+
+// SetUserData for service
+func (service *baseService) SetUserData(
+	userdata map[string]interface{}) Service {
+	service.UserData = userdata
 	return service
 }
 
