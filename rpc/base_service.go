@@ -12,7 +12,7 @@
  *                                                        *
  * hprose base service for Go.                            *
  *                                                        *
- * LastModified: Oct 27, 2016                             *
+ * LastModified: Oct 28, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -334,6 +334,9 @@ func invoke(
 	name string,
 	args []reflect.Value,
 	context ServiceContext) ([]reflect.Value, error) {
+	if context.Method() == nil {
+		return nil, errors.New("Can't find this method " + name)
+	}
 	if context.Method().Oneway {
 		go func() {
 			defer func() {
@@ -438,10 +441,6 @@ func (service *baseService) doSingleInvoke(
 			context.setByRef(true)
 			tag = reader.CheckTags([]byte{io.TagEnd, io.TagCall})
 		}
-	}
-	if method == nil {
-		err := errors.New("Can't find this method " + name)
-		return service.sendError(err, context), tag
 	}
 	context.setMethod(method)
 	result, err := service.beforeInvoke(name, args, context)
