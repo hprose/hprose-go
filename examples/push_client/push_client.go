@@ -6,6 +6,7 @@ import (
 	"github.com/hprose/hprose-golang/rpc"
 )
 
+// HelloService ...
 type HelloService struct {
 	Hello func(string) (string, error)
 }
