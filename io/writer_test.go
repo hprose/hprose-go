@@ -1337,3 +1337,22 @@ func TestWriteSliceMap(t *testing.T) {
 		t.Error(w.String())
 	}
 }
+
+func TestSerializeInterface(t *testing.T) {
+	w := NewWriter(false)
+	var i interface{}
+	w.Serialize(&i)
+	i = 123
+	w.Serialize(&i)
+	if w.String() != `ni123;` {
+		t.Error(w.String())
+	}
+}
+
+func TestSerializeFunc(t *testing.T) {
+	w := NewWriter(false)
+	w.Serialize(func() {})
+	if w.String() != `n` {
+		t.Error(w.String())
+	}
+}
