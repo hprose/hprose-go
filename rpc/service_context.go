@@ -23,6 +23,7 @@ package rpc
 type ServiceContext interface {
 	Context
 	Service() Service
+	Clients() Clients
 	Method() *Method
 	IsMissingMethod() bool
 	ByRef() bool
@@ -52,6 +53,10 @@ func (context *serviceContext) Method() *Method {
 }
 
 func (context *serviceContext) Service() Service {
+	return context.service
+}
+
+func (context *serviceContext) Clients() Clients {
 	return context.service
 }
 

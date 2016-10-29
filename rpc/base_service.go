@@ -12,7 +12,7 @@
  *                                                        *
  * hprose base service for Go.                            *
  *                                                        *
- * LastModified: Oct 28, 2016                             *
+ * LastModified: Oct 29, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -35,7 +35,6 @@ type baseService struct {
 	methodManager
 	handlerManager
 	filterManager
-	Clients
 	FixArguments func(args []reflect.Value, context ServiceContext)
 	Event        ServiceEvent
 	Debug        bool
