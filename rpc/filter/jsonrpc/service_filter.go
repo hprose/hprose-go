@@ -12,7 +12,7 @@
  *                                                        *
  * hprose service filter for Go.                          *
  *                                                        *
- * LastModified: Oct 27, 2016                             *
+ * LastModified: Oct 29, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -28,6 +28,25 @@ import (
 
 // ServiceFilter is a JSONRPC Service Filter
 type ServiceFilter struct{}
+
+func createResponse(request map[string]interface{}) (response map[string]interface{}) {
+	response = make(map[string]interface{})
+	if id, ok := request["id"]; ok {
+		response["id"] = id
+	} else {
+		response["id"] = nil
+	}
+	if version, ok := request["jsonrpc"]; ok {
+		response["jsonrpc"] = version
+	} else {
+		if version, ok := request["version"]; ok {
+			response["version"] = version
+		}
+		response["result"] = nil
+		response["error"] = nil
+	}
+	return
+}
 
 // InputFilter for JSONRPC Service
 func (filter ServiceFilter) InputFilter(data []byte, context rpc.Context) []byte {
@@ -47,22 +66,7 @@ func (filter ServiceFilter) InputFilter(data []byte, context rpc.Context) []byte
 		n := len(requests)
 		responses := make([]map[string]interface{}, n)
 		for i, request := range requests {
-			response := make(map[string]interface{})
-			if id, ok := request["id"]; ok {
-				response["id"] = id
-			} else {
-				response["id"] = nil
-			}
-			if version, ok := request["jsonrpc"]; ok {
-				response["jsonrpc"] = version
-			} else {
-				if version, ok := request["version"]; ok {
-					response["version"] = version
-				}
-				response["result"] = nil
-				response["error"] = nil
-			}
-			responses[i] = response
+			responses[i] = createResponse(request)
 			if method, ok := request["method"].(string); ok && method != "" {
 				writer.WriteByte(io.TagCall)
 				writer.WriteString(method)
