@@ -1217,3 +1217,64 @@ func TestSerializeValue(t *testing.T) {
 		t.Error(w.String())
 	}
 }
+
+func TestWriteSlice(t *testing.T) {
+	w := NewWriter(true)
+	w.Serialize([]reflect.Value{reflect.ValueOf(123), reflect.ValueOf("Hello")})
+	if w.String() != `a2{i123;s5"Hello"}` {
+		t.Error(w.String())
+	}
+}
+
+func TestWriteStringSlice(t *testing.T) {
+	w := NewWriter(true)
+	w.Serialize([]string{"你好", "Hello"})
+	if w.String() != `a2{s2"你好"s5"Hello"}` {
+		t.Error(w.String())
+	}
+}
+
+func TestWriteSliceArray(t *testing.T) {
+	w := NewWriter(false)
+	s := []string{"你好", "Hello"}
+	w.Serialize([2]*[]string{&s, &s})
+	if w.String() != `a2{a2{s2"你好"s5"Hello"}r1;}` {
+		t.Error(w.String())
+	}
+	w.Clear()
+	w.Reset()
+	w.Serialize([2][]string{s, s})
+	if w.String() != `a2{a2{s2"你好"s5"Hello"}a2{s2"你好"s5"Hello"}}` {
+		t.Error(w.String())
+	}
+}
+
+func TestWriteSliceSlice(t *testing.T) {
+	w := NewWriter(false)
+	s := []string{"你好", "Hello"}
+	w.Serialize([]*[]string{&s, &s})
+	if w.String() != `a2{a2{s2"你好"s5"Hello"}r1;}` {
+		t.Error(w.String())
+	}
+	w.Clear()
+	w.Reset()
+	w.Serialize([][]string{s, s})
+	if w.String() != `a2{a2{s2"你好"s5"Hello"}a2{s2"你好"s5"Hello"}}` {
+		t.Error(w.String())
+	}
+}
+
+func TestWriteSliceSlice2(t *testing.T) {
+	w := NewWriter(true)
+	s := []string{"你好", "Hello"}
+	w.Serialize([]*[]string{&s, &s})
+	if w.String() != `a2{a2{s2"你好"s5"Hello"}a2{s2"你好"s5"Hello"}}` {
+		t.Error(w.String())
+	}
+	w.Clear()
+	w.Reset()
+	w.Serialize([][]string{s, s})
+	if w.String() != `a2{a2{s2"你好"s5"Hello"}a2{s2"你好"s5"Hello"}}` {
+		t.Error(w.String())
+	}
+}
