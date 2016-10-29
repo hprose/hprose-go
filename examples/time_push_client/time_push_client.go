@@ -9,13 +9,12 @@ import (
 func main() {
 	client := rpc.NewTCPClient("tcp4://127.0.0.1:2016/")
 	count := 0
-	id, _ := client.AutoID()
-	done := make(chan bool)
-	client.Subscribe("time", id, nil, func(data string) {
+	done := make(chan struct{})
+	client.Subscribe("time", "", nil, func(data string) {
 		count++
 		if count > 10 {
 			client.Unsubscribe("time")
-			done <- true
+			done <- struct{}{}
 		}
 		fmt.Println(data)
 	})

@@ -24,7 +24,9 @@ func main() {
 	var timer *time.Timer
 	timer = time.AfterFunc(1*time.Second, func() {
 		server.Broadcast("time", time.Now().String(), func(sended []string) {
-			fmt.Println(sended)
+			if len(sended) > 0 {
+				fmt.Println(sended)
+			}
 		})
 		timer.Reset(1 * time.Second)
 	})
