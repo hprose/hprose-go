@@ -12,7 +12,7 @@
  *                                                        *
  * hprose rpc base client for Go.                         *
  *                                                        *
- * LastModified: Oct 27, 2016                             *
+ * LastModified: Oct 29, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -330,8 +330,8 @@ func (client *baseClient) Invoke(
 func (client *baseClient) Go(
 	name string,
 	args []reflect.Value,
-	callback Callback,
-	settings *InvokeSettings) {
+	settings *InvokeSettings,
+	callback Callback) {
 	go func() {
 		defer client.fireErrorEvent(name, nil)
 		callback(client.Invoke(name, args, settings))

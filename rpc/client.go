@@ -79,7 +79,7 @@ type Client interface {
 	SetUserData(userdata map[string]interface{}) Client
 	UseService(remoteService interface{}, namespace ...string)
 	Invoke(string, []reflect.Value, *InvokeSettings) ([]reflect.Value, error)
-	Go(string, []reflect.Value, Callback, *InvokeSettings)
+	Go(string, []reflect.Value, *InvokeSettings, Callback)
 	Close()
 	AutoID() (string, error)
 	ID() string
