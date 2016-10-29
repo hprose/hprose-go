@@ -12,7 +12,7 @@
  *                                                        *
  * hprose writer test for Go.                             *
  *                                                        *
- * LastModified: Oct 22, 2016                             *
+ * LastModified: Oct 29, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -1220,7 +1220,7 @@ func TestSerializeValue(t *testing.T) {
 
 func TestWriteSlice(t *testing.T) {
 	w := NewWriter(true)
-	w.Serialize([]reflect.Value{reflect.ValueOf(123), reflect.ValueOf("Hello")})
+	w.WriteSlice([]reflect.Value{reflect.ValueOf(123), reflect.ValueOf("Hello")})
 	if w.String() != `a2{i123;s5"Hello"}` {
 		t.Error(w.String())
 	}
@@ -1228,7 +1228,7 @@ func TestWriteSlice(t *testing.T) {
 
 func TestWriteStringSlice(t *testing.T) {
 	w := NewWriter(true)
-	w.Serialize([]string{"你好", "Hello"})
+	w.WriteStringSlice([]string{"你好", "Hello"})
 	if w.String() != `a2{s2"你好"s5"Hello"}` {
 		t.Error(w.String())
 	}
