@@ -22,11 +22,11 @@ func main() {
 	server.Publish("time", 0, 0)
 	server.Event = event{}
 	var timer *time.Timer
-	timer = time.AfterFunc(1*1000*1000*1000, func() {
+	timer = time.AfterFunc(1*time.Second, func() {
 		server.Broadcast("time", time.Now().String(), func(sended []string) {
 			fmt.Println(sended)
 		})
-		timer.Reset(1 * 1000 * 1000 * 1000)
+		timer.Reset(1 * time.Second)
 	})
 	server.Start()
 }
