@@ -12,7 +12,7 @@
  *                                                        *
  * hprose RawReader Test for Go.                          *
  *                                                        *
- * LastModified: Sep 2, 2016                              *
+ * LastModified: Oct 29, 2016                             *
  * Author: Ma Bingyao <andot@hprose.com>                  *
  *                                                        *
 \**********************************************************/
@@ -20,6 +20,7 @@
 package io
 
 import (
+	"math"
 	"testing"
 	"time"
 )
@@ -41,6 +42,16 @@ func TestRawReaderNumber(t *testing.T) {
 	raw := rawReader.ReadRaw()
 	if string(raw) != "i123;" {
 		t.Error("read integer error: ", string(raw))
+	}
+}
+
+func TestRawReaderInf(t *testing.T) {
+	w := NewWriter(true)
+	w.Serialize(math.Inf(1))
+	rawReader := NewRawReader(w.Bytes())
+	raw := rawReader.ReadRaw()
+	if string(raw) != "I+" {
+		t.Error("read inf error: ", string(raw))
 	}
 }
 
@@ -114,6 +125,29 @@ func TestRawReaderStruct(t *testing.T) {
 	if string(raw) != `c6"Person"2{s4"name"s3"age"}o0{s3"Tom"i18;}` {
 		t.Error("read object error: ", string(raw))
 	}
+}
+
+func TestRawReaderError(t *testing.T) {
+	w := NewWriter(true)
+	w.writeByte(TagError)
+	w.Serialize("test error")
+	rawReader := NewRawReader(w.Bytes())
+	raw := rawReader.ReadRaw()
+	if string(raw) != `Es10"test error"` {
+		t.Error("read error: ", string(raw))
+	}
+}
+
+func TestRawReaderUnexpectedTag(t *testing.T) {
+	defer func() {
+		if e := recover(); e == nil {
+			t.Error("read unexpected tag error")
+		}
+	}()
+	w := NewWriter(true)
+	w.writeByte('*')
+	rawReader := NewRawReader(w.Bytes())
+	rawReader.ReadRaw()
 }
 
 func BenchmarkRawReaderReadUTF8StringEmpty(b *testing.B) {
