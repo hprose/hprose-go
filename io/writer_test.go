@@ -461,6 +461,26 @@ func TestWriteString(t *testing.T) {
 	}
 }
 
+func TestSerializeStringPtr(t *testing.T) {
+	w := NewWriter(true)
+	testdata := map[string]string{
+		"":                            "e",
+		"π":                           "uπ",
+		"你":                           "u你",
+		"你好":                          `s2"你好"`,
+		"你好啊,hello!":                  `s10"你好啊,hello!"`,
+		"🇨🇳":                          `s4"🇨🇳"`,
+		string([]byte{128, 129, 130}): string([]byte{'b', '3', '"', 128, 129, 130, '"'}),
+	}
+	for k, v := range testdata {
+		w.Serialize(&k)
+		if w.String() != v {
+			t.Error(w.String())
+		}
+		w.Clear()
+	}
+}
+
 func TestSerializeArray(t *testing.T) {
 	w := NewWriter(true)
 	testdata := map[interface{}]string{
