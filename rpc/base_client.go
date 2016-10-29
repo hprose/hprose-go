@@ -70,7 +70,7 @@ func (tm *topicManager) createTopic(topic string) {
 	if tm.allTopics[topic] == nil {
 		tm.allTopics[topic] = make(map[string]*clientTopic)
 	}
-	tm.locker.Lock()
+	tm.locker.Unlock()
 }
 
 // IsSubscribed the topic
