@@ -1212,6 +1212,12 @@ func TestSerializeStructPtr(t *testing.T) {
 	if w.String() != s {
 		t.Error(w.String())
 	}
+	w.Reset()
+	w.Serialize(&pq)
+	s = `c8"Quotient"2{s3"quo"s3"rem"}o0{i10;1}c8"Quotient"2{s3"quo"s3"rem"}o0{i10;1}`
+	if w.String() != s {
+		t.Error(w.String())
+	}
 }
 
 func TestSerializeBigIntPtr(t *testing.T) {
@@ -1313,6 +1319,21 @@ func TestWriteSliceSlice2(t *testing.T) {
 	w.Reset()
 	w.Serialize([][]string{s, s})
 	if w.String() != `a2{a2{s2"你好"s5"Hello"}a2{s2"你好"s5"Hello"}}` {
+		t.Error(w.String())
+	}
+}
+
+func TestWriteSliceMap(t *testing.T) {
+	w := NewWriter(false)
+	w.Serialize(map[string]*[]string{})
+	if w.String() != `m{}` {
+		t.Error(w.String())
+	}
+	w.Clear()
+	w.Reset()
+	s := []string{"你好", "Hello"}
+	w.Serialize(map[string]*[]string{"e1": &s})
+	if w.String() != `m1{s2"e1"a2{s2"你好"s5"Hello"}}` {
 		t.Error(w.String())
 	}
 }
