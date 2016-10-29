@@ -936,6 +936,16 @@ func TestWriteTime(t *testing.T) {
 	}
 }
 
+func TestWriteTimeRef(t *testing.T) {
+	d := time.Date(1980, 12, 1, 0, 0, 0, 0, time.UTC)
+	w := NewWriter(false)
+	w.WriteTime(&d)
+	w.WriteTime(&d)
+	if w.String() != "D19801201Zr0;" {
+		t.Error(w.String())
+	}
+}
+
 func TestSerializeTime(t *testing.T) {
 	w := NewWriter(true)
 	testdata := map[time.Time]string{
@@ -979,37 +989,41 @@ func BenchmarkSerializeTime(b *testing.B) {
 }
 
 func TestSerializeList(t *testing.T) {
-	w := NewWriter(true)
+	w := NewWriter(false)
 	lst := list.New()
 	w.Serialize(lst)
 	if w.String() != "a{}" {
 		t.Error(w.String())
 	}
 	w.Clear()
+	w.Reset()
 	lst.PushBack(1)
 	lst.PushBack("hello")
 	lst.PushBack(nil)
 	lst.PushBack(3.14159)
 	w.Serialize(lst)
-	if w.String() != `a4{1s5"hello"nd3.14159;}` {
+	w.Serialize(lst)
+	if w.String() != `a4{1s5"hello"nd3.14159;}r0;` {
 		t.Error(w.String())
 	}
 }
 
 func TestWriteList(t *testing.T) {
-	w := NewWriter(true)
+	w := NewWriter(false)
 	lst := list.New()
 	w.WriteList(lst)
 	if w.String() != "a{}" {
 		t.Error(w.String())
 	}
 	w.Clear()
+	w.Reset()
 	lst.PushBack(1)
 	lst.PushBack("hello")
 	lst.PushBack(nil)
 	lst.PushBack(3.14159)
 	w.WriteList(lst)
-	if w.String() != `a4{1s5"hello"nd3.14159;}` {
+	w.WriteList(lst)
+	if w.String() != `a4{1s5"hello"nd3.14159;}r0;` {
 		t.Error(w.String())
 	}
 }
@@ -1220,6 +1234,12 @@ func TestSerializeValue(t *testing.T) {
 
 func TestWriteSlice(t *testing.T) {
 	w := NewWriter(true)
+	w.WriteSlice([]reflect.Value{})
+	if w.String() != `a{}` {
+		t.Error(w.String())
+	}
+	w.Clear()
+	w.Reset()
 	w.WriteSlice([]reflect.Value{reflect.ValueOf(123), reflect.ValueOf("Hello")})
 	if w.String() != `a2{i123;s5"Hello"}` {
 		t.Error(w.String())
@@ -1228,6 +1248,12 @@ func TestWriteSlice(t *testing.T) {
 
 func TestWriteStringSlice(t *testing.T) {
 	w := NewWriter(true)
+	w.WriteStringSlice([]string{})
+	if w.String() != `a{}` {
+		t.Error(w.String())
+	}
+	w.Clear()
+	w.Reset()
 	w.WriteStringSlice([]string{"你好", "Hello"})
 	if w.String() != `a2{s2"你好"s5"Hello"}` {
 		t.Error(w.String())
@@ -1236,6 +1262,12 @@ func TestWriteStringSlice(t *testing.T) {
 
 func TestWriteSliceArray(t *testing.T) {
 	w := NewWriter(false)
+	w.Serialize([0]*[]string{})
+	if w.String() != `a{}` {
+		t.Error(w.String())
+	}
+	w.Clear()
+	w.Reset()
 	s := []string{"你好", "Hello"}
 	w.Serialize([2]*[]string{&s, &s})
 	if w.String() != `a2{a2{s2"你好"s5"Hello"}r1;}` {
@@ -1251,6 +1283,12 @@ func TestWriteSliceArray(t *testing.T) {
 
 func TestWriteSliceSlice(t *testing.T) {
 	w := NewWriter(false)
+	w.Serialize([]*[]string{})
+	if w.String() != `a{}` {
+		t.Error(w.String())
+	}
+	w.Clear()
+	w.Reset()
 	s := []string{"你好", "Hello"}
 	w.Serialize([]*[]string{&s, &s})
 	if w.String() != `a2{a2{s2"你好"s5"Hello"}r1;}` {
