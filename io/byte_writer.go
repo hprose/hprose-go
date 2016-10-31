@@ -88,13 +88,15 @@ func (w *ByteWriter) Grow(n int) {
 
 // WriteByte c to the byte slice of this writer.
 func (w *ByteWriter) WriteByte(c byte) error {
-	w.writeByte(c)
+	p := w.grow(1)
+	w.buf[p] = c
 	return nil
 }
 
 // Write the contents of b to the byte slice of this writer.
 func (w *ByteWriter) Write(b []byte) (int, error) {
-	return w.write(b), nil
+	p := w.grow(len(b))
+	return copy(w.buf[p:], b), nil
 }
 
 func (w *ByteWriter) writeByte(c byte) {
